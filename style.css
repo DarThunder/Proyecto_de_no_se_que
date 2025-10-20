@@ -7,13 +7,16 @@
 
 body {
   font-family: "Poppins", sans-serif;
-  background-color: #f0f4f8; /* Un gris muy suave */
-  color: #333;
+  background-image: url(sources/img/pexels-pixabay-264636.jpg); /* ← pon aquí tu imagen */
+  background-size: cover;             /* que cubra toda la pantalla */
+  background-position: center;        /* centrada */
+  background-repeat: no-repeat;       /* sin repetir */
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
   padding: 1rem;
+  color: #333;
 }
 
 /* --- Contenedor Principal --- */
