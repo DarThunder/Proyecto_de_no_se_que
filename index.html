@@ -17,9 +17,13 @@
       rel="stylesheet"
     />
 
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css"/>
   </head>
   <body>
+    <audio autoplay preload loop id="Bg_music" src="sources/audio/Bg_music.mp3"></audio>
+
+    <video autoplay loop muted class="videoFondo" src="sources/vids/BrcAzulFondo.webm"></video>
+
     <div class="login-container">
       <div class="login-form">
         <form action="/login" method="POST">
@@ -84,5 +88,9 @@
     </div>
 
     <script src="script.js"></script>
+    <script>
+      const musica = document.getElementById("Bg_music");
+      musica.volume = 0.2;
+    </script>
   </body>
 </html>

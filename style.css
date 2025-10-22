@@ -20,7 +20,19 @@ body {
 }
 
 /* --- Contenedor Principal --- */
+.videoFondo {
+  z-index: 0;
+
+  position: fixed;
+  height: 150vh;
+  top: -12vh;
+  left: -3vh;
+}
+
 .login-container {
+  z-index: 1;
+  
+  position: relative;
   width: 100%;
   max-width: 420px;
 }
