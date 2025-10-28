@@ -252,6 +252,12 @@ body {
   text-decoration: underline;
 }
 
+.form-logo {
+  display: block;
+  width:150px;  /* Ajusta el tamaño (ancho) de tu logo */
+  margin: 0 auto 1.5rem auto; /* Centra el logo y le da espacio abajo */
+}
+
 /* --- Responsividad (Optimización Móvil) --- */
 @media (max-width: 480px) {
   .login-form {

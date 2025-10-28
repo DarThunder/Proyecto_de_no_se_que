@@ -283,7 +283,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: url('sources/img/Fondo.jpg');
+    background-image: url('/sources/img/Fondo.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -562,4 +562,10 @@ body {
 
 .product-card:hover .product-image img {
     transform: scale(1.05);
+}
+
+.hero-logo {
+  display: block;
+  width:150px;  /* Ajusta el tamaño (ancho) de tu logo */
+  margin: 0 auto 1.5rem auto; /* Centra el logo y le da espacio abajo */
 }
