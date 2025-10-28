@@ -1,0 +1,190 @@
+/* 1. ARREGLO DE LAYOUT Y FONDO */
+        html > body {
+            /* Fondo animado */
+            background: linear-gradient(-45deg, #ffffff, #8b8b8b, #3a3a3a, #000000);
+            background-size: 400% 400%;
+            animation: gradient-animation 15s ease infinite;
+
+            /* Layout Flex para empujar el footer */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            
+            /* Espacio para el header fijo */
+            padding-top: 100px; 
+        }
+
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Regla que empuja el footer hacia abajo */
+        .footer {
+            margin-top: auto;
+        }
+
+        /* 2. ESTILOS DEL CONTENEDOR DEL CARRITO */
+        .cart-container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 2rem auto; /* Centrado y con espacio */
+            padding: 2.5rem;
+            
+            /* Efecto "Glass" moderno que combina con tu tema */
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid #333;
+            border-radius: 16px;
+            color: #ffffff; /* Texto blanco */
+        }
+
+        .cart-container h1 {
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 2.5rem;
+            letter-spacing: 2px;
+        }
+
+        /* 3. LAYOUT DE 2 COLUMNAS */
+        .cart-layout {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap; /* Para que sea responsive en móviles */
+        }
+
+        .cart-items {
+            flex: 2; /* Ocupa 2/3 del espacio */
+            min-width: 320px;
+        }
+
+        .cart-summary {
+            flex: 1; /* Ocupa 1/3 del espacio */
+            min-width: 300px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 2rem;
+            
+            /* Efecto "sticky" para que te siga al hacer scroll */
+            position: sticky;
+            top: 120px; /* 100px del padding-top + 20px de espacio */
+        }
+
+        /* 4. ESTILOS DE CADA PRODUCTO EN LA LISTA */
+        .cart-item {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding-bottom: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #333;
+        }
+
+        .cart-item img {
+            width: 90px;
+            height: 110px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .item-details {
+            flex-grow: 1; /* Ocupa el espacio restante */
+        }
+
+        .item-details h3 {
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .item-price {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ccc;
+        }
+
+        .item-quantity input {
+            width: 60px;
+            padding: 0.5rem;
+            text-align: center;
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .item-remove {
+            background: none;
+            border: none;
+            color: #ff4d4d;
+            font-size: 1.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0 0.5rem;
+            transition: color 0.3s ease;
+        }
+        
+        .item-remove:hover {
+            color: #ff8a8a;
+        }
+
+        /* 5. ESTILOS DEL RESUMEN DE COMPRA */
+        .cart-summary h2 {
+            font-size: 1.5rem;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+        }
+
+        .summary-row, .summary-total {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+        
+        .summary-total {
+            font-size: 1.25rem;
+            font-weight: 700;
+            padding-top: 1rem;
+            border-top: 1px solid #333;
+            color: #fff;
+        }
+
+        .btn-checkout {
+            /* Estilos copiados de tu botón ".cta-button" */
+            display: block;
+            width: 100%;
+            text-align: center;
+            background: #fff;
+            color: #000;
+            padding: 1rem;
+            margin-top: 2rem;
+            text-decoration: none;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 2px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+        
+        .btn-checkout:hover {
+            background: #ccc;
+        }
+        
+        /* Oculta labels que son solo para accesibilidad */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            border: 0;
+        }

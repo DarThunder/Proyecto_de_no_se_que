@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadow & Stitch - Tienda de Ropa Urbana</title>
+    <link rel="stylesheet" href="../css/styleMain.css">
+    <link rel="stylesheet" href="../css/carrito.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+</head>
+
+</head>
+<body>
+     <audio autoplay preload loop id="Bg_music" src="../sources/audio/Bg_music.mp3"></audio>
+
+    <!-- Header con Menú Hamburguesa -->
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <h1>SHADOW & STITCH</h1>
+            </div>
+            
+            <!-- Menú Hamburguesa -->
+            <div class="hamburger-menu">
+                <div class="hamburger-icon">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <!-- Menú Lateral -->
+            <div class="mobile-menu">
+                <div class="menu-header">
+                    <h3>S&S</h3>
+                </div>
+                <ul class="mobile-nav-links">
+                    <li><a href="#inicio"><i class="fas fa-home"></i> Inicio</a></li>
+                    <li><a href="#categorias"><i class="fas fa-th-large"></i> Categorías</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle">
+                            <i class="fas fa-user"></i> Cuenta
+                            <i class="fas fa-chevron-down dropdown-arrow"></i>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="login.html" class="dropdown-link">Iniciar Sesión</a></li>
+                            <li><a href="CrearCuenta.html" class="dropdown-link">Crear Cuenta</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="#carrito"><i class="fas fa-shopping-bag"></i> Carrito</a></li>
+                    <li><a href="#nuevo"><i class="fas fa-star"></i> Nuevo</a></li>
+                </ul>
+                
+                <div class="menu-footer">
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-tiktok"></i></a>
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="cart-container">
+    <h1>Tu Carrito</h1>
+
+    <div class="cart-layout">
+
+        <div class="cart-items">
+
+            <div class="cart-item">
+                <img src="../sources/img/pantalones.jpg" alt="Pantalones Urban Fit">
+                <div class="item-details">
+                    <h3>JEAN URBAN FIT</h3>
+                    <p class="item-price">$750.00 MXN</p>
+                </div>
+                <div class="item-quantity">
+                    <label for="qty-1" class="sr-only">Cantidad</label>
+                    <input type="number" id="qty-1" value="1" min="1" max="10">
+                </div>
+                <button class="item-remove" title="Eliminar producto">&times;</button>
+            </div>
+
+            <div class="cart-item">
+                <img src="../sources/img/hoodie.jpg" alt="Hoodie Black Shadow">
+                <div class="item-details">
+                    <h3>HOODIE BLACK SHADOW</h3>
+                    <p class="item-price">$899.00 MXN</p>
+                </div>
+                <div class="item-quantity">
+                    <label for="qty-2" class="sr-only">Cantidad</label>
+                    <input type="number" id="qty-2" value="1" min="1" max="10">
+                </div>
+                <button class="item-remove" title="Eliminar producto">&times;</button>
+            </div>
+            
+            </div>
+
+        <aside class="cart-summary">
+            <h2>Resumen de Compra</h2>
+            <div class="summary-row">
+                <span>Subtotal:</span>
+                <span>$1,649.00</span>
+            </div>
+            <div class="summary-row">
+                <span>Envío:</span>
+                <span>$99.00</span>
+            </div>
+            <div class="summary-total">
+                <span>Total:</span>
+                <span>$1,748.00</span>
+            </div>
+            <button class="btn-checkout">IR A PAGAR</button>
+        </aside>
+
+    </div>
+</main>
+
+    
+
+    
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>SHADOW & STITCH</h3>
+                <p>Tu destino para el estilo urbano auténtico</p>
+            </div>
+            <div class="footer-section">
+                <h4>ENLACES RÁPIDOS</h4>
+                <ul>
+                    <li><a href="#inicio">Inicio</a></li>
+                    <li><a href="#categorias">Categorías</a></li>
+                    <li><a href="#nuevo">Nuevo</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>CONTACTO</h4>
+                <p>info@shadowstitch.com</p>
+                <p>+52 55 1234 5678</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Shadow & Stitch. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="/js/scriptMain.js"></script>
+</body>
+</html>
