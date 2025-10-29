@@ -1,22 +1,139 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Punto de venta</title>
+    <title>Sistema Punto de Venta</title>
+    <link rel="stylesheet" href="../css/stylePOS.css">
 </head>
-
 <body>
-    <label>ID del producto</label>
-    <input type="text" id="IDP" name="IDP">
-    <table>
-        <tr>
-            <th>Nombre</th>
-            <th>Cantidad</th>
-            <th>Precio</th>
-        </tr>
-    </table>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="logo">Sistema POS</div>
+                <div class="user-info">
+                    <div class="user-avatar" id="userAvatar"></div>
+                    <div id="userName">Cajero: No asignado</div>
+                </div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="left-panel">
+                <!-- Búsqueda de cliente -->
+                <div class="card">
+                    <h2 class="card-title">Búsqueda de Cliente</h2>
+                    <div class="form-group">
+                        <label for="searchCustomer">Buscar cliente por nombre, teléfono o correo</label>
+                        <input type="text" id="searchCustomer" placeholder="Ingrese datos del cliente...">
+                    </div>
+                    <button class="btn btn-primary" id="searchCustomerBtn">Buscar Cliente</button>
+                    
+                    <!-- Información del cliente seleccionado -->
+                    <div class="customer-info" id="customerInfo" style="display: none;">
+                        <div class="customer-avatar" id="customerAvatar"></div>
+                        <div class="customer-details">
+                            <div class="customer-name" id="customerName"></div>
+                            <div class="customer-contact" id="customerContact"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Agregar producto -->
+                <div class="card">
+                    <h2 class="card-title">Agregar Producto</h2>
+                    <div class="form-group">
+                        <label for="productID">ID del Producto</label>
+                        <input type="text" id="productID" placeholder="Ingrese ID del producto">
+                    </div>
+                    <div class="form-group">
+                        <label for="productSearch">Buscar Producto</label>
+                        <input type="text" id="productSearch" placeholder="Buscar por nombre o código...">
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="addProductBtn">Añadir Producto</button>
+                        <button class="btn btn-warning" id="searchProductBtn">Buscar</button>
+                    </div>
+                </div>
+                
+                <!-- Cierre de caja -->
+                <div class="card cash-register-section">
+                    <h2 class="card-title">Cierre de Caja</h2>
+                    <p>Realice el cierre de caja al final del turno</p>
+                    <div class="register-stats">
+                        <div class="stat-card">
+                            <div class="stat-label">Ventas del Día</div>
+                            <div class="stat-value" id="dailySales">$0.00</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Transacciones</div>
+                            <div class="stat-value" id="transactionsCount">0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Ticket Promedio</div>
+                            <div class="stat-value" id="averageTicket">$0.00</div>
+                        </div>
+                    </div>
+                    <div class="actions-section">
+                        <button class="btn btn-warning" id="dailyReportBtn">Reporte Diario</button>
+                        <button class="btn btn-danger" id="closeRegisterBtn">Cierre de Caja</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <!-- Carrito de compras -->
+                <div class="card">
+                    <h2 class="card-title">Carrito de Compras</h2>
+                    
+                    <!-- Tabla de productos -->
+                    <table id="cartTable">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Precio Unit.</th>
+                                <th>Subtotal</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cartBody">
+                            <!-- El carrito estará vacío inicialmente -->
+                        </tbody>
+                    </table>
+                    
+                    <!-- Mensaje cuando el carrito está vacío -->
+                    <div class="empty-cart" id="emptyCartMessage">
+                        <i>🛒</i>
+                        <p>El carrito está vacío</p>
+                        <p>Agregue productos para comenzar una venta</p>
+                    </div>
+                    
+                    <!-- Sección de descuento -->
+                    <div class="discount-section">
+                        <h3>Aplicar Descuento</h3>
+                        <div class="discount-form">
+                            <div class="discount-input">
+                                <input type="text" id="discountInput" placeholder="Código de descuento o porcentaje">
+                            </div>
+                            <button class="btn btn-warning" id="applyDiscountBtn">Aplicar</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Total y acciones -->
+                    <div class="total-section">
+                        <div class="total-label">Total:</div>
+                        <div class="total-amount" id="totalAmount">$0.00</div>
+                    </div>
+                    
+                    <div class="actions-section">
+                        <button class="btn btn-danger" id="removeProductBtn">Eliminar Producto</button>
+                        <button class="btn btn-primary" id="addAnotherProductBtn">Añadir Producto</button>
+                        <button class="btn btn-success" id="checkoutBtn">Cobrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
-
 </html>
