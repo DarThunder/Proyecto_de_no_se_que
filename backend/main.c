@@ -7,8 +7,7 @@
 #define PORT 8080
 
 #define DB_CONNECTION_STRING                                                   \
-  "host=db port=5432 dbname=ropadb user=usuario_db "                           \
-  "password=pene"
+  "host=db port=5432 dbname=ropadb user=usuario_db password=tu_password"
 
 typedef struct {
   PGconn *db_conn;
@@ -129,7 +128,9 @@ int main() {
          "/orders\n");
   printf("Presiona Ctrl+C para detenerlo\n");
 
-  getchar();
+  while (1) {
+    sleep(60);
+  }
   MHD_stop_daemon(daemon);
 
   PQfinish(context.db_conn);
