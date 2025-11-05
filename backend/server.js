@@ -1,6 +1,7 @@
 import "dotenv/config";
 
 import express, { json } from "express";
+import cors from "cors";
 import { connect } from "mongoose";
 
 import productRoutes from "./routes/productRoutes.js";
@@ -11,8 +12,12 @@ import userRoutes from "./routes/userRoute.js";
 const app = express();
 const PORT = process.env.PORT || 8080;
 const MONGODB_URI = process.env.MONGODB_URI;
+const corsOptions = {
+  origin: "http://127.0.0.1:5500",
+};
 
 app.use(json());
+app.use(cors(corsOptions));
 
 connect(MONGODB_URI)
   .then(() => {

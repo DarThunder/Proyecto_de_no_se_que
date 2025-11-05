@@ -15,3 +15,31 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+document
+  .getElementById("login-form-form")
+  .addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const username = e.target.username.value;
+    const password = e.target.password.value;
+
+    try {
+      const res = await fetch("http://localhost:8080/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error HTTP: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      localStorage.setItem("token", data.token);
+      window.location.href = "../index.html";
+    } catch (err) {
+      console.error("Error al iniciar sesión:", err);
+    }
+  });
