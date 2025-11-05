@@ -1,11 +1,13 @@
-FROM archlinux:latest
-RUN pacman -Sy --noconfirm \
-    base-devel \
-    postgresql-libs \
-    libmicrohttpd \
-    && pacman -Scc --noconfirm 
-WORKDIR /usr/src/app
-COPY main.c .
-RUN gcc -o backend main.c -lmicrohttpd -lpq
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+
+RUN npm install
+
+COPY . .
+
 EXPOSE 8080
-CMD ["./backend"]
+
+CMD [ "node", "server.js" ]

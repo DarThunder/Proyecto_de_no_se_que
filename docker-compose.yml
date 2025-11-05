@@ -1,27 +1,32 @@
 version: "3.8"
 
 services:
-  db:
-    image: postgres:15-alpine
-    container_name: ropadb_container
+  mongo:
+    image: mongo:6.0
+    container_name: ropadb_mongo_container
     restart: always
     environment:
-      POSTGRES_USER: usuario_db
-      POSTGRES_PASSWORD: tu_password
-      POSTGRES_DB: ropadb
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: tu_password_segura
     ports:
-      - "5432:5432"
+      - "27017:27017"
+    command: mongod --bind_ip 0.0.0.0
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./db:/docker-entrypoint-initdb.d/
+      - mongo_data:/data/db
+      - ./backend/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
+
   backend:
     build: ./backend
-    container_name: ropa_backend_container
+    container_name: ropa_backend_node_container
+    restart: always
     ports:
       - "8080:8080"
     depends_on:
-      - db
-    # environment:
-    # DB_CONNECTION_STRING: "host=db ..."
+      - mongo
+    environment:
+      PORT: 8080
+      MONGODB_URI: "mongodb://admin:tu_password_segura@mongo:27017/ropadb?authSource=admin"
+      JWT_SECRET: "ArZfGtW9yVnnJV9Yf1f5zeSLlqIzCLRGD2XmjgkeF8fQhKVtyaB7x34SWv07U0p2"
+
 volumes:
-  postgres_data:
+  mongo_data:
