@@ -1,12 +1,11 @@
 import mongoose, { model } from "mongoose";
 const { Schema } = mongoose;
 
-// Define el esquema para un ítem dentro del carrito
 const cartItemSchema = new Schema(
   {
     variant: {
       type: Schema.Types.ObjectId,
-      ref: "ProductVariant", // Referencia a tu modelo de variantes de producto
+      ref: "ProductVariant",
       required: true,
     },
     quantity: {
@@ -16,17 +15,16 @@ const cartItemSchema = new Schema(
       default: 1,
     },
   },
-  { _id: false } // No es necesario un _id para los subdocumentos de items
+  { _id: false }
 );
 
-// Define el esquema principal del carrito
 const cartSchema = new Schema(
   {
     user: {
       type: Schema.Types.ObjectId,
-      ref: "User", // Referencia a tu modelo User
+      ref: "User",
       required: true,
-      unique: true, // Cada usuario tiene solo un carrito
+      unique: true,
       index: true,
     },
     items: [cartItemSchema],
