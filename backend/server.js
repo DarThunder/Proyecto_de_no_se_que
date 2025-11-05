@@ -8,6 +8,7 @@ import productRoutes from "./routes/productRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import userRoutes from "./routes/userRoute.js";
+import cartRoutes from "./routes/cartRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -37,6 +38,7 @@ app.use("/products", productRoutes);
 app.use("/auth", authRoutes);
 app.use("/orders", orderRoutes);
 app.use("/users", userRoutes);
+app.use("/cart", cartRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ error: "Recurso no encontrado" });

@@ -133,21 +133,63 @@ window.addEventListener('scroll', () => {
 
 // Simulación de agregar al carrito
 document.querySelectorAll('.product-btn').forEach(button => {
-    button.addEventListener('click', function() {
-        const productName = this.parentElement.querySelector('h3').textContent;
-        const originalText = this.textContent;
+    button.addEventListener('click', async function() {
         
-        this.textContent = 'AGREGADO ✓';
-        this.style.background = '#4CAF50';
-        this.style.color = '#fff';
+        // --- NECESITAS EL ID DE LA VARIANTE ---
+        // Debes agregar el ID de la variante al botón en tu HTML
+        // Por ejemplo: <button class="product-btn" data-variant-id="672fbc125e9d...">
+        const variantId = this.dataset.variantId; 
         
-        setTimeout(() => {
-            this.textContent = originalText;
-            this.style.background = '#fff';
-            this.style.color = '#000';
-        }, 2000);
-        
-        console.log(`Producto agregado: ${productName}`);
+        // --- NECESITAS EL TOKEN ---
+        // Debes obtener el token que guardaste en localStorage al hacer login
+        const token = localStorage.getItem('jwt_token'); 
+
+        if (!token) {
+            alert("Debes iniciar sesión para agregar productos al carrito.");
+            window.location.href = 'html/login.html'; // Redirige a login
+            return;
+        }
+
+        if (!variantId) {
+            console.error("El producto no tiene un ID de variante (data-variant-id).");
+            return;
+        }
+
+        this.textContent = 'AGREGANDO...';
+        this.disabled = true;
+
+        try {
+            const response = await fetch("http://localhost:8080/cart/items", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    variantId: variantId,
+                    quantity: 1 // Por defecto se agrega 1
+                })
+            });
+
+            if (response.ok) {
+                this.textContent = 'AGREGADO ✓';
+                this.style.background = '#4CAF50'; // Éxito
+            } else {
+                throw new Error('Error al agregar');
+            }
+
+        } catch (error) {
+            console.error(error);
+            this.textContent = 'ERROR';
+            this.style.background = '#e74c3c'; // Error
+        } finally {
+            setTimeout(() => {
+                this.textContent = 'AGREGAR AL CARRITO';
+                this.style.background = '#fff';
+                this.style.color = '#000';
+                this.disabled = false;
+            }, 2000);
+        }
     });
 });
 
