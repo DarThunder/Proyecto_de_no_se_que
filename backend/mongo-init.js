@@ -26,7 +26,7 @@ const cashierRole = db.roles.findOne({ name: "cashier" });
 const userRole = db.roles.findOne({ name: "user" });
 
 const samplePasswordHash =
-  "$2b$10$zNZEVbIXGs84eNZS3VmVyO/IPeoglQ9Jc90muzjRms/SwWQPBjHay";
+  "$2b$10$zNZEVbIXGs84eNZS3VmVyO/IPeoglQ9Jc90muzjRms/SwWQPBjHay"; // este es el hash de la contraseña: password123
 
 if (adminRole && cashierRole && userRole) {
   db.users.insertMany([
