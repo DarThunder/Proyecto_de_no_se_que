@@ -41,6 +41,7 @@ app.use("/auth", authRoutes);
 app.use("/orders", orderRoutes);
 app.use("/users", userRoutes);
 app.use("/cart", cartRoutes);
+  
 
 app.use((req, res) => {
   res.status(404).json({ error: "Recurso no encontrado" });
