@@ -1,11 +1,30 @@
 import { Router } from "express";
 const router = Router();
 import User from "../models/User.js";
+import Role from "../models/Role.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 router.post("/register", async (req, res) => {
-  const { username, password, role } = req.body;
+  const { username, password, email, role } = req.body;
+  let roleDocument;
+
+  if (role) {
+    roleDocument = await Role.findOne({ name: role });
+  }
+
+  if (!roleDocument) {
+    roleDocument = await Role.findOne({ name: "user" });
+  }
+
+  if (!roleDocument) {
+    return res.status(500).json({
+      error:
+        "Error de configuración de la DB: Rol por defecto 'user' no encontrado.",
+    });
+  }
+
+  const roleId = roleDocument._id;
 
   try {
     const existingUser = await User.findOne({ username });
@@ -21,7 +40,8 @@ router.post("/register", async (req, res) => {
     const newUser = new User({
       username,
       password_hash,
-      role: role || "user",
+      email,
+      role: roleId,
     });
 
     await newUser.save();
