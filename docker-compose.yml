@@ -27,6 +27,7 @@ services:
       PORT: 8080
       MONGODB_URI: "mongodb://admin:tu_password_segura@mongo:27017/ropadb?authSource=admin"
       JWT_SECRET: "ArZfGtW9yVnnJV9Yf1f5zeSLlqIzCLRGD2XmjgkeF8fQhKVtyaB7x34SWv07U0p2"
+      NODE_ENV: "testing"
 
 volumes:
   mongo_data:
