@@ -1,3 +1,4 @@
+// pos.js - Archivo completo con funcionalidad de búsqueda de clientes
 document.addEventListener("DOMContentLoaded", function () {
   initializePOS();
 });
@@ -79,9 +80,7 @@ function setupPOSFunctionality() {
   console.log("POS inicializado");
 
   initializeCart();
-
   setupEventListeners();
-
   loadInitialData();
 }
 
@@ -93,12 +92,27 @@ function initializeCart() {
   if (cartBody) cartBody.innerHTML = "";
   if (emptyCartMessage) emptyCartMessage.style.display = "block";
   if (totalAmount) totalAmount.textContent = "$0.00";
+  
+  // Limpiar cualquier cliente seleccionado previamente
+  window.selectedCustomer = null;
+  hideCustomerInfo();
+  clearCustomerSearch();
 }
 
 function setupEventListeners() {
   const searchCustomerBtn = document.getElementById("searchCustomerBtn");
   if (searchCustomerBtn) {
     searchCustomerBtn.addEventListener("click", searchCustomer);
+  }
+
+  // Agregar búsqueda al presionar Enter en el campo de búsqueda
+  const searchCustomerInput = document.getElementById("searchCustomer");
+  if (searchCustomerInput) {
+    searchCustomerInput.addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        searchCustomer();
+      }
+    });
   }
 
   const addProductBtn = document.getElementById("addProductBtn");
@@ -146,11 +160,103 @@ function loadInitialData() {
   console.log("Cargando datos iniciales...");
 }
 
-function searchCustomer() {
-  console.log("Buscando cliente...");
-  alert("Funcionalidad de búsqueda de cliente");
+// Función para buscar cliente por nombre
+// pos.js - Reemplazar la función searchCustomer
+async function searchCustomer() {
+  const searchInput = document.getElementById("searchCustomer").value.trim();
+  
+  if (!searchInput) {
+    alert("Por favor, ingrese un nombre para buscar");
+    return;
+  }
+
+  if (searchInput.length < 2) {
+    alert("La búsqueda debe tener al menos 2 caracteres");
+    return;
+  }
+
+  try {
+    // Usar el nuevo endpoint específico para búsqueda de clientes
+    const response = await fetch(`http://localhost:8080/users/search/customers?query=${encodeURIComponent(searchInput)}`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      if (response.status === 403) {
+        throw new Error("No tiene permisos para buscar clientes. Contacte al administrador.");
+      }
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const matchingUsers = await response.json();
+
+    if (matchingUsers.length === 0) {
+      alert("No se encontraron clientes con ese nombre");
+      hideCustomerInfo();
+      return;
+    }
+
+    // Si hay múltiples resultados, mostrar el primero
+    if (matchingUsers.length > 1) {
+      const customerNames = matchingUsers.map(user => user.username).join(", ");
+      alert(`Múltiples clientes encontrados: ${customerNames}. Mostrando el primero.`);
+    }
+
+    // Mostrar información del primer cliente encontrado
+    displayCustomerInfo(matchingUsers[0]);
+    
+  } catch (error) {
+    console.error("Error buscando cliente:", error);
+    alert(`Error al buscar cliente: ${error.message}`);
+  }
 }
 
+// Función para mostrar información del cliente
+function displayCustomerInfo(customer) {
+  const customerInfo = document.getElementById("customerInfo");
+  const customerAvatar = document.getElementById("customerAvatar");
+  const customerName = document.getElementById("customerName");
+  const customerContact = document.getElementById("customerContact");
+
+  if (customerInfo && customerAvatar && customerName && customerContact) {
+    // Generar avatar con iniciales
+    const initials = customer.username.charAt(0).toUpperCase();
+    customerAvatar.textContent = initials;
+    
+    // Mostrar información del cliente
+    customerName.textContent = customer.username;
+    customerContact.textContent = customer.email || "Sin email registrado";
+    
+    // Mostrar la sección de información del cliente
+    customerInfo.style.display = "flex";
+    
+    // Guardar el cliente seleccionado para uso posterior
+    window.selectedCustomer = customer;
+    
+    console.log("Cliente seleccionado:", customer);
+  }
+}
+
+// Función para ocultar información del cliente
+function hideCustomerInfo() {
+  const customerInfo = document.getElementById("customerInfo");
+  if (customerInfo) {
+    customerInfo.style.display = "none";
+    window.selectedCustomer = null;
+  }
+}
+
+// Función para limpiar la búsqueda
+function clearCustomerSearch() {
+  const searchInput = document.getElementById("searchCustomer");
+  if (searchInput) {
+    searchInput.value = "";
+  }
+  hideCustomerInfo();
+}
+
+// Funcionalidades existentes del POS
 function addProduct() {
   console.log("Añadiendo producto...");
   alert("Funcionalidad de añadir producto");
@@ -178,7 +284,14 @@ function addAnotherProduct() {
 
 function processCheckout() {
   console.log("Procesando pago...");
-  alert("Funcionalidad de procesar pago");
+  
+  // Verificar si hay un cliente seleccionado
+  if (!window.selectedCustomer) {
+    alert("Por favor, seleccione un cliente antes de procesar el pago");
+    return;
+  }
+  
+  alert(`Procesando pago para cliente: ${window.selectedCustomer.username}`);
 }
 
 function generateDailyReport() {
@@ -202,4 +315,16 @@ async function logout() {
   } finally {
     window.location.href = "../html/login.html";
   }
+}
+
+// Función auxiliar para obtener el cliente seleccionado (para uso en otras funciones)
+function getSelectedCustomer() {
+  return window.selectedCustomer || null;
+}
+
+// Función para limpiar selección de cliente
+function clearSelectedCustomer() {
+  window.selectedCustomer = null;
+  hideCustomerInfo();
+  clearCustomerSearch();
 }
