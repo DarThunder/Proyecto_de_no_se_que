@@ -2,6 +2,7 @@ import "dotenv/config";
 import express, { json } from "express";
 import { connect } from "mongoose";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 import productRoutes from "./routes/productRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -12,7 +13,12 @@ import cartRoutes from "./routes/cartRoutes.js";
 const app = express();
 const PORT = process.env.PORT || 8080;
 const MONGODB_URI = process.env.MONGODB_URI;
-const allowedOrigins = ["http://127.0.0.1:5500", "http://127.0.0.1:3000"];
+const allowedOrigins = [
+  "http://127.0.0.1:5500",
+  "http://127.0.0.1:3000",
+  "http://localhost:5500",
+  "http://localhost:3000",
+];
 
 const corsOptions = {
   origin: allowedOrigins,
@@ -23,6 +29,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(json());
+app.use(cookieParser());
 
 connect(MONGODB_URI)
   .then(() => {
@@ -41,8 +48,7 @@ app.use("/auth", authRoutes);
 app.use("/orders", orderRoutes);
 app.use("/users", userRoutes);
 app.use("/cart", cartRoutes);
-  
 
-app.use((req, res) => {
+app.use((_, res) => {
   res.status(404).json({ error: "Recurso no encontrado" });
 });
