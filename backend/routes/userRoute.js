@@ -1,6 +1,7 @@
 import { Router } from "express";
 const router = Router();
 import User from "../models/User.js";
+import Role from "../models/Role.js";
 
 import verifyToken from "../middleware/verifyToken.js";
 import hasPermission from "../middleware/hasPermission.js";
@@ -9,6 +10,23 @@ router.get("/", verifyToken, hasPermission(0), async (req, res) => {
   try {
     const users = await User.find().select("-password_hash");
     res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+router.get("/me", verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId)
+      .select("-password_hash")
+      .populate("role", "name permission_ring");
+
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    res.json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -61,24 +79,6 @@ router.delete("/:id", verifyToken, hasPermission(0), async (req, res) => {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
     res.json({ message: "Usuario eliminado" });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// En userRoute.js, agregar este endpoint después de los existentes
-router.get("/me", verifyToken, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const user = await User.findById(userId)
-      .select("-password_hash")
-      .populate('role', 'name permission_ring');
-    
-    if (!user) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
-    }
-    
-    res.json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
