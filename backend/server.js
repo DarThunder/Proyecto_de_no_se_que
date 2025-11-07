@@ -13,17 +13,23 @@ import cartRoutes from "./routes/cartRoutes.js";
 const app = express();
 const PORT = process.env.PORT || 8080;
 const MONGODB_URI = process.env.MONGODB_URI;
-const allowedOrigins = [
+const allowedOrigins = new Set([
   "http://127.0.0.1:5500",
   "http://127.0.0.1:3000",
   "http://localhost:5500",
   "http://localhost:3000",
-];
+]);
 
 const corsOptions = {
-  origin: allowedOrigins,
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.has(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Origen no permitido por CORS: " + origin));
+    }
+  },
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
   optionsSuccessStatus: 200,
 };
 
