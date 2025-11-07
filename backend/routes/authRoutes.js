@@ -50,8 +50,14 @@ router.post("/register", async (req, res) => {
       process.env.JWT_SECRET
     );
 
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Lax",
+      maxAge: 1000 * 60 * 60 * 24,
+    });
+
     res.status(201).json({
-      token: token,
       message: "Cuenta creada exitosamente",
     });
   } catch (err) {
@@ -84,8 +90,14 @@ router.post("/login", async (req, res) => {
       process.env.JWT_SECRET
     );
 
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "Lax",
+      maxAge: 1000 * 60 * 60 * 24,
+    });
+
     res.status(200).json({
-      token: token,
       message: "Inicio de sesión exitoso",
     });
   } catch (err) {
