@@ -1,7 +1,6 @@
-// reseñas.js - VERSIÓN CORREGIDA
-
 let currentProductId = null;
 let currentUser = null;
+let purchasedProducts = [];
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Reviews JS cargado');
@@ -75,9 +74,7 @@ async function getUserInfoMe() {
     }
 }
 
-// =============================================
-// FUNCIONES PARA RESEÑAUSER.HTML
-// =============================================
+// FUNCIONES PARA RESEÑAUSER.HTML - PRODUCTOS COMPRADOS
 
 async function initializeReviewPage() {
     try {
@@ -89,17 +86,16 @@ async function initializeReviewPage() {
             // Mostrar información de sesión en el contenido
             displayUserSessionInfo(userInfo);
             
-            // Continuar con el resto de la inicialización
-            getProductIdFromPage();
+            // Cargar productos comprados
+            await loadPurchasedProducts();
+            
+            // Configurar el resto de la funcionalidad
             setupStarRatings();
             setupCharacterCounters();
             setupFileUpload();
             setupFormSubmission();
         } else {
-            alert("Debes iniciar sesión para escribir una reseña");
-            setTimeout(() => {
-                window.location.href = "login.html";
-            }, 1500);
+            showLoginPrompt();
             return;
         }
     } catch (error) {
@@ -133,23 +129,237 @@ function displayUserSessionInfo(userData) {
     }
 }
 
-function getProductIdFromPage() {
-    const urlParams = new URLSearchParams(window.location.search);
-    currentProductId = urlParams.get('productId');
+// Función para cargar productos comprados
+async function loadPurchasedProducts() {
+    try {
+        console.log('Cargando productos comprados...');
+        
+        // Llamar a tu API para obtener productos comprados
+        const response = await fetch('http://localhost:8080/api/user/purchased-products', {
+            method: 'GET',
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const products = await response.json();
+            purchasedProducts = products;
+            displayPurchasedProducts(products);
+        } else if (response.status === 401) {
+            showLoginPrompt();
+        } else {
+            throw new Error('Error al cargar productos comprados');
+        }
+    } catch (error) {
+        console.error('Error cargando productos comprados:', error);
+        // Para desarrollo, usar datos de ejemplo
+        loadMockPurchasedProducts();
+    }
+}
+
+// Función para mostrar productos comprados
+function displayPurchasedProducts(products) {
+    const productsGrid = document.getElementById('purchasedProductsGrid');
+    const noPurchasesMessage = document.getElementById('noPurchasesMessage');
+
+    if (!products || products.length === 0) {
+        productsGrid.style.display = 'none';
+        noPurchasesMessage.style.display = 'block';
+        return;
+    }
+
+    productsGrid.style.display = 'grid';
+    noPurchasesMessage.style.display = 'none';
+
+    // Generar HTML para cada producto
+    productsGrid.innerHTML = products.map(product => `
+        <div class="product-card" data-product-id="${product.id}">
+            <div class="product-card-image">
+                <img src="${product.imageUrl || '../sources/img/placeholder.jpg'}" alt="${product.name}" 
+                     onerror="this.src='../sources/img/placeholder.jpg'">
+                <div class="product-card-overlay">
+                    <button class="select-product-btn" onclick="selectProductForReview('${product.id}')">
+                        <i class="fas fa-edit"></i> Reseñar este Producto
+                    </button>
+                </div>
+            </div>
+            <div class="product-card-info">
+                <h3>${product.name}</h3>
+                <p class="product-card-category">${product.category || 'Categoría no disponible'}</p>
+                <p class="product-card-price">$${(product.price || 0).toFixed(2)} MXN</p>
+                <p class="product-card-purchase-date">Comprado el: ${formatDate(product.purchaseDate || new Date())}</p>
+                ${product.size ? `<p class="product-card-details">Talla: ${product.size}</p>` : ''}
+                ${product.color ? `<p class="product-card-details">Color: ${product.color}</p>` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+// Función para seleccionar un producto para reseñar
+function selectProductForReview(productId) {
+    const product = purchasedProducts.find(p => p.id === productId);
     
-    if (!currentProductId) {
-        const productIdElement = document.getElementById('productId');
-        if (productIdElement) {
-            currentProductId = productIdElement.value;
+    if (product) {
+        currentProductId = productId;
+        showReviewForm();
+        updateSelectedProductInfo(product);
+        prefillUserInfo();
+    } else {
+        console.error('Producto no encontrado:', productId);
+        showError('Error al cargar el producto seleccionado');
+    }
+}
+
+// Función para mostrar el formulario de reseña
+function showReviewForm() {
+    document.getElementById('productSelectionSection').style.display = 'none';
+    document.getElementById('reviewFormSection').style.display = 'block';
+    
+    // Scroll to top
+    window.scrollTo(0, 0);
+}
+
+// Función para volver a la selección de productos
+function showProductSelection() {
+    document.getElementById('reviewFormSection').style.display = 'none';
+    document.getElementById('productSelectionSection').style.display = 'block';
+    resetForm();
+    currentProductId = null;
+}
+
+// Función para actualizar la información del producto seleccionado
+function updateSelectedProductInfo(product) {
+    document.getElementById('selectedProductImage').src = product.imageUrl || '../sources/img/placeholder.jpg';
+    document.getElementById('selectedProductImage').alt = product.name;
+    document.getElementById('selectedProductName').textContent = product.name;
+    document.getElementById('selectedProductCategory').textContent = 
+        `${product.category || 'Categoría'} • ${product.collection || 'Colección'}`;
+    document.getElementById('selectedProductPrice').textContent = 
+        `$${(product.price || 0).toFixed(2)} MXN`;
+    document.getElementById('selectedPurchaseDateValue').textContent = 
+        formatDate(product.purchaseDate || new Date());
+    
+    // Actualizar campo oculto del producto
+    document.getElementById('productId').value = product.id;
+}
+
+// Función para prellenar información del usuario
+function prefillUserInfo() {
+    if (currentUser) {
+        const reviewerName = document.getElementById('reviewerName');
+        if (reviewerName && !reviewerName.value) {
+            reviewerName.value = currentUser.displayName || currentUser.username || '';
+        }
+        
+        const reviewerLocation = document.getElementById('reviewerLocation');
+        if (reviewerLocation && currentUser.location && !reviewerLocation.value) {
+            reviewerLocation.value = currentUser.location;
         }
     }
-    
-    if (!currentProductId) {
-        console.warn('No se encontró ID del producto');
+}
+
+// Función para resetear el formulario
+function resetForm() {
+    const form = document.getElementById('reviewForm');
+    if (form) {
+        form.reset();
     }
     
-    console.log('Product ID:', currentProductId);
+    const uploadedMedia = document.getElementById('uploadedMedia');
+    if (uploadedMedia) {
+        uploadedMedia.innerHTML = '';
+    }
+    
+    // Resetear estrellas seleccionadas
+    const starInputs = document.querySelectorAll('.star-rating input, .specific-stars input');
+    starInputs.forEach(input => input.checked = false);
+    
+    // Resetear contadores de caracteres
+    document.querySelectorAll('.char-count').forEach(span => {
+        span.textContent = '0/' + (span.previousElementSibling.tagName === 'INPUT' ? '60' : '500') + ' caracteres';
+    });
+    
+    // Resetear texto de calificación
+    const ratingText = document.querySelector('.rating-text-selected');
+    if (ratingText) {
+        ratingText.textContent = 'Selecciona una calificación';
+        ratingText.style.color = '';
+    }
 }
+
+// Función para cancelar reseña
+function cancelReview() {
+    if (confirm('¿Estás seguro de que quieres cancelar? Se perderán los datos no guardados.')) {
+        showProductSelection();
+    }
+}
+
+// Función para mostrar prompt de login
+function showLoginPrompt() {
+    const productsGrid = document.getElementById('purchasedProductsGrid');
+    const noPurchasesMessage = document.getElementById('noPurchasesMessage');
+    
+    productsGrid.style.display = 'none';
+    noPurchasesMessage.innerHTML = `
+        <div class="empty-state">
+            <i class="fas fa-user-lock fa-3x"></i>
+            <h3>Inicia sesión para ver tus productos</h3>
+            <p>Necesitas iniciar sesión para poder dejar reseñas de tus compras.</p>
+            <a href="/html/login.html" class="btn-primary">Iniciar Sesión</a>
+        </div>
+    `;
+    noPurchasesMessage.style.display = 'block';
+}
+
+// Función para formatear fecha
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const options = { day: 'numeric', month: 'short', year: 'numeric' };
+    return date.toLocaleDateString('es-MX', options);
+}
+
+// Datos de ejemplo para desarrollo
+function loadMockPurchasedProducts() {
+    const mockProducts = [
+        {
+            id: 'prod-001',
+            name: 'HOODIE BLACK SHADOW',
+            category: 'Hoodies',
+            collection: 'Colección Hombre',
+            price: 899.00,
+            imageUrl: '../sources/img/hoodie.jpg',
+            purchaseDate: '2024-11-15',
+            size: 'M',
+            color: 'Negro'
+        },
+        {
+            id: 'prod-002',
+            name: 'T-SHIRT WHITE BASIC',
+            category: 'Playeras',
+            collection: 'Colección Unisex',
+            price: 299.00,
+            imageUrl: '../sources/img/tshirt.jpg',
+            purchaseDate: '2024-11-10',
+            size: 'L',
+            color: 'Blanco'
+        },
+        {
+            id: 'prod-003',
+            name: 'JEANS DARK BLUE',
+            category: 'Pantalones',
+            collection: 'Colección Hombre',
+            price: 1299.00,
+            imageUrl: '../sources/img/jeans.jpg',
+            purchaseDate: '2024-11-05',
+            size: '32',
+            color: 'Azul Oscuro'
+        }
+    ];
+
+    purchasedProducts = mockProducts;
+    displayPurchasedProducts(mockProducts);
+}
+
+// FUNCIONES EXISTENTES DEL FORMULARIO
 
 function setupStarRatings() {
     // Calificación principal
@@ -338,13 +548,14 @@ function setupFormSubmission() {
             return;
         }
 
-        if (!validateForm()) {
+        // VERIFICAR QUE HAY PRODUCTO SELECCIONADO
+        if (!currentProductId) {
+            alert('Error: No se ha seleccionado ningún producto. Por favor, selecciona un producto primero.');
+            showProductSelection();
             return;
         }
 
-        // Verificar que tenemos el ID del producto
-        if (!currentProductId) {
-            alert('Error: No se pudo identificar el producto. Por favor, recarga la página.');
+        if (!validateForm()) {
             return;
         }
 
@@ -367,7 +578,7 @@ function setupFormSubmission() {
                 media: []
             };
 
-            console.log('Enviando reseña:', formData);
+            console.log('Enviando reseña para producto:', currentProductId, formData);
 
             // Enviar al backend
             const response = await fetch('http://localhost:8080/reviews', {
@@ -438,9 +649,7 @@ function setupFormSubmission() {
     }
 }
 
-// =============================================
 // FUNCIONES PARA MISRESEÑAS.HTML
-// =============================================
 
 async function initializeMyReviewsPage() {
     try {
@@ -633,9 +842,7 @@ function generateStars(rating) {
     return stars;
 }
 
-// =============================================
 // FUNCIONES DE GESTIÓN DE RESEÑAS
-// =============================================
 
 function editReview(reviewId) {
     if (confirm('¿Quieres editar esta reseña?')) {
@@ -668,4 +875,10 @@ async function deleteReview(reviewId) {
         console.error('Error:', error);
         alert('Error: ' + error.message);
     }
+}
+
+// Función auxiliar para mostrar errores
+function showError(message) {
+    alert(message);
+    console.error(message);
 }
