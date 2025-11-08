@@ -9,6 +9,7 @@ import authRoutes from "./routes/authRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import userRoutes from "./routes/userRoute.js";
 import cartRoutes from "./routes/cartRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js"
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -54,6 +55,7 @@ app.use("/auth", authRoutes);
 app.use("/orders", orderRoutes);
 app.use("/users", userRoutes);
 app.use("/cart", cartRoutes);
+app.use("/reviews", reviewRoutes);
 
 app.use((_, res) => {
   res.status(404).json({ error: "Recurso no encontrado" });

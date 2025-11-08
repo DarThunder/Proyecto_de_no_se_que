@@ -15,7 +15,12 @@
             <div class="logo">
                 <h1>SHADOW & STITCH</h1>
             </div>
-            
+
+            <!-- USUARIO -->
+            <div class="header-user-info" id="headerUserInfo" >
+                <i class="fas fa-user-circle"></i>
+                <span class="username" id="headerUsername">Usuario</span>
+            </div>
             <!-- Menú Hamburguesa -->
             <div class="hamburger-menu">
                 <div class="hamburger-icon">
@@ -32,20 +37,30 @@
                 </div>
                 <ul class="mobile-nav-links">
                     <li><a href="/index.html"><i class="fas fa-home"></i> Inicio</a></li>
-                    <li><a href="main.html#categorias"><i class="fas fa-th-large"></i> Categorías</a></li>
+                    <li><a href="#categorias"><i class="fas fa-th-large"></i> Categorías</a></li>
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle">
                             <i class="fas fa-user"></i> Cuenta
                             <i class="fas fa-chevron-down dropdown-arrow"></i>
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a href="login.html" class="dropdown-link">Iniciar Sesión</a></li>
-                            <li><a href="CrearCuenta.html" class="dropdown-link">Crear Cuenta</a></li>
+                            <li><a href="html/login.html" class="dropdown-link">Iniciar Sesión</a></li>
+                            <li><a href="html/CrearCuenta.html" class="dropdown-link">Crear Cuenta</a></li>
                         </ul>
                     </li>
-                    <li><a href="carrito.html"><i class="fas fa-shopping-bag"></i> Carrito</a></li>
-                    <li><a href="Listadeseos.html"><i class="fas fa-heart"></i> Lista de Deseos</a></li>
-                    <li><a href="misreseñas.html"><i class="fas fa-star"></i> Mis Reseñas</a></li>
+                    <li><a href="/html/carrito.html"><i class="fas fa-shopping-bag"></i> Carrito</a></li>
+                    <li><a href="/html/Listadeseos.html"><i class="fas fa-heart"></i> Lista de Deseos</a></li>
+                    <li><a href="#nuevo"><i class="fas fa-star"></i> Nuevo</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle">
+                            <i class="fas fa-star"></i> Reseñas
+                            <i class="fas fa-chevron-down dropdown-arrow"></i>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/html/misreseñas.html" class="dropdown-link">Mis Reseñas</a></li>
+                            <li><a href="/html/reseñaUser.html" class="dropdown-link">Crear Reseña</a></li>
+                        </ul>
+                    </li>
                 </ul>
                 
                 <div class="menu-footer">
@@ -62,31 +77,39 @@
     <!-- Contenido Principal -->
     <main class="review-main">
         <div class="review-container">
+            <!-- NUEVA SECCIÓN: Información de Sesión Activa -->
+            <div class="user-session-info" id="userSessionInfo" style="display: none;">
+                <!-- Se llenará dinámicamente con JavaScript -->
+            </div>
+
             <!-- Información del Producto -->
             <div class="product-info-review">
                 <div class="product-image-review">
-                    <img src="../sources/img/hoodie.jpg" alt="HOODIE BLACK SHADOW">
+                    <img src="../sources/img/hoodie.jpg" alt="HOODIE BLACK SHADOW" id="productImage">
                 </div>
                 <div class="product-details-review">
-                    <h1>HOODIE BLACK SHADOW</h1>
-                    <p class="product-category">Hoodies • Colección Hombre</p>
-                    <p class="product-price">$899.00 MXN</p>
-                    <p class="purchase-date">Comprado el: 15 Nov 2024</p>
+                    <h1 id="productName">HOODIE BLACK SHADOW</h1>
+                    <p class="product-category" id="productCategory">Hoodies • Colección Hombre</p>
+                    <p class="product-price" id="productPrice">$899.00 MXN</p>
+                    <p class="purchase-date" id="purchaseDate">Comprado el: <span id="purchaseDateValue">15 Nov 2024</span></p>
                     <div class="product-rating-overview">
                         <div class="average-rating">
-                            <span class="rating-stars">
+                            <span class="rating-stars" id="averageStars">
                                 <i class="fas fa-star"></i>
                                 <i class="fas fa-star"></i>
                                 <i class="fas fa-star"></i>
                                 <i class="fas fa-star"></i>
                                 <i class="fas fa-star-half-alt"></i>
                             </span>
-                            <span class="rating-text">4.5 de 5 estrellas</span>
+                            <span class="rating-text" id="averageRating">4.5 de 5 estrellas</span>
                         </div>
-                        <p class="rating-count">Basado en 128 reseñas</p>
+                        <p class="rating-count" id="ratingCount">Basado en 128 reseñas</p>
                     </div>
                 </div>
             </div>
+
+            <!-- Campo oculto para el ID del producto -->
+            <input type="hidden" id="productId" value="">
 
             <!-- Formulario de Reseña -->
             <div class="review-form-container">
@@ -96,7 +119,7 @@
                 <form id="reviewForm" class="review-form">
                     <!-- Calificación con Estrellas -->
                     <div class="rating-section">
-                        <label>Calificación General</label>
+                        <label>Calificación General *</label>
                         <div class="star-rating">
                             <input type="radio" id="star5" name="rating" value="5">
                             <label for="star5" class="star-label"><i class="fas fa-star"></i></label>
@@ -116,7 +139,7 @@
                     <div class="form-group">
                         <label for="reviewTitle">Título de la Reseña *</label>
                         <input type="text" id="reviewTitle" name="reviewTitle" 
-                               placeholder="Ej: 'Excelente calidad, muy cómodo'" required>
+                               placeholder="Ej: 'Excelente calidad, muy cómodo'" required maxlength="60">
                         <span class="char-count">0/60 caracteres</span>
                     </div>
 
@@ -125,13 +148,13 @@
                         <label for="reviewComment">Tu Reseña *</label>
                         <textarea id="reviewComment" name="reviewComment" 
                                   placeholder="¿Qué te gustó del producto? ¿Cómo es la calidad? ¿Recomendarías este producto a otros?" 
-                                  rows="6" required></textarea>
+                                  rows="6" required maxlength="500"></textarea>
                         <span class="char-count">0/500 caracteres</span>
                     </div>
 
                     <!-- Calificaciones Específicas -->
                     <div class="specific-ratings">
-                        <h3>Calificaciones Específicas</h3>
+                        <h3>Calificaciones Específicas (Opcional)</h3>
                         
                         <div class="specific-rating-item">
                             <label>Calidad del Material</label>
@@ -184,9 +207,8 @@
 
                     <!-- Subir Fotos/Videos -->
                     <div class="media-upload">
-                        <h3>Compartir Fotos o Videos</h3>
+                        <h3>Compartir Fotos o Videos (Opcional)</h3>
                         <p>Muestra cómo se ve el producto en la vida real</p>
-                        
                         
                         <div class="upload-area" id="uploadArea">
                             <i class="fas fa-cloud-upload-alt"></i>
@@ -223,7 +245,7 @@
 
                     <!-- Botones de Envío -->
                     <div class="form-actions">
-                        <button type="button" class="cancel-btn" onclick="window.history.back()">
+                        <button type="button" class="cancel-btn" onclick="cancelReview()">
                             <i class="fas fa-times"></i> Cancelar
                         </button>
                         <button type="submit" class="submit-review-btn">
@@ -245,7 +267,7 @@
             <div class="footer-section">
                 <h4>ENLACES RÁPIDOS</h4>
                 <ul>
-                    <li><a href="main.html">Inicio</a></li>
+                    <li><a href="../index.html">Inicio</a></li>
                     <li><a href="main.html#categorias">Categorías</a></li>
                     <li><a href="main.html#nuevo">Nuevo</a></li>
                 </ul>
@@ -261,7 +283,8 @@
         </div>
     </footer>
 
-    <script src="../js/reviews.js"></script>
+
+    <script src="../js/reseñas.js"></script>
     <script src="../js/scriptMain.js"></script>
 </body>
 </html>
