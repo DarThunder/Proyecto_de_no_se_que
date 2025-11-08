@@ -569,3 +569,31 @@ body {
   width:150px;  /* Ajusta el tamaño (ancho) de tu logo */
   margin: 0 auto 1.5rem auto; /* Centra el logo y le da espacio abajo */
 }
+/* Estilos para el usuario en el header */
+.header-user-info {
+    display: flex; 
+    align-items: center;
+    margin-left: auto;
+    margin-right: 20px;
+    color: white;
+    font-weight: bold;
+    background: rgba(76, 175, 80, 0.9);
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    gap: 8px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    animation: fadeIn 0.5s ease-in;
+}
+
+.header-user-info i {
+    font-size: 1.1em;
+    color: #fff;
+}
+
+.header-user-info .username {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
