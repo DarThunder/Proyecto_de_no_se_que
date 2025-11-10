@@ -1,9 +1,10 @@
-const express = require('express');
-const router = express.Router();
-const Review = require('../models/Review');
-const Product = require('../models/Product');
-const verifyToken = require('../middleware/verifyToken');
-const hasPermission = require('../middleware/hasPermission');
+import { Router } from "express";
+const router = Router();
+import Review from "../models/Review.js";
+import Product from "../models/Product.js";
+
+import verifyToken from "../middleware/verifyToken.js";
+import hasPermission from "../middleware/hasPermission.js";
 
 // GET /reviews - Obtener reseñas de un producto (Público)
 router.get('/product/:productId', async (req, res) => {
@@ -148,4 +149,4 @@ router.delete('/:id', verifyToken, async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;
