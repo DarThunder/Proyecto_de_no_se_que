@@ -42,7 +42,7 @@ let cuponBienvenida = {
 };
 
 // Insertar cupones
-db.cupones.insertMany([cuponBuenFin, cuponVerano, cuponBienvenida]);
+db.cupons.insertMany([cuponBuenFin, cuponVerano, cuponBienvenida]);
 
 db.roles.insertMany([
   {
