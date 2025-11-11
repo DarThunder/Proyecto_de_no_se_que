@@ -17,10 +17,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // FUNCIÓN PRINCIPAL PARA ACTUALIZAR USUARIO EN HEADER
+
 async function updateUserInHeader() {
     try {
         const userInfo = await getUserInfoMe();
-        
         const userElement = document.getElementById('headerUserInfo');
         const usernameElement = document.getElementById('headerUsername');
         
@@ -30,16 +30,19 @@ async function updateUserInHeader() {
             if (userElement && usernameElement) {
                 usernameElement.textContent = userInfo.username;
                 userElement.style.display = 'flex';
+                userElement.onclick = null;
+                userElement.style.cursor = 'default';
                 console.log("✅ Usuario actualizado en header:", userInfo.username);
             }
             
             return userInfo;
         } else {
-            // Ocultar el elemento si no hay sesión
+            // OCULTAR Y REDIRIGIR INMEDIATAMENTE
             if (userElement) {
                 userElement.style.display = 'none';
             }
-            console.log("⚠️ No hay sesión activa");
+            console.log("⚠️ No hay sesión activa - Redirigiendo al login");
+            showAlertAndRedirect(); // ← ¡AÑADIR ESTO!
             return null;
         }
     } catch (error) {
@@ -48,6 +51,7 @@ async function updateUserInHeader() {
         if (userElement) {
             userElement.style.display = 'none';
         }
+        showAlertAndRedirect(); // ← ¡Y ESTO TAMBIÉN!
         return null;
     }
 }
@@ -75,7 +79,6 @@ async function getUserInfoMe() {
 }
 
 // FUNCIONES PARA RESEÑAUSER.HTML - PRODUCTOS COMPRADOS
-
 async function initializeReviewPage() {
     try {
         const userInfo = await updateUserInHeader();
@@ -95,11 +98,12 @@ async function initializeReviewPage() {
             setupFileUpload();
             setupFormSubmission();
         } else {
-            showLoginPrompt();
-            return;
+            // MOSTRAR ALERT Y REDIRIGIR AL LOGIN
+            showAlertAndRedirect();
         }
     } catch (error) {
         console.error("❌ Error inicializando página de reseña:", error);
+        showAlertAndRedirect();
     }
 }
 
@@ -134,8 +138,8 @@ async function loadPurchasedProducts() {
     try {
         console.log('Cargando productos comprados...');
         
-        // Llamar a tu API para obtener productos comprados
-        const response = await fetch('http://localhost:8080/api/user/purchased-products', {
+        // Llamar a tu API para obtener productos comprados - URL CORREGIDA
+        const response = await fetch('http://localhost:8080/orders/user/purchased-products', {
             method: 'GET',
             credentials: 'include'
         });
@@ -145,14 +149,17 @@ async function loadPurchasedProducts() {
             purchasedProducts = products;
             displayPurchasedProducts(products);
         } else if (response.status === 401) {
-            showLoginPrompt();
+            showAlertAndRedirect();
         } else {
             throw new Error('Error al cargar productos comprados');
         }
     } catch (error) {
         console.error('Error cargando productos comprados:', error);
-        // Para desarrollo, usar datos de ejemplo
-        loadMockPurchasedProducts();
+        // Para desarrollo, usar datos de ejemplo SOLO si el usuario está logueado
+        if (currentUser) {
+            console.log("📦 Cargando datos de ejemplo para demostración...");
+            loadMockPurchasedProducts();
+        }
     }
 }
 
@@ -293,23 +300,6 @@ function cancelReview() {
     }
 }
 
-// Función para mostrar prompt de login
-function showLoginPrompt() {
-    const productsGrid = document.getElementById('purchasedProductsGrid');
-    const noPurchasesMessage = document.getElementById('noPurchasesMessage');
-    
-    productsGrid.style.display = 'none';
-    noPurchasesMessage.innerHTML = `
-        <div class="empty-state">
-            <i class="fas fa-user-lock fa-3x"></i>
-            <h3>Inicia sesión para ver tus productos</h3>
-            <p>Necesitas iniciar sesión para poder dejar reseñas de tus compras.</p>
-            <a href="/html/login.html" class="btn-primary">Iniciar Sesión</a>
-        </div>
-    `;
-    noPurchasesMessage.style.display = 'block';
-}
-
 // Función para formatear fecha
 function formatDate(dateString) {
     const date = new Date(dateString);
@@ -317,8 +307,16 @@ function formatDate(dateString) {
     return date.toLocaleDateString('es-MX', options);
 }
 
-// Datos de ejemplo para desarrollo
+// Datos de ejemplo para desarrollo - SOLO cuando el usuario está logueado
 function loadMockPurchasedProducts() {
+    // Verificar que el usuario esté logueado antes de cargar datos mock
+    if (!currentUser) {
+        console.log("❌ No se pueden cargar datos mock: usuario no logueado");
+        return;
+    }
+    
+    console.log("🎯 Cargando productos de ejemplo para demostración...");
+    
     const mockProducts = [
         {
             id: 'prod-001',
@@ -360,7 +358,6 @@ function loadMockPurchasedProducts() {
 }
 
 // FUNCIONES EXISTENTES DEL FORMULARIO
-
 function setupStarRatings() {
     // Calificación principal
     const starInputs = document.querySelectorAll('.star-rating input');
@@ -650,21 +647,44 @@ function setupFormSubmission() {
 }
 
 // FUNCIONES PARA MISRESEÑAS.HTML
-
 async function initializeMyReviewsPage() {
     try {
         const userInfo = await updateUserInHeader();
         
+        // Si updateUserInHeader() no redirigió, significa que hay usuario
         if (userInfo) {
             console.log("✅ Sesión activa:", userInfo.username);
             await loadUserReviews();
-        } else {
-            displayNoSessionMessage();
         }
+        // Si no hay usuario, updateUserInHeader() ya se encargó de redirigir
     } catch (error) {
         console.error("❌ Error inicializando mis reseñas:", error);
+        showAlertAndRedirect();
     }
 }
+
+// Mostrar alerta de que el usuario no esta logeado y para ver la sección de sus reseñas y crea una reseña tiene que iniciar sesion o registrarse
+function showAlertAndRedirect() {
+    // Verificar que no estemos ya en la página de login para evitar bucle
+    if (!window.location.pathname.includes('login.html') && 
+        !window.location.pathname.includes('CrearCuenta.html')) {
+        
+        const userResponse = confirm(
+            '🔒 Acceso Requerido\n\n' +
+            'Para acceder a esta sección necesitas iniciar sesión en tu cuenta.\n\n' +
+            '• Aceptar: Ir a Iniciar Sesión\n' +
+            '• Cancelar: Volver al Inicio'
+        );
+        
+        if (userResponse) {
+            // Usuario presionó "Aceptar" - ir al login
+            window.location.href = '/html/login.html';
+        } else {
+            // Usuario presionó "Cancelar" - ir al inicio
+            window.location.href = '/index.html';
+        }
+    }
+} 
 
 function displayNoSessionMessage() {
     const reviewsList = document.getElementById('reviewsList');
@@ -843,7 +863,6 @@ function generateStars(rating) {
 }
 
 // FUNCIONES DE GESTIÓN DE RESEÑAS
-
 function editReview(reviewId) {
     if (confirm('¿Quieres editar esta reseña?')) {
         alert('Funcionalidad de edición en desarrollo');
