@@ -84,34 +84,36 @@ router.delete("/:id", verifyToken, hasPermission(0), async (req, res) => {
   }
 });
 
-// Nuevo endpoint para búsqueda de clientes (accesible para cajeros)
-router.get("/search/customers", verifyToken, hasPermission(1), async (req, res) => {
-  try {
-    const { query } = req.query;
-    
-    if (!query || query.trim().length < 2) {
-      return res.status(400).json({ 
-        message: "La búsqueda debe tener al menos 2 caracteres" 
-      });
+router.get(
+  "/search/customers",
+  verifyToken,
+  hasPermission(1),
+  async (req, res) => {
+    try {
+      const { query } = req.query;
+
+      if (!query || query.trim().length < 2) {
+        return res.status(400).json({
+          message: "La búsqueda debe tener al menos 2 caracteres",
+        });
+      }
+
+      const customers = await User.find({
+        username: { $regex: query, $options: "i" },
+      })
+        .select("-password_hash")
+        .populate("role", "name permission_ring")
+        .limit(10);
+
+      const filteredCustomers = customers.filter(
+        (customer) => customer.role && customer.role.permission_ring > 0
+      );
+
+      res.json(filteredCustomers);
+    } catch (error) {
+      res.status(500).json({ message: error.message });
     }
-
-    // Buscar usuarios que no sean administradores (clientes normales)
-    const customers = await User.find({
-      username: { $regex: query, $options: "i" }
-    })
-    .select("-password_hash")
-    .populate("role", "name permission_ring")
-    .limit(10);
-
-    // Filtrar para mostrar solo clientes (no administradores)
-    const filteredCustomers = customers.filter(customer => 
-      customer.role && customer.role.permission_ring > 0
-    );
-
-    res.json(filteredCustomers);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
   }
-});
+);
 
 export default router;

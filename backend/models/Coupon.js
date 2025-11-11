@@ -1,38 +1,38 @@
 import mongoose, { model } from "mongoose";
 const { Schema } = mongoose;
 
-const cuponSchema = new Schema(
+const couponSchema = new Schema(
   {
-    nombre: {
+    name: {
       type: String,
       required: true,
       trim: true,
     },
-    descuento: {
+    discount: {
       type: Number,
       required: true,
       min: 0,
       max: 100,
     },
-    codigo: {
+    code: {
       type: String,
       required: true,
       unique: true,
       trim: true,
       uppercase: true,
     },
-    activo: {
+    active: {
       type: Boolean,
       default: true,
     },
-    fecha_expiracion: {
+    expiration_date: {
       type: Date,
     },
-    usos_maximos: {
+    maximum_uses: {
       type: Number,
       default: null,
     },
-    usos_actuales: {
+    actual_uses: {
       type: Number,
       default: 0,
     },
@@ -40,4 +40,4 @@ const cuponSchema = new Schema(
   { timestamps: true }
 );
 
-export default model("Cupon", cuponSchema);
+export default model("Coupon", couponSchema);

@@ -97,17 +97,17 @@ function initializeCart() {
   window.getSelectedCustomer = null;
   window.selectedCupon = null;
   window.cartItems = [];
-  
+
   hideCustomerInfo();
   hideCuponInfo();
   clearCustomerSearch();
-  
+
   // Limpiar también el campo de búsqueda de cupones
   const searchCuponInput = document.getElementById("searchCupon");
   if (searchCuponInput) {
     searchCuponInput.value = "";
   }
-  
+
   updateCartSummary();
 }
 
@@ -243,7 +243,10 @@ async function searchCustomer() {
 }
 
 async function searchCupon() {
-  const searchInput = document.getElementById("searchCupon").value.trim().toUpperCase();
+  const searchInput = document
+    .getElementById("searchCupon")
+    .value.trim()
+    .toUpperCase();
 
   if (!searchInput) {
     alert("Por favor, ingrese un código de cupón");
@@ -252,7 +255,7 @@ async function searchCupon() {
 
   try {
     const response = await fetch(
-      `http://localhost:8080/cupones/buscar/${encodeURIComponent(searchInput)}`,
+      `http://localhost:8080/coupons/search/${encodeURIComponent(searchInput)}`,
       {
         method: "GET",
         credentials: "include",
@@ -265,8 +268,8 @@ async function searchCupon() {
       throw new Error(data.message || "Error al buscar cupón");
     }
 
-    if (data.success && data.cupon) {
-      displayCuponInfo(data.cupon);
+    if (data.success && data.coupon) {
+      displayCuponInfo(data.coupon);
       updateCartSummary();
     } else {
       throw new Error("Cupón no encontrado");
@@ -307,30 +310,38 @@ function displayCuponInfo(cupon) {
   const cuponUsos = document.getElementById("cuponUsos");
   const cuponExpiracion = document.getElementById("cuponExpiracion");
 
-  if (cuponInfo && cuponCodigo && cuponDescuento && cuponNombre && cuponUsos && cuponExpiracion) {
-    cuponCodigo.textContent = cupon.codigo;
-    cuponDescuento.textContent = `${cupon.descuento}% OFF`;
-    cuponNombre.textContent = cupon.nombre;
-    
+  if (
+    cuponInfo &&
+    cuponCodigo &&
+    cuponDescuento &&
+    cuponNombre &&
+    cuponUsos &&
+    cuponExpiracion
+  ) {
+    cuponCodigo.textContent = cupon.code;
+    cuponDescuento.textContent = `${cupon.discount}% OFF`;
+    cuponNombre.textContent = cupon.name;
+
     // Información de usos
-    const usosText = cupon.usos_maximos 
-      ? `Usos: ${cupon.usos_actuales}/${cupon.usos_maximos}`
-      : `Usos: ${cupon.usos_actuales}`;
+    const usosText = cupon.maximum_uses
+      ? `Usos: ${cupon.actual_uses}/${cupon.maximum_uses}`
+      : `Usos: ${cupon.actual_uses}`;
     cuponUsos.textContent = usosText;
-    
+
     // Información de expiración
-    const expiracionText = cupon.fecha_expiracion 
-      ? `Expira: ${new Date(cupon.fecha_expiracion).toLocaleDateString()}`
-      : 'Sin expiración';
+    const expiracionText = cupon.expiration_date
+      ? `Expira: ${new Date(cupon.expiration_date).toLocaleDateString()}`
+      : "Sin expiración";
     cuponExpiracion.textContent = expiracionText;
 
     cuponInfo.style.display = "block";
-    window.selectedCupon = cupon;
+    window.getSelectedCupon = cupon;
 
     console.log("Cupón seleccionado:", cupon);
-    
-    // Mostrar mensaje de éxito
-    alert(`Cupón "${cupon.nombre}" aplicado correctamente. Descuento: ${cupon.descuento}%`);
+
+    alert(
+      `Cupón "${cupon.name}" aplicado correctamente. Descuento: ${cupon.discount}%`
+    );
   }
 }
 
@@ -370,22 +381,22 @@ function removeCupon() {
 
 function addProduct() {
   console.log("Añadiendo producto...");
-  
+
   // Simulación de producto añadido
   const productId = document.getElementById("productID").value.trim();
   if (!productId) {
     alert("Por favor, ingrese un ID de producto");
     return;
   }
-  
+
   // Producto simulado para demo
   const simulatedProduct = {
     id: productId,
     name: `Producto ${productId}`,
     price: Math.random() * 100 + 10, // Precio aleatorio entre 10 y 110
-    quantity: 1
+    quantity: 1,
   };
-  
+
   addProductToCart(simulatedProduct);
   document.getElementById("productID").value = "";
 }
@@ -394,10 +405,12 @@ function addProductToCart(product) {
   if (!window.cartItems) {
     window.cartItems = [];
   }
-  
+
   // Verificar si el producto ya está en el carrito
-  const existingItemIndex = window.cartItems.findIndex(item => item.id === product.id);
-  
+  const existingItemIndex = window.cartItems.findIndex(
+    (item) => item.id === product.id
+  );
+
   if (existingItemIndex > -1) {
     // Incrementar cantidad si ya existe
     window.cartItems[existingItemIndex].quantity += 1;
@@ -407,10 +420,10 @@ function addProductToCart(product) {
       id: product.id,
       name: product.name,
       price: product.price,
-      quantity: 1
+      quantity: 1,
     });
   }
-  
+
   updateCartDisplay();
   updateCartSummary();
 }
@@ -418,26 +431,32 @@ function addProductToCart(product) {
 function updateCartDisplay() {
   const cartBody = document.getElementById("cartBody");
   const emptyCartMessage = document.getElementById("emptyCartMessage");
-  
+
   if (!window.cartItems || window.cartItems.length === 0) {
     if (cartBody) cartBody.innerHTML = "";
     if (emptyCartMessage) emptyCartMessage.style.display = "block";
     return;
   }
-  
+
   if (emptyCartMessage) emptyCartMessage.style.display = "none";
-  
-  cartBody.innerHTML = window.cartItems.map(item => `
+
+  cartBody.innerHTML = window.cartItems
+    .map(
+      (item) => `
     <tr>
       <td>${item.name}</td>
       <td>${item.quantity}</td>
       <td>$${item.price.toFixed(2)}</td>
       <td>$${(item.price * item.quantity).toFixed(2)}</td>
       <td>
-        <button onclick="removeProductFromCart('${item.id}')" class="btn-small btn-danger">Eliminar</button>
+        <button onclick="removeProductFromCart('${
+          item.id
+        }')" class="btn-small btn-danger">Eliminar</button>
       </td>
     </tr>
-  `).join('');
+  `
+    )
+    .join("");
 }
 
 function updateCartSummary() {
@@ -447,28 +466,35 @@ function updateCartSummary() {
     document.getElementById("descuentoRow").style.display = "none";
     return;
   }
-  
-  const subtotal = window.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  
-  document.getElementById("subtotalAmount").textContent = `$${subtotal.toFixed(2)}`;
-  
+
+  const subtotal = window.cartItems.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+
+  document.getElementById("subtotalAmount").textContent = `$${subtotal.toFixed(
+    2
+  )}`;
+
   let descuento = 0;
   if (window.selectedCupon) {
     descuento = subtotal * (window.selectedCupon.descuento / 100);
-    document.getElementById("descuentoAmount").textContent = `-$${descuento.toFixed(2)}`;
+    document.getElementById(
+      "descuentoAmount"
+    ).textContent = `-$${descuento.toFixed(2)}`;
     document.getElementById("descuentoRow").style.display = "flex";
   } else {
     document.getElementById("descuentoRow").style.display = "none";
   }
-  
+
   const total = subtotal - descuento;
   document.getElementById("totalAmount").textContent = `$${total.toFixed(2)}`;
 }
 
 function removeProductFromCart(productId) {
   if (!window.cartItems) return;
-  
-  window.cartItems = window.cartItems.filter(item => item.id !== productId);
+
+  window.cartItems = window.cartItems.filter((item) => item.id !== productId);
   updateCartDisplay();
   updateCartSummary();
 }
@@ -476,25 +502,26 @@ function removeProductFromCart(productId) {
 function searchProduct() {
   console.log("Buscando producto...");
   const searchTerm = document.getElementById("productSearch").value.trim();
-  
+
   if (!searchTerm) {
     alert("Por favor, ingrese un término de búsqueda");
     return;
   }
-  
-  // Simulación de búsqueda de producto
-  alert(`Buscando productos con: "${searchTerm}"\n\nEsta funcionalidad se conectará con la API de productos.`);
-}
 
+  // Simulación de búsqueda de producto
+  alert(
+    `Buscando productos con: "${searchTerm}"\n\nEsta funcionalidad se conectará con la API de productos.`
+  );
+}
 
 function removeProduct() {
   console.log("Eliminando producto...");
-  
+
   if (!window.cartItems || window.cartItems.length === 0) {
     alert("El carrito está vacío");
     return;
   }
-  
+
   const productId = prompt("Ingrese el ID del producto a eliminar:");
   if (productId) {
     removeProductFromCart(productId);
@@ -515,18 +542,24 @@ function processCheckout() {
   }
 
   if (!window.cartItems || window.cartItems.length === 0) {
-    alert("El carrito está vacío. Agregue productos antes de procesar el pago.");
+    alert(
+      "El carrito está vacío. Agregue productos antes de procesar el pago."
+    );
     return;
   }
 
-  const total = parseFloat(document.getElementById("totalAmount").textContent.replace('$', ''));
-  
+  const total = parseFloat(
+    document.getElementById("totalAmount").textContent.replace("$", "")
+  );
+
   const checkoutInfo = {
     cliente: window.getSelectedCustomer.username,
     cupon: window.selectedCupon ? window.selectedCupon.nombre : "Ninguno",
-    descuento: window.selectedCupon ? window.selectedCupon.descuento + "%" : "0%",
+    descuento: window.selectedCupon
+      ? window.selectedCupon.descuento + "%"
+      : "0%",
     total: total,
-    items: window.cartItems.length
+    items: window.cartItems.length,
   };
 
   alert(`Procesando pago para:\n
@@ -544,12 +577,16 @@ Esta funcionalidad se conectará con la API de órdenes.`);
 
 function generateDailyReport() {
   console.log("Generando reporte diario...");
-  alert("Generando reporte diario...\n\nEsta funcionalidad generará un reporte de ventas del día.");
+  alert(
+    "Generando reporte diario...\n\nEsta funcionalidad generará un reporte de ventas del día."
+  );
 }
 
 function closeRegister() {
   console.log("Cerrando caja...");
-  alert("Cerrando caja...\n\nEsta funcionalidad realizará el cierre de caja del turno.");
+  alert(
+    "Cerrando caja...\n\nEsta funcionalidad realizará el cierre de caja del turno."
+  );
 }
 
 async function logout() {

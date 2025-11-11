@@ -1,48 +1,47 @@
 const db = db.getSiblingDB("ropadb");
 
-db.createCollection("cupons");
+db.createCollection("coupons");
 
 // Cuponcillo por defecto - Buen Fin
 let cuponBuenFin = {
-  nombre: "Buen Fin 2024",
-  descuento: 20,
-  codigo: "BUENFIN20",
-  activo: true,
-  fecha_expiracion: new Date("2024-12-31T23:59:59Z"),
-  usos_maximos: 1000,
-  usos_actuales: 0,
+  name: "Buen Fin 2024",
+  discount: 20,
+  code: "BUENFIN20",
+  active: true,
+  expiration_date: new Date("2024-12-31T23:59:59Z"),
+  maximum_uses: 1000,
+  actual_uses: 0,
   createdAt: new Date(),
-  updatedAt: new Date()
+  updatedAt: new Date(),
 };
 
 // Cupón de temporada jejejej
 let cuponVerano = {
-  nombre: "Descuento de Verano",
-  descuento: 15,
-  codigo: "VERANO15",
-  activo: true,
-  fecha_expiracion: new Date("2024-09-30T23:59:59Z"),
-  usos_maximos: 500,
-  usos_actuales: 0,
+  name: "Descuento de Verano",
+  discount: 15,
+  code: "VERANO15",
+  active: true,
+  expiration_date: new Date("2024-09-30T23:59:59Z"),
+  maximum_uses: 500,
+  actual_uses: 0,
   createdAt: new Date(),
-  updatedAt: new Date()
+  updatedAt: new Date(),
 };
 
 // Cupón para nuevos clientes
 let cuponBienvenida = {
-  nombre: "Bienvenida Nuevos Clientes",
-  descuento: 10,
-  codigo: "BIENVENIDA10",
-  activo: true,
-  fecha_expiracion: null, // Sin fecha de expiración
-  usos_maximos: null, // Sin límite de usos w
-  usos_actuales: 0,
+  name: "Bienvenida Nuevos Clientes",
+  discount: 10,
+  code: "BIENVENIDA10",
+  active: true,
+  expiration_date: null, // Sin fecha de expiración
+  maximum_uses: null, // Sin límite de usos w
+  actual_uses: 0,
   createdAt: new Date(),
-  updatedAt: new Date()
+  updatedAt: new Date(),
 };
 
-// Insertar cupones
-db.cupons.insertMany([cuponBuenFin, cuponVerano, cuponBienvenida]);
+db.coupons.insertMany([cuponBuenFin, cuponVerano, cuponBienvenida]);
 
 db.roles.insertMany([
   {
@@ -100,8 +99,6 @@ if (adminRole && cashierRole && userRole) {
     },
   ]);
 }
-
-
 
 print("Datos iniciales de Roles y Usuarios creados en ropadb.");
 print("Cupon de prueba creo que también w");
