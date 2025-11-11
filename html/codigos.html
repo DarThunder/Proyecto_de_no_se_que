@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Códigos de Barras</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <link rel="stylesheet" href="../css/codigos.css">
+</head>
+<body>
+    <h1>Generador de Códigos de Barras</h1>
+    
+    <div class="container">
+        <div class="input-section">
+            <label for="productName">Nombre del Producto:</label>
+            <input type="text" id="productName" placeholder="Ingresa el nombre del producto">
+            <div class="btn-group">
+                <button id="generateBtn">Generar Código de Barras</button>
+                <button id="printBtn" class="print-btn">Imprimir Código</button>
+                <button id="backBtn" class="btn-secondary">Regresar al Admin</button>
+            </div>
+        </div>
+        
+        <div id="barcodeResult" class="hidden">
+            <div class="barcode-container">
+                <div id="productDisplay" class="product-name"></div>
+                <svg id="barcode" class="barcode-image"></svg>
+                <div id="barcodeText" class="barcode-value"></div>
+            </div>
+        </div>
+        
+        <div class="recent-products">
+            <h3>Productos recientes:</h3>
+            <div id="recentProductsList"></div>
+        </div>
+        
+        
+    </div>
+
+    <script src="../js/codigos.js"></script>
+</body>
+</html>
