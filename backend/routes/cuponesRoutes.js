@@ -117,6 +117,56 @@ router.get("/validar/:codigo", verifyToken, hasPermission(1), async (req, res) =
   }
 });
 
+//BUscar cupon por código accesible para cajero
+router.get("/buscar/:codigo", verifyToken, hasPermission(1), async (req, res) => {
+  try {
+    const codigo = req.params.codigo.toUpperCase();
+    
+    const cupon = await Cupon.findOne({ 
+      codigo, 
+      activo: true 
+    });
+
+    if (!cupon) {
+      return res.status(404).json({ 
+        message: "Cupón no encontrado o inactivo" 
+      });
+    }
+
+    // Verificar fecha de expiración
+    if (cupon.fecha_expiracion && new Date() > cupon.fecha_expiracion) {
+      return res.status(400).json({ 
+        message: "Cupón expirado" 
+      });
+    }
+
+    // Verificar usos máximos
+    if (cupon.usos_maximos && cupon.usos_actuales >= cupon.usos_maximos) {
+      return res.status(400).json({ 
+        message: "Cupón ha alcanzado su límite de usos" 
+      });
+    }
+
+    res.json({
+      success: true,
+      cupon: {
+        id: cupon._id,
+        nombre: cupon.nombre,
+        descuento: cupon.descuento,
+        codigo: cupon.codigo,
+        fecha_expiracion: cupon.fecha_expiracion,
+        usos_actuales: cupon.usos_actuales,
+        usos_maximos: cupon.usos_maximos
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      message: "Error al buscar cupón",
+      details: error.message 
+    });
+  }
+});
+
 // Función para generar código único de cupón
 function generateCuponCode() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

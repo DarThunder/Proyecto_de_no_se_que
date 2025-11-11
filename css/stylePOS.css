@@ -466,3 +466,86 @@ tr:hover {
   border-color: #007bff;
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
+
+/* Agregar estos estilos al archivo stylePOS.css */
+
+/* Estilos para la sección de cupones */
+.cupon-info {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 15px;
+    display: none;
+}
+
+.cupon-details {
+    margin-bottom: 10px;
+}
+
+.cupon-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.cupon-codigo {
+    background: #28a745;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.cupon-descuento {
+    background: #dc3545;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.cupon-nombre {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+.cupon-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+#removeCuponBtn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 8px;
+    font-size: 14px;
+}
+
+/* Mejorar el input de búsqueda de cupones */
+#searchCupon {
+    text-transform: uppercase;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .cupon-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .cupon-stats {
+        flex-direction: column;
+        gap: 2px;
+    }
+}

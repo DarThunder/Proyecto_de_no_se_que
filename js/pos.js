@@ -86,15 +86,29 @@ function setupPOSFunctionality() {
 function initializeCart() {
   const cartBody = document.getElementById("cartBody");
   const emptyCartMessage = document.getElementById("emptyCartMessage");
+  const subtotalAmount = document.getElementById("subtotalAmount");
   const totalAmount = document.getElementById("totalAmount");
 
   if (cartBody) cartBody.innerHTML = "";
   if (emptyCartMessage) emptyCartMessage.style.display = "block";
+  if (subtotalAmount) subtotalAmount.textContent = "$0.00";
   if (totalAmount) totalAmount.textContent = "$0.00";
 
   window.getSelectedCustomer = null;
+  window.selectedCupon = null;
+  window.cartItems = [];
+  
   hideCustomerInfo();
+  hideCuponInfo();
   clearCustomerSearch();
+  
+  // Limpiar también el campo de búsqueda de cupones
+  const searchCuponInput = document.getElementById("searchCupon");
+  if (searchCuponInput) {
+    searchCuponInput.value = "";
+  }
+  
+  updateCartSummary();
 }
 
 function setupEventListeners() {
@@ -112,6 +126,25 @@ function setupEventListeners() {
     });
   }
 
+  const searchCuponBtn = document.getElementById("searchCuponBtn");
+  if (searchCuponBtn) {
+    searchCuponBtn.addEventListener("click", searchCupon);
+  }
+
+  const searchCuponInput = document.getElementById("searchCupon");
+  if (searchCuponInput) {
+    searchCuponInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        searchCupon();
+      }
+    });
+  }
+
+  const removeCuponBtn = document.getElementById("removeCuponBtn");
+  if (removeCuponBtn) {
+    removeCuponBtn.addEventListener("click", removeCupon);
+  }
+
   const addProductBtn = document.getElementById("addProductBtn");
   if (addProductBtn) {
     addProductBtn.addEventListener("click", addProduct);
@@ -120,11 +153,6 @@ function setupEventListeners() {
   const searchProductBtn = document.getElementById("searchProductBtn");
   if (searchProductBtn) {
     searchProductBtn.addEventListener("click", searchProduct);
-  }
-
-  const applyDiscountBtn = document.getElementById("applyDiscountBtn");
-  if (applyDiscountBtn) {
-    applyDiscountBtn.addEventListener("click", applyDiscount);
   }
 
   const removeProductBtn = document.getElementById("removeProductBtn");
@@ -214,6 +242,42 @@ async function searchCustomer() {
   }
 }
 
+async function searchCupon() {
+  const searchInput = document.getElementById("searchCupon").value.trim().toUpperCase();
+
+  if (!searchInput) {
+    alert("Por favor, ingrese un código de cupón");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://localhost:8080/cupones/buscar/${encodeURIComponent(searchInput)}`,
+      {
+        method: "GET",
+        credentials: "include",
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || "Error al buscar cupón");
+    }
+
+    if (data.success && data.cupon) {
+      displayCuponInfo(data.cupon);
+      updateCartSummary();
+    } else {
+      throw new Error("Cupón no encontrado");
+    }
+  } catch (error) {
+    console.error("Error buscando cupón:", error);
+    alert(`Error al buscar cupón: ${error.message}`);
+    hideCuponInfo();
+  }
+}
+
 function displayCustomerInfo(customer) {
   const customerInfo = document.getElementById("customerInfo");
   const customerAvatar = document.getElementById("customerAvatar");
@@ -235,12 +299,56 @@ function displayCustomerInfo(customer) {
   }
 }
 
+function displayCuponInfo(cupon) {
+  const cuponInfo = document.getElementById("cuponInfo");
+  const cuponCodigo = document.getElementById("cuponCodigo");
+  const cuponDescuento = document.getElementById("cuponDescuento");
+  const cuponNombre = document.getElementById("cuponNombre");
+  const cuponUsos = document.getElementById("cuponUsos");
+  const cuponExpiracion = document.getElementById("cuponExpiracion");
+
+  if (cuponInfo && cuponCodigo && cuponDescuento && cuponNombre && cuponUsos && cuponExpiracion) {
+    cuponCodigo.textContent = cupon.codigo;
+    cuponDescuento.textContent = `${cupon.descuento}% OFF`;
+    cuponNombre.textContent = cupon.nombre;
+    
+    // Información de usos
+    const usosText = cupon.usos_maximos 
+      ? `Usos: ${cupon.usos_actuales}/${cupon.usos_maximos}`
+      : `Usos: ${cupon.usos_actuales}`;
+    cuponUsos.textContent = usosText;
+    
+    // Información de expiración
+    const expiracionText = cupon.fecha_expiracion 
+      ? `Expira: ${new Date(cupon.fecha_expiracion).toLocaleDateString()}`
+      : 'Sin expiración';
+    cuponExpiracion.textContent = expiracionText;
+
+    cuponInfo.style.display = "block";
+    window.selectedCupon = cupon;
+
+    console.log("Cupón seleccionado:", cupon);
+    
+    // Mostrar mensaje de éxito
+    alert(`Cupón "${cupon.nombre}" aplicado correctamente. Descuento: ${cupon.descuento}%`);
+  }
+}
+
 function hideCustomerInfo() {
   const customerInfo = document.getElementById("customerInfo");
   if (customerInfo) {
     customerInfo.style.display = "none";
     window.getSelectedCustomer = null;
   }
+}
+
+function hideCuponInfo() {
+  const cuponInfo = document.getElementById("cuponInfo");
+  if (cuponInfo) {
+    cuponInfo.style.display = "none";
+    window.selectedCupon = null;
+  }
+  updateCartSummary();
 }
 
 function clearCustomerSearch() {
@@ -251,29 +359,151 @@ function clearCustomerSearch() {
   hideCustomerInfo();
 }
 
+function removeCupon() {
+  hideCuponInfo();
+  const searchInput = document.getElementById("searchCupon");
+  if (searchInput) {
+    searchInput.value = "";
+  }
+  alert("Cupón removido correctamente");
+}
+
 function addProduct() {
   console.log("Añadiendo producto...");
-  alert("Funcionalidad de añadir producto");
+  
+  // Simulación de producto añadido
+  const productId = document.getElementById("productID").value.trim();
+  if (!productId) {
+    alert("Por favor, ingrese un ID de producto");
+    return;
+  }
+  
+  // Producto simulado para demo
+  const simulatedProduct = {
+    id: productId,
+    name: `Producto ${productId}`,
+    price: Math.random() * 100 + 10, // Precio aleatorio entre 10 y 110
+    quantity: 1
+  };
+  
+  addProductToCart(simulatedProduct);
+  document.getElementById("productID").value = "";
+}
+
+function addProductToCart(product) {
+  if (!window.cartItems) {
+    window.cartItems = [];
+  }
+  
+  // Verificar si el producto ya está en el carrito
+  const existingItemIndex = window.cartItems.findIndex(item => item.id === product.id);
+  
+  if (existingItemIndex > -1) {
+    // Incrementar cantidad si ya existe
+    window.cartItems[existingItemIndex].quantity += 1;
+  } else {
+    // Agregar nuevo producto
+    window.cartItems.push({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: 1
+    });
+  }
+  
+  updateCartDisplay();
+  updateCartSummary();
+}
+
+function updateCartDisplay() {
+  const cartBody = document.getElementById("cartBody");
+  const emptyCartMessage = document.getElementById("emptyCartMessage");
+  
+  if (!window.cartItems || window.cartItems.length === 0) {
+    if (cartBody) cartBody.innerHTML = "";
+    if (emptyCartMessage) emptyCartMessage.style.display = "block";
+    return;
+  }
+  
+  if (emptyCartMessage) emptyCartMessage.style.display = "none";
+  
+  cartBody.innerHTML = window.cartItems.map(item => `
+    <tr>
+      <td>${item.name}</td>
+      <td>${item.quantity}</td>
+      <td>$${item.price.toFixed(2)}</td>
+      <td>$${(item.price * item.quantity).toFixed(2)}</td>
+      <td>
+        <button onclick="removeProductFromCart('${item.id}')" class="btn-small btn-danger">Eliminar</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function updateCartSummary() {
+  if (!window.cartItems || window.cartItems.length === 0) {
+    document.getElementById("subtotalAmount").textContent = "$0.00";
+    document.getElementById("totalAmount").textContent = "$0.00";
+    document.getElementById("descuentoRow").style.display = "none";
+    return;
+  }
+  
+  const subtotal = window.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  
+  document.getElementById("subtotalAmount").textContent = `$${subtotal.toFixed(2)}`;
+  
+  let descuento = 0;
+  if (window.selectedCupon) {
+    descuento = subtotal * (window.selectedCupon.descuento / 100);
+    document.getElementById("descuentoAmount").textContent = `-$${descuento.toFixed(2)}`;
+    document.getElementById("descuentoRow").style.display = "flex";
+  } else {
+    document.getElementById("descuentoRow").style.display = "none";
+  }
+  
+  const total = subtotal - descuento;
+  document.getElementById("totalAmount").textContent = `$${total.toFixed(2)}`;
+}
+
+function removeProductFromCart(productId) {
+  if (!window.cartItems) return;
+  
+  window.cartItems = window.cartItems.filter(item => item.id !== productId);
+  updateCartDisplay();
+  updateCartSummary();
 }
 
 function searchProduct() {
   console.log("Buscando producto...");
-  alert("Funcionalidad de búsqueda de producto");
+  const searchTerm = document.getElementById("productSearch").value.trim();
+  
+  if (!searchTerm) {
+    alert("Por favor, ingrese un término de búsqueda");
+    return;
+  }
+  
+  // Simulación de búsqueda de producto
+  alert(`Buscando productos con: "${searchTerm}"\n\nEsta funcionalidad se conectará con la API de productos.`);
 }
 
-function applyDiscount() {
-  console.log("Aplicando descuento...");
-  alert("Funcionalidad de aplicar descuento");
-}
 
 function removeProduct() {
   console.log("Eliminando producto...");
-  alert("Funcionalidad de eliminar producto");
+  
+  if (!window.cartItems || window.cartItems.length === 0) {
+    alert("El carrito está vacío");
+    return;
+  }
+  
+  const productId = prompt("Ingrese el ID del producto a eliminar:");
+  if (productId) {
+    removeProductFromCart(productId);
+  }
 }
 
 function addAnotherProduct() {
   console.log("Añadiendo otro producto...");
-  alert("Funcionalidad de añadir otro producto");
+  document.getElementById("productID").focus();
 }
 
 function processCheckout() {
@@ -284,17 +514,42 @@ function processCheckout() {
     return;
   }
 
-  alert(`Procesando pago para cliente: ${window.getSelectedCustomer.username}`);
+  if (!window.cartItems || window.cartItems.length === 0) {
+    alert("El carrito está vacío. Agregue productos antes de procesar el pago.");
+    return;
+  }
+
+  const total = parseFloat(document.getElementById("totalAmount").textContent.replace('$', ''));
+  
+  const checkoutInfo = {
+    cliente: window.getSelectedCustomer.username,
+    cupon: window.selectedCupon ? window.selectedCupon.nombre : "Ninguno",
+    descuento: window.selectedCupon ? window.selectedCupon.descuento + "%" : "0%",
+    total: total,
+    items: window.cartItems.length
+  };
+
+  alert(`Procesando pago para:\n
+Cliente: ${checkoutInfo.cliente}
+Cupón aplicado: ${checkoutInfo.cupon}
+Descuento: ${checkoutInfo.descuento}
+Total a cobrar: $${checkoutInfo.total.toFixed(2)}
+Items: ${checkoutInfo.items}
+
+Esta funcionalidad se conectará con la API de órdenes.`);
+
+  // Aquí se conectaría con la API para procesar la orden
+  // initializeCart(); // Limpiar carrito después del pago
 }
 
 function generateDailyReport() {
   console.log("Generando reporte diario...");
-  alert("Funcionalidad de reporte diario");
+  alert("Generando reporte diario...\n\nEsta funcionalidad generará un reporte de ventas del día.");
 }
 
 function closeRegister() {
   console.log("Cerrando caja...");
-  alert("Funcionalidad de cierre de caja");
+  alert("Cerrando caja...\n\nEsta funcionalidad realizará el cierre de caja del turno.");
 }
 
 async function logout() {
@@ -312,6 +567,10 @@ async function logout() {
 
 function getSelectedCustomer() {
   return window.getSelectedCustomer || null;
+}
+
+function getSelectedCupon() {
+  return window.selectedCupon || null;
 }
 
 function clearSelectedCustomer() {

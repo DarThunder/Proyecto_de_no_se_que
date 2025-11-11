@@ -20,6 +20,24 @@
         
         <div class="main-content">
             <div class="left-panel">
+
+                <!-- Agregar producto -->
+                <div class="card">
+                    <h2 class="card-title">Agregar Producto</h2>
+                    <div class="form-group">
+                        <label for="productID">ID del Producto</label>
+                        <input type="text" id="productID" placeholder="Ingrese ID del producto">
+                    </div>
+                    <div class="form-group">
+                        <label for="productSearch">Buscar Producto</label>
+                        <input type="text" id="productSearch" placeholder="Buscar por nombre o código...">
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="addProductBtn">Añadir Producto</button>
+                        <button class="btn btn-warning" id="searchProductBtn">Buscar</button>
+                    </div>
+                </div>
+
                 <!-- Búsqueda de cliente -->
                 <div class="card">
                     <h2 class="card-title">Búsqueda de Cliente</h2>
@@ -39,22 +57,32 @@
                     </div>
                 </div>
                 
-                <!-- Agregar producto -->
+                <!-- Búsqueda de cupón -->
                 <div class="card">
-                    <h2 class="card-title">Agregar Producto</h2>
+                    <h2 class="card-title">Búsqueda de Cupón</h2>
                     <div class="form-group">
-                        <label for="productID">ID del Producto</label>
-                        <input type="text" id="productID" placeholder="Ingrese ID del producto">
+                        <label for="searchCupon">Buscar cupón por código</label>
+                        <input type="text" id="searchCupon" placeholder="Ingrese código del cupón..." style="text-transform: uppercase">
                     </div>
-                    <div class="form-group">
-                        <label for="productSearch">Buscar Producto</label>
-                        <input type="text" id="productSearch" placeholder="Buscar por nombre o código...">
-                    </div>
-                    <div class="btn-group">
-                        <button class="btn btn-primary" id="addProductBtn">Añadir Producto</button>
-                        <button class="btn btn-warning" id="searchProductBtn">Buscar</button>
+                    <button class="btn btn-primary" id="searchCuponBtn">Buscar Cupón</button>
+                    
+                    <!-- Información del cupón seleccionado -->
+                    <div class="cupon-info" id="cuponInfo" style="display: none;">
+                        <div class="cupon-details">
+                            <div class="cupon-header">
+                                <span class="cupon-codigo" id="cuponCodigo"></span>
+                                <span class="cupon-descuento" id="cuponDescuento"></span>
+                            </div>
+                            <div class="cupon-nombre" id="cuponNombre"></div>
+                            <div class="cupon-stats">
+                                <span id="cuponUsos"></span>
+                                <span id="cuponExpiracion"></span>
+                            </div>
+                        </div>
+                        <button class="btn btn-danger" id="removeCuponBtn">Quitar Cupón</button>
                     </div>
                 </div>
+                
                 
                 <!-- Cierre de caja -->
                 <div class="card cash-register-section">
@@ -109,21 +137,20 @@
                         <p>Agregue productos para comenzar una venta</p>
                     </div>
                     
-                    <!-- Sección de descuento -->
-                    <div class="discount-section">
-                        <h3>Aplicar Descuento</h3>
-                        <div class="discount-form">
-                            <div class="discount-input">
-                                <input type="text" id="discountInput" placeholder="Código de descuento o porcentaje">
-                            </div>
-                            <button class="btn btn-warning" id="applyDiscountBtn">Aplicar</button>
+                    <!-- Resumen de venta -->
+                    <div class="sale-summary">
+                        <div class="summary-row">
+                            <span>Subtotal:</span>
+                            <span id="subtotalAmount">$0.00</span>
                         </div>
-                    </div>
-                    
-                    <!-- Total y acciones -->
-                    <div class="total-section">
-                        <div class="total-label">Total:</div>
-                        <div class="total-amount" id="totalAmount">$0.00</div>
+                        <div class="summary-row" id="descuentoRow" style="display: none;">
+                            <span>Descuento:</span>
+                            <span id="descuentoAmount">-$0.00</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Total:</span>
+                            <span id="totalAmount">$0.00</span>
+                        </div>
                     </div>
                     
                     <div class="actions-section">
