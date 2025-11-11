@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Compras - Shadow & Stitch</title>
+    <link rel="stylesheet" href="../css/styleMain.css">
+    <link rel="stylesheet" href="../css/HistorialC.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- HEADER SOLO CON LOGO Y MENÚ -->
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <h1>SHADOW & STITCH</h1>
+            </div>
+            
+            <div class="hamburger-menu">
+                <div class="hamburger-icon">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+
+            <div class="mobile-menu">
+                <div class="menu-header">
+                    <h3>S&S</h3>
+                </div>
+                <ul class="mobile-nav-links">
+                    <li><a href="/index.html"><i class="fas fa-home"></i> Inicio</a></li>
+                    <li><a href="#categorias"><i class="fas fa-th-large"></i> Categorías</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle">
+                            <i class="fas fa-user"></i> Cuenta
+                            <i class="fas fa-chevron-down dropdown-arrow"></i>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="login.html" class="dropdown-link">Iniciar Sesión</a></li>
+                            <li><a href="CrearCuenta.html" class="dropdown-link">Crear Cuenta</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="carrito.html"><i class="fas fa-shopping-bag"></i> Carrito</a></li>
+                    <li><a href="Listadeseos.html"><i class="fas fa-heart"></i> Lista de Deseos</a></li>
+                    <li><a href="#nuevo"><i class="fas fa-star"></i> Nuevo</a></li>
+                    <li><a href="orders.html" class="active"><i class="fas fa-receipt"></i> Mis Compras</a></li>
+                </ul>
+                
+                <div class="menu-footer">
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-tiktok"></i></a>
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL CON EL TÍTULO -->
+    <main class="orders-container">
+        <div class="container">
+            <!-- TÍTULO PRINCIPAL DE LA PÁGINA -->
+            <div class="page-header">
+                <h1 class="page-title">MIS COMPRAS</h1>
+                <p class="page-subtitle">Revisa tu historial de compras y los detalles de cada pedido</p>
+            </div>
+
+            <div class="orders-list" id="ordersList">
+                <!-- Las órdenes se cargarán aquí dinámicamente -->
+                
+            </div>
+
+            <div class="no-orders" id="noOrders" style="display: none;">
+                <i class="fas fa-shopping-bag"></i>
+                <h3>Aún no tienes compras</h3>
+                <p>Descubre nuestra colección y realiza tu primera compra</p>
+                <a href="../index.html" class="cta-button">EXPLORAR COLECCIÓN</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para detalles de orden -->
+    <div class="modal" id="orderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Detalles de la Orden</h2>
+                <button class="close-modal" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Los detalles de la orden se cargarán aquí -->
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>SHADOW & STITCH</h3>
+                <p>Tu destino para el estilo urbano auténtico</p>
+            </div>
+            <div class="footer-section">
+                <h4>ENLACES RÁPIDOS</h4>
+                <ul>
+                    <li><a href="../index.html">Inicio</a></li>
+                    <li><a href="../index.html#categorias">Categorías</a></li>
+                    <li><a href="../index.html#nuevo">Nuevo</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>CONTACTO</h4>
+                <p>info@shadowstitch.com</p>
+                <p>+52 55 1234 5678</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Shadow & Stitch. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="../js/HistorialC.js"></script>
+    <script src="../js/scriptMain.js"></script>
+</body>
+</html>
