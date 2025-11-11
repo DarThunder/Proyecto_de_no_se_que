@@ -86,27 +86,47 @@ async function loadProducts() {
     variants.forEach((variant) => {
       const product = variant.product;
 
+      // Si por alguna razón el producto no vino populado, sáltalo.
+      if (!product) {
+        console.warn("Variante sin producto adjunto:", variant._id);
+        return;
+      }
+      
+      // --- CORRECCIÓN DE IMAGEN ---
+      // Se añade la imagen del producto como fondo del div.
       const productCardHTML = `
-                <div class="product-card">
-                    <div class="product-image">
-                        </div>
-                    <h3>${product.name.toUpperCase()} (${variant.size})</h3>
-                    <p>$${product.base_price.toFixed(2)} MXN</p>
-                    
-                    <button class="product-btn" data-variant-id="${
-                      variant._id
-                    }">
-                        AGREGAR AL CARRITO
-                    </button>
-                </div>
-            `;
-      menGrid.innerHTML += productCardHTML;
+        <div class="product-card">
+            <div class="product-image" style="background-image: url('${product.image_url || 'sources/img/logo_negro.png'}'); background-size: cover; background-position: center;">
+            </div>
+            <h3>${product.name.toUpperCase()} (${variant.size})</h3>
+            <p>$${product.base_price.toFixed(2)} MXN</p>
+            
+            <button class="product-btn" data-variant-id="${variant._id}">
+                AGREGAR AL CARRITO
+            </button>
+        </div>
+      `;
+
+      // --- CORRECCIÓN DE CATEGORÍA ---
+      // Se añade la lógica para separar por 'product.category'
+      if (product.category === "hombre") {
+        menGrid.innerHTML += productCardHTML;
+      } else if (product.category === "mujer") {
+        womenGrid.innerHTML += productCardHTML;
+      } else if (product.category === "unisex") {
+        menGrid.innerHTML += productCardHTML;
+        womenGrid.innerHTML += productCardHTML;
+      }
     });
 
-    initializeProductButtons();
+    // Mueve esta función para que se llame DESPUÉS de crear los botones
+    initializeProductButtons(); 
+    
   } catch (error) {
     console.error("Error cargando productos:", error);
     menGrid.innerHTML =
+      "<p>No se pudieron cargar los productos. Intenta más tarde.</p>";
+    womenGrid.innerHTML =
       "<p>No se pudieron cargar los productos. Intenta más tarde.</p>";
   }
 }

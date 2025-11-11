@@ -42,16 +42,31 @@ router.get("/:id", async (req, res) => {
 });
 
 router.post("/", verifyToken, hasPermission(1), async (req, res) => {
-  const { name, base_price, description, size, sku, stock } = req.body;
+  const {
+    name,
+    base_price,
+    description,
+    size,
+    sku,
+    stock,
+    image_url,
+    category,
+  } = req.body;
 
-  if (!name || !base_price || !sku || !stock || !size) {
-    return res
-      .status(400)
-      .json({ error: "Faltan campos: name, base_price, sku, stock, size" });
+  if (!name || !base_price || !sku || !stock || !size || !category) {
+    return res.status(400).json({
+      error: "Faltan campos: name, base_price, sku, stock, size, category",
+    });
   }
 
   try {
-    const newProduct = new Product({ name, base_price, description });
+    const newProduct = new Product({
+      name,
+      base_price,
+      description,
+      image_url,
+      category,
+    });
     await newProduct.save();
 
     const newVariant = new ProductVariant({

@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shadow & Stitch - Tienda de Ropa Urbana</title>
-    <link rel="stylesheet" href="../css/styleMain.css">
+    <link rel="stylesheet" href="css/styleMain.css"> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
 </head>
 <body>
-     <audio autoplay preload loop id="Bg_music" src="../sources/audio/Bg_music.mp3"></audio>
+    <audio autoplay preload loop id="Bg_music" src="sources/audio/Bg_music.mp3"></audio>
 
     <header class="header">
         <nav class="nav">
@@ -30,7 +29,7 @@
                     <h3>S&S</h3>
                 </div>
                 <ul class="mobile-nav-links">
-                    <li><a href="/index.html"><i class="fas fa-home"></i> Inicio</a></li>
+                    <li><a href="index.html"><i class="fas fa-home"></i> Inicio</a></li>
                     <li><a href="#categorias"><i class="fas fa-th-large"></i> Categorías</a></li>
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle">
@@ -42,8 +41,8 @@
                             <li><a href="html/CrearCuenta.html" class="dropdown-link">Crear Cuenta</a></li>
                         </ul>
                     </li>
-                    <li><a href="/html/carrito.html"><i class="fas fa-shopping-bag"></i> Carrito</a></li>
-                    <li><a href="/html/Listadeseos.html"><i class="fas fa-heart"></i> Lista de Deseos</a></li>
+                    <li><a href="html/carrito.html"><i class="fas fa-shopping-bag"></i> Carrito</a></li>
+                    <li><a href="html/Listadeseos.html"><i class="fas fa-heart"></i> Lista de Deseos</a></li>
                     <li><a href="#nuevo"><i class="fas fa-star"></i> Nuevo</a></li>
                     <li class="dropdown">
                         <a href="#" class="dropdown-toggle">
@@ -51,8 +50,8 @@
                             <i class="fas fa-chevron-down dropdown-arrow"></i>
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a href="/html/misreseñas.html" class="dropdown-link">Mis Reseñas</a></li>
-                            <li><a href="/html/reseñaUser.html" class="dropdown-link">Crear Reseña</a></li>
+                            <li><a href="html/misreseñas.html" class="dropdown-link">Mis Reseñas</a></li>
+                            <li><a href="html/reseñaUser.html" class="dropdown-link">Crear Reseña</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -71,7 +70,7 @@
     <section id="inicio" class="hero">
         <div class="hero-background"></div>
         <div class="hero-content">
-            <img src="/sources/img/logo_blanco.png" alt="Logo Shadow & Stitch" class="hero-logo">
+            <img src="sources/img/logo_blanco.png" alt="Logo Shadow & Stitch" class="hero-logo">
             <h2>BIENVENIDO A</h2>
             <h1>SHADOW & STITCH</h1>
             <p>Donde la calle encuentra su estilo</p>
@@ -116,14 +115,12 @@
         </div>
     </section>
 
-
     <section class="men-section">
         <div class="section-header">
             <h2>COLECCIÓN HOMBRE</h2>
             <p>Estilo urbano para él</p>
         </div>
-        <div class="products-grid">
-            
+        <div class="products-grid" id="productos-hombre-container"> 
         </div>
     </section>
 
@@ -132,58 +129,15 @@
             <h2>COLECCIÓN MUJER</h2>
             <p>Actitud y estilo para ella</p>
         </div>
-        <div class="products-grid">
-            
+        <div class="products-grid" id="productos-mujer-container">
         </div>
     </section>
 
     <section id="nuevo" class="new-arrivals">
-        <div class="section-header">
-            <h2>NUEVOS LANZAMIENTOS</h2>
-            <p>Lo más reciente de Shadow & Stitch</p>
-        </div>
-        <div class="products-grid">
-            <div class="product-card new-product">
-                <div class="new-badge">NUEVO</div>
-                <div class="product-image"></div>
-                <h3>COLLECTION 2024</h3>
-                <p>$999.00 MXN</p>
-                <button class="product-btn">AGREGAR AL CARRITO</button>
-            </div>
-            <div class="product-card new-product">
-                <div class="new-badge">NUEVO</div>
-                <div class="product-image"></div>
-                <h3>LIMITED EDITION</h3>
-                <p>$1,500.00 MXN</p>
-                <button class="product-btn">AGREGAR AL CARRITO</button>
-            </div>
-        </div>
-    </section>
+         </section>
 
     <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-section">
-                <h3>SHADOW & STITCH</h3>
-                <p>Tu destino para el estilo urbano auténtico</p>
-            </div>
-            <div class="footer-section">
-                <h4>ENLACES RÁPIDOS</h4>
-                <ul>
-                    <li><a href="#inicio">Inicio</a></li>
-                    <li><a href="#categorias">Categorías</a></li>
-                    <li><a href="#nuevo">Nuevo</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h4>CONTACTO</h4>
-                <p>info@shadowstitch.com</p>
-                <p>+52 55 1234 5678</p>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2025 Shadow & Stitch. Todos los derechos reservados.</p>
-        </div>
-    </footer>
+        </footer>
 
     <script src="js/scriptMain.js"></script>
 </body>
