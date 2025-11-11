@@ -1,13 +1,48 @@
 const db = db.getSiblingDB("ropadb");
 
-db.createCollection("cupones");
+db.createCollection("cupons");
 
+// Cuponcillo por defecto - Buen Fin
 let cuponBuenFin = {
-  nombre: "Buen Fin",
-  descuento: 50
+  nombre: "Buen Fin 2024",
+  descuento: 20,
+  codigo: "BUENFIN20",
+  activo: true,
+  fecha_expiracion: new Date("2024-12-31T23:59:59Z"),
+  usos_maximos: 1000,
+  usos_actuales: 0,
+  createdAt: new Date(),
+  updatedAt: new Date()
 };
 
-db.cupones.insertOne(cuponBuenFin);
+// Cupón de temporada jejejej
+let cuponVerano = {
+  nombre: "Descuento de Verano",
+  descuento: 15,
+  codigo: "VERANO15",
+  activo: true,
+  fecha_expiracion: new Date("2024-09-30T23:59:59Z"),
+  usos_maximos: 500,
+  usos_actuales: 0,
+  createdAt: new Date(),
+  updatedAt: new Date()
+};
+
+// Cupón para nuevos clientes
+let cuponBienvenida = {
+  nombre: "Bienvenida Nuevos Clientes",
+  descuento: 10,
+  codigo: "BIENVENIDA10",
+  activo: true,
+  fecha_expiracion: null, // Sin fecha de expiración
+  usos_maximos: null, // Sin límite de usos w
+  usos_actuales: 0,
+  createdAt: new Date(),
+  updatedAt: new Date()
+};
+
+// Insertar cupones
+db.cupones.insertMany([cuponBuenFin, cuponVerano, cuponBienvenida]);
 
 db.roles.insertMany([
   {
