@@ -1,5 +1,14 @@
 const db = db.getSiblingDB("ropadb");
 
+db.createCollection("cupones");
+
+let cuponBuenFin = {
+  nombre: "Buen Fin",
+  descuento: 50
+};
+
+db.cupones.insertOne(cuponBuenFin);
+
 db.roles.insertMany([
   {
     name: "admin",
@@ -57,4 +66,7 @@ if (adminRole && cashierRole && userRole) {
   ]);
 }
 
+
+
 print("Datos iniciales de Roles y Usuarios creados en ropadb.");
+print("Cupon de prueba creo que también w");
