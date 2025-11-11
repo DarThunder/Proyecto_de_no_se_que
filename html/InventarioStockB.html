@@ -25,10 +25,10 @@
             <div class="header">
                 <h2>Dashboard de Inventario</h2>
                 <div class="user-info">
-                    <div class="user-avatar">JS</div>
+                    <div class="user-avatar" id="userAvatar"></div>
                     <div>
-                        <p></p>
-                        <small>Encargado de Inventario</small>
+                        <p id="userName">Sistema de Inventario</p>
+                        <small id="userRole">Stock Bajo</small>
                     </div>
                 </div>
             </div>
@@ -40,7 +40,7 @@
                         <i class="fas fa-exclamation-circle"></i>
                     </div>
                     <div class="stat-info">
-                        <h3>8</h3>
+                        <h3>0</h3>
                         <p>Productos con stock crítico</p>
                     </div>
                 </div>
@@ -49,7 +49,7 @@
                         <i class="fas fa-clock"></i>
                     </div>
                     <div class="stat-info">
-                        <h3>12</h3>
+                        <h3>0</h3>
                         <p>Productos con stock bajo</p>
                     </div>
                 </div>
@@ -58,18 +58,18 @@
                         <i class="fas fa-check-circle"></i>
                     </div>
                     <div class="stat-info">
-                        <h3>45</h3>
+                        <h3>0</h3>
                         <p>Productos con stock normal</p>
                     </div>
                 </div>
             </div>
             
             <!-- Alert Banner -->
-            <div class="alert-banner">
+            <div class="alert-banner" style="display: none;">
                 <i class="fas fa-exclamation-triangle"></i>
                 <div>
                     <h3>Alerta: Stock Crítico</h3>
-                    <p>8 productos tienen niveles de inventario por debajo del mínimo. Se recomienda realizar pedidos de inmediato.</p>
+                    <p id="alertMessage">0 productos tienen niveles de inventario por debajo del mínimo. Se recomienda realizar pedidos de inmediato.</p>
                 </div>
             </div>
             
@@ -95,52 +95,18 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <!-- Los datos se cargarán dinámicamente desde el backend -->
                         <tr>
-                            <td>Hoodie Black Shadow</td>
-                            <td>Hoodies</td>
-                            <td class="stock-low">3</td>
-                            <td>15</td>
-                            <td><span class="stock-low">Crítico</span></td>
-                            <td><button class="action-btn order-btn" data-product="Hoodie Black Shadow">Realizar Pedido</button></td>
-                        </tr>
-                        <tr>
-                            <td>Jean Urban Fit</td>
-                            <td>Pantalones</td>
-                            <td class="stock-low">5</td>
-                            <td>20</td>
-                            <td><span class="stock-low">Crítico</span></td>
-                            <td><button class="action-btn order-btn" data-product="Jean Urban Fit">Realizar Pedido</button></td>
-                        </tr>
-                        <tr>
-                            <td>Crop Top Urban</td>
-                            <td>Camisas</td>
-                            <td class="stock-warning">8</td>
-                            <td>15</td>
-                            <td><span class="stock-warning">Bajo</span></td>
-                            <td><button class="action-btn order-btn" data-product="Crop Top Urban">Realizar Pedido</button></td>
-                        </tr>
-                        <tr>
-                            <td>Short Street</td>
-                            <td>Shorts</td>
-                            <td class="stock-warning">10</td>
-                            <td>25</td>
-                            <td><span class="stock-warning">Bajo</span></td>
-                            <td><button class="action-btn order-btn" data-product="Short Street">Realizar Pedido</button></td>
-                        </tr>
-                        <tr>
-                            <td>T-Shirt Graffiti</td>
-                            <td>Camisas</td>
-                            <td class="stock-low">2</td>
-                            <td>30</td>
-                            <td><span class="stock-low">Crítico</span></td>
-                            <td><button class="action-btn order-btn" data-product="T-Shirt Graffiti">Realizar Pedido</button></td>
+                            <td colspan="6" style="text-align: center; padding: 20px; color: #666;">
+                                Cargando productos del inventario...
+                            </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
             
             <!-- Reorder Form -->
-            <div class="reorder-form" id="reorderForm">
+            <div class="reorder-form" id="reorderForm" style="display: none;">
                 <div class="form-header">
                     <h3>Realizar Pedido</h3>
                     <button class="close-form" id="closeForm">&times;</button>
