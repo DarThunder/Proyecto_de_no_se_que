@@ -85,19 +85,20 @@ async function loadProducts() {
 
     variants.forEach((variant) => {
       const product = variant.product;
+      if (!product) return; // Si un producto se borró pero la variante no
 
-      // Si por alguna razón el producto no vino populado, sáltalo.
-      if (!product) {
-        console.warn("Variante sin producto adjunto:", variant._id);
-        return;
-      }
-      
       // --- CORRECCIÓN DE IMAGEN ---
-      // Se añade la imagen del producto como fondo del div.
+      // La página index.html está en la raíz, por lo que la ruta es directa
+      const imageUrl = product.image_url || 'sources/img/logo_negro.png';
+
       const productCardHTML = `
         <div class="product-card">
-            <div class="product-image" style="background-image: url('${product.image_url || 'sources/img/logo_negro.png'}'); background-size: cover; background-position: center;">
+            <button class="wishlist-btn" data-variant-id="${variant._id}" title="Añadir a lista de deseos">
+                <i class="far fa-heart"></i> </button>
+            
+            <div class="product-image" style="background-image: url('${imageUrl}'); background-size: cover; background-position: center;">
             </div>
+            
             <h3>${product.name.toUpperCase()} (${variant.size})</h3>
             <p>$${product.base_price.toFixed(2)} MXN</p>
             
@@ -108,7 +109,6 @@ async function loadProducts() {
       `;
 
       // --- CORRECCIÓN DE CATEGORÍA ---
-      // Se añade la lógica para separar por 'product.category'
       if (product.category === "hombre") {
         menGrid.innerHTML += productCardHTML;
       } else if (product.category === "mujer") {
@@ -119,14 +119,12 @@ async function loadProducts() {
       }
     });
 
-    // Mueve esta función para que se llame DESPUÉS de crear los botones
-    initializeProductButtons(); 
-    
+    initializeProductButtons();
+    initializeWishlistButtons(); // <-- LLAMADA A LA NUEVA FUNCIÓN
+
   } catch (error) {
     console.error("Error cargando productos:", error);
     menGrid.innerHTML =
-      "<p>No se pudieron cargar los productos. Intenta más tarde.</p>";
-    womenGrid.innerHTML =
       "<p>No se pudieron cargar los productos. Intenta más tarde.</p>";
   }
 }
@@ -185,6 +183,53 @@ function initializeProductButtons() {
       });
     });
 }
+
+// --- NUEVA FUNCIÓN PARA LA LISTA DE DESEOS ---
+function initializeWishlistButtons() {
+  document.querySelectorAll(".wishlist-btn").forEach((button) => {
+    button.addEventListener("click", async function () {
+      const variantId = this.dataset.variantId;
+      if (!variantId) {
+        console.error("El producto no tiene un ID de variante (data-variant-id).");
+        return;
+      }
+      
+      // Llama a la función de la API
+      await addToWishlist(variantId, this);
+    });
+  });
+}
+
+// --- NUEVA FUNCIÓN ASÍNCRONA PARA LLAMAR A LA API ---
+async function addToWishlist(variantId, button) {
+  try {
+    const response = await fetch("http://localhost:8080/wishlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include", // Envía el token de autenticación
+      body: JSON.stringify({ variantId }),
+    });
+
+    if (response.ok) {
+      // Éxito: Cambia el ícono del corazón a "lleno"
+      button.innerHTML = '<i class="fas fa-heart"></i>'; // 'fas' es el corazón lleno
+      button.title = "Añadido a lista de deseos";
+    } else if (response.status === 401 || response.status === 403) {
+      alert("Debes iniciar sesión para añadir a tu lista de deseos.");
+      window.location.href = "html/login.html";
+    } else if (response.status === 400) {
+      // El producto ya está en la lista, solo marca el corazón
+      button.innerHTML = '<i class="fas fa-heart"></i>';
+      button.title = "Ya está en tu lista";
+    } else {
+      throw new Error("Error al añadir a la lista de deseos");
+    }
+  } catch (error) {
+    console.error("Error en addToWishlist:", error);
+  }
+}
+// --- FIN DE NUEVAS FUNCIONES ---
+
 
 function setupScrollEffects() {
   document.querySelectorAll('a[href^="#"]').forEach((anchor) => {

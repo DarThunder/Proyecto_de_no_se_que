@@ -597,3 +597,25 @@ body {
     text-overflow: ellipsis;
     max-width: 120px;
 }
+
+.wishlist-btn {
+    position: absolute;
+    top: 1rem; /* Ajusta el espaciado desde arriba */
+    right: 1rem; /* Ajusta el espaciado desde la derecha */
+    background: none;
+    border: none;
+    font-size: 1.5rem; /* Tamaño del corazón */
+    color: #fff; /* Color del corazón vacío (far) */
+    cursor: pointer;
+    z-index: 5;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.wishlist-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Este estilo se aplica cuando el JS cambia el ícono a 'fas' (lleno) */
+.wishlist-btn .fas.fa-heart {
+    color: #e74c3c; /* Color rojo para el corazón lleno */
+}
