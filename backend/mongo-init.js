@@ -105,8 +105,8 @@ if (hoodie) {
 if (pantalon) {
   db.productvariants.insertOne({
     product: pantalon._id,
-    size: "32",
-    sku: "PANT-CAR-32",
+    size: "M", // <-- CORREGIDO: "32" cambiado a "M"
+    sku: "PANT-CAR-M", // <-- CORREGIDO: SKU actualizado
     stock: 40,
     createdAt: new Date(),
     updatedAt: new Date(),

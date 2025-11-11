@@ -2,12 +2,13 @@ import { Router } from "express";
 const router = Router();
 
 import Sale from "../models/Sale.js";
-import Cart from "../models/Cart.js"; // Necesitamos el modelo del carrito
+import Cart from "../models/Cart.js";
 import ProductVariant from "../models/ProductVariant.js";
 import verifyToken from "../middleware/verifyToken.js";
 import hasPermission from "../middleware/hasPermission.js";
 
-// --- RUTA EXISTENTE PARA POS ---
+// --- RUTA POS (CAJERO) ---
+// (Esta es tu ruta original, la dejamos como estaba)
 router.post("/", verifyToken, hasPermission(1), async (req, res) => {
   const { user, cashier, items, transaction_type, payment_method } = req.body;
 
@@ -57,17 +58,20 @@ router.post("/", verifyToken, hasPermission(1), async (req, res) => {
   }
 });
 
-// --- NUEVA RUTA PARA CHECKOUT WEB ---
+// --- RUTA CHECKOUT (WEB) ---
+// (Esta es la ruta corregida, con toda la lógica DENTRO del try...catch)
 router.post("/checkout", verifyToken, async (req, res) => {
-  const userId = req.user.id;
-  const { shipping_address } = req.body; // Datos de envío del formulario
-
-  if (!shipping_address) {
-    return res.status(400).json({ error: "Faltan datos de envío" });
-  }
-
   try {
-    // 1. Encontrar el carrito del usuario
+    // 1. Mover la lógica DENTRO del try
+    // Si req.user es undefined (porque el token es malo), el catch lo atrapará
+    const userId = req.user.id; 
+    const { shipping_address } = req.body;
+
+    if (!shipping_address) {
+      return res.status(400).json({ error: "Faltan datos de envío" });
+    }
+
+    // 2. Encontrar el carrito del usuario
     const cart = await Cart.findOne({ user: userId }).populate({
       path: "items.variant",
       populate: { path: "product" },
@@ -77,13 +81,18 @@ router.post("/checkout", verifyToken, async (req, res) => {
       return res.status(400).json({ error: "No hay productos en el carrito" });
     }
 
-    // 2. Preparar los items de la venta y verificar stock
+    // 3. Preparar los items de la venta y verificar stock
     let total = 0;
     const saleItems = [];
     const stockUpdates = [];
 
     for (const cartItem of cart.items) {
       const variant = cartItem.variant;
+
+      // Verificación de seguridad
+      if (!variant || !variant.product) {
+        return res.status(404).json({ error: "Un producto en tu carrito ya no existe."});
+      }
 
       if (variant.stock < cartItem.quantity) {
         return res
@@ -94,26 +103,26 @@ router.post("/checkout", verifyToken, async (req, res) => {
       variant.stock -= cartItem.quantity;
       stockUpdates.push(variant.save());
 
-      const unit_price = variant.product.base_price; // O el precio que corresponda
+      const unit_price = variant.product.base_price;
       saleItems.push({
         variant: variant._id,
         quantity: cartItem.quantity,
         unit_price: unit_price,
-        discount_rate: 0, // Implementar lógica de cupón aquí si se desea
+        discount_rate: 0, // Implementar cupones aquí si se desea
       });
 
       total += cartItem.quantity * unit_price;
     }
 
-    // 3. Crear el número de seguimiento (simulado)
+    // 4. Crear el número de seguimiento (simulado)
     const tracking_number = `SS-${Date.now()}`;
 
-    // 4. Crear la nueva venta (Sale)
+    // 5. Crear la nueva venta (Sale)
     const newSale = new Sale({
       user: userId,
       items: saleItems,
       total: total,
-      payment_method: "ONLINE", // Asumimos que es pago en línea
+      payment_method: "ONLINE", 
       transaction_type: "WEB",
       shipping_address: shipping_address,
       shipping_status: "Processing",
@@ -123,42 +132,44 @@ router.post("/checkout", verifyToken, async (req, res) => {
     await newSale.save();
     await Promise.all(stockUpdates); // Actualizar stock
 
-    // 5. Vaciar el carrito del usuario
+    // 6. Vaciar el carrito del usuario
     cart.items = [];
     await cart.save();
 
-    // 6. Responder con éxito
+    // 7. Responder con éxito
     res.status(201).json({
       message: "Pedido realizado exitosamente",
       saleId: newSale._id,
       trackingNumber: newSale.tracking_number,
     });
   } catch (err) {
-    console.error(err);
+    // 8. Si algo falla (incluyendo req.user.id), se envía un error 500
+    console.error("Error en /orders/checkout:", err);
     res
       .status(500)
       .json({ error: "Error al procesar el pedido", details: err.message });
   }
 });
 
+
+// --- RUTA DE SEGUIMIENTO ---
+// (La dejamos como estaba)
 router.get("/track/:trackingNumber", async (req, res) => {
   try {
     const { trackingNumber } = req.params;
 
-    // Buscamos la venta (Sale) por su número de seguimiento
     const sale = await Sale.findOne({ tracking_number: trackingNumber })
       .populate({
-        path: "items.variant", // Poblamos la variante
+        path: "items.variant", 
         populate: {
-          path: "product", // Y poblamos el producto dentro de la variante
+          path: "product", 
         },
       });
 
     if (!sale) {
       return res.status(404).json({ error: "Pedido no encontrado." });
     }
-
-    // Si encontramos el pedido, lo devolvemos
+    
     res.status(200).json(sale);
 
   } catch (err) {
