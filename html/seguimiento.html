@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadow & Stitch - Seguir Pedido</title>
+    <link rel="stylesheet" href="../css/styleMain.css">
+    <link rel="stylesheet" href="../css/seguimiento.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Header (reutilizado) -->
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <a href="../index.html" style="text-decoration: none; color: white;"><h1>SHADOW & STITCH</h1></a>
+            </div>
+            <div class="hamburger-menu">
+                <div class="hamburger-icon">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+            <!-- Incluye el menú móvil de scriptMain.js -->
+            <div class="mobile-menu">
+                <!-- ... (puedes copiar el mobile-menu de index.html aquí si lo deseas) ... -->
+            </div>
+        </nav>
+    </header>
+
+    <main class="tracking-container">
+        <h1>Seguimiento de Pedido</h1>
+        <p>Ingresa tu número de seguimiento para ver el estado de tu pedido.</p>
+
+        <!-- Formulario de Búsqueda -->
+        <form class="tracking-form" id="tracking-form">
+            <input type="text" id="tracking-input" placeholder="Ej: SS-123456789" required>
+            <button type="submit" class="cta-button">Rastrear</button>
+        </form>
+
+        <!--  -->
+
+        <!-- Contenedor de Resultados (inicialmente oculto) -->
+        <div class="tracking-results" id="tracking-results">
+            
+            <!-- Aquí se mostrará un mensaje de error o carga -->
+            <div class="results-message" id="results-message"></div>
+            
+            <!-- 1. Línea de Tiempo del Estado -->
+            <div class="status-timeline" id="status-timeline">
+                <div class="status-step" id="status-processing">
+                    <div class="status-icon"><i class="fas fa-cogs"></i></div>
+                    <span>Procesando</span>
+                </div>
+                <div class="status-line"></div>
+                <div class="status-step" id="status-shipped">
+                    <div class="status-icon"><i class="fas fa-truck"></i></div>
+                    <span>Enviado</span>
+                </div>
+                <div class="status-line"></div>
+                <div class="status-step" id="status-delivered">
+                    <div class="status-icon"><i class="fas fa-box-open"></i></div>
+                    <span>Entregado</span>
+                </div>
+            </div>
+
+            <!-- 2. Detalles del Pedido -->
+            <div class="order-details" id="order-details">
+                <h3>Detalles del Pedido</h3>
+                <div id="order-items-list">
+                    <!-- Los items del pedido se cargarán aquí -->
+                </div>
+                <div class="order-summary-total">
+                    <span>Total:</span>
+                    <span id="order-total-amount">$0.00</span>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>SHADOW & STITCH</h3>
+                    <p>Tu destino para el estilo urbano auténtico</p>
+                </div>
+                <div class="footer-section">
+                    <h4>ENLACES RÁPIDOS</h4>
+                    <ul>
+                        <li><a href="#inicio">Inicio</a></li>
+                        <li><a href="#categorias">Categorías</a></li>
+                        <li><a href="#nuevo">Nuevo</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>CONTACTO</h4>
+                    <p>info@shadowstitch.com</p>
+                    <p>+52 55 1234 5678</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Shadow & Stitch. Todos los derechos reservados.</p>
+            </div>
+        </footer>
+        
+    <script src="../js/scriptMain.js"></script> <!-- Para el menú -->
+    <script src="../js/seguimiento.js"></script> <!-- Lógica de esta página -->
+</body>
+</html>

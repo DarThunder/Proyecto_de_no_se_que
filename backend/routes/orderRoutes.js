@@ -141,4 +141,30 @@ router.post("/checkout", verifyToken, async (req, res) => {
   }
 });
 
+router.get("/track/:trackingNumber", async (req, res) => {
+  try {
+    const { trackingNumber } = req.params;
+
+    // Buscamos la venta (Sale) por su número de seguimiento
+    const sale = await Sale.findOne({ tracking_number: trackingNumber })
+      .populate({
+        path: "items.variant", // Poblamos la variante
+        populate: {
+          path: "product", // Y poblamos el producto dentro de la variante
+        },
+      });
+
+    if (!sale) {
+      return res.status(404).json({ error: "Pedido no encontrado." });
+    }
+
+    // Si encontramos el pedido, lo devolvemos
+    res.status(200).json(sale);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error al buscar el pedido", details: err.message });
+  }
+});
+
 export default router;

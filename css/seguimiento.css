@@ -1,0 +1,251 @@
+/* Estilos para la página de seguimiento */
+.tracking-container {
+    max-width: 900px;
+    margin: 100px auto 2rem auto;
+    padding: 2rem;
+    color: #fff;
+    text-align: center;
+}
+
+.tracking-container h1 {
+    font-size: 2.5rem;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 1rem;
+}
+
+.tracking-container p {
+    font-size: 1.1rem;
+    color: #ccc;
+    margin-bottom: 2rem;
+}
+
+/* Formulario de Búsqueda */
+.tracking-form {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.tracking-form input {
+    flex-grow: 1;
+    max-width: 400px;
+    padding: 0.8rem 1rem;
+    background: #333;
+    border: 1px solid #555;
+    color: #fff;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.tracking-form .cta-button {
+    background: #fff;
+    color: #000;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+}
+.tracking-form .cta-button:hover {
+    background: #ccc;
+}
+
+/* Contenedor de Resultados */
+.tracking-results {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: left;
+    display: none; /* Oculto por defecto */
+}
+
+/* Mensajes de Carga/Error */
+.results-message {
+    text-align: center;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+.results-message.error {
+    color: #ff4d4d;
+}
+.results-message.loading {
+    color: #ccc;
+}
+
+/* Línea de tiempo de Estado (Similar a checkout) */
+.status-timeline {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 3rem;
+    padding: 1rem 0;
+}
+.status-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #555; /* Inactivo */
+    font-weight: bold;
+    transition: color 0.4s ease;
+}
+.status-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #333;
+    border: 2px solid #555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all 0.4s ease;
+}
+.status-step span {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+.status-line {
+    flex-grow: 1;
+    height: 2px;
+    background: #555;
+    margin: 25px 0.5rem 0 0.5rem;
+    transition: background 0.4s ease;
+}
+
+/* Colores de Estado */
+.status-step.completed {
+    color: #4CAF50; /* Verde */
+}
+.status-step.completed .status-icon {
+    background: #4CAF50;
+    border-color: #4CAF50;
+    color: #fff;
+}
+.status-step.completed + .status-line {
+    background: #4CAF50;
+}
+
+.status-step.active {
+    color: #fff; /* Blanco (Actual) */
+}
+.status-step.active .status-icon {
+    background: #fff;
+    border-color: #fff;
+    color: #0a0a0a;
+}
+.status-step.active ~ .status-line {
+    background: #555; /* Línea gris después del activo */
+}
+.status-step.active ~ .status-step {
+    color: #555; /* Pasos grises después del activo */
+}
+
+
+/* Detalles del Pedido */
+.order-details {
+    border-top: 1px solid #333;
+    padding-top: 2rem;
+}
+.order-details h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+}
+
+/* Reutilizamos estilos del carrito/checkout */
+.summary-item {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: center;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #333;
+}
+.summary-item:last-child {
+    border-bottom: none;
+}
+.summary-item-img {
+    width: 60px;
+    height: 60px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+.summary-item-info {
+    flex-grow: 1;
+}
+.summary-item-info h4 {
+    font-size: 0.9rem;
+    margin: 0;
+}
+.summary-item-info p {
+    font-size: 0.8rem;
+    color: #aaa;
+}
+.summary-item-price {
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.order-summary-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.3rem;
+    font-weight: bold;
+    border-top: 1px solid #333;
+    padding-top: 1rem;
+    margin-top: 1rem;
+}
+
+/* Footer */
+.footer {
+    background: #1a1a1a;
+    padding: 3rem 2rem 1rem;
+    margin-top: 4rem;
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.footer-section h3, .footer-section h4 {
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.footer-section ul {
+    list-style: none;
+}
+
+.footer-section ul li {
+    margin-bottom: 0.5rem;
+}
+
+.footer-section a {
+    color: #ccc;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-section a:hover {
+    color: #fff;
+}
+
+.footer-bottom {
+    text-align: center;
+    padding-top: 2rem;
+    margin-top: 2rem;
+    border-top: 1px solid #333;
+    color: #666;
+}
