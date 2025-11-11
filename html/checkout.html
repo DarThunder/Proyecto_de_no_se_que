@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadow & Stitch - Pagar</title>
+    <!-- CSS de la página principal para el header/footer -->
+    <link rel="stylesheet" href="../css/styleMain.css">
+    <!-- CSS específico para el checkout -->
+    <link rel="stylesheet" href="../css/checkout.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Reutilizamos el header de la página principal -->
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <a href="/index.html" style="text-decoration: none; color: white;"><h1>SHADOW & STITCH</h1></a>
+            </div>
+            <!-- El menú hamburguesa se puede incluir si se desea, o simplificarlo -->
+            <div class="nav-links-simple">
+                <a href="/html/carrito.html"><i class="fas fa-shopping-bag"></i> Volver al Carrito</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="checkout-container">
+        
+        <!-- Esta es la Línea de Tiempo (Stepper) -->
+        <div class="timeline-stepper">
+            <div class="step active" id="timeline-step-1">
+                <div class="step-icon"><i class="fas fa-shipping-fast"></i></div>
+                <span>Envío</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step" id="timeline-step-2">
+                <div class="step-icon"><i class="fas fa-credit-card"></i></div>
+                <span>Pago</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step" id="timeline-step-3">
+                <div class="step-icon"><i class="fas fa-check"></i></div>
+                <span>Confirmación</span>
+            </div>
+        </div>
+
+        <div class="checkout-content">
+            
+            <!-- Contenedor del Resumen del Pedido (se llenará con JS) -->
+            <aside class="order-summary">
+                <h2>Resumen del Pedido</h2>
+                <div id="summary-items">
+                    <!-- Los items del carrito se cargarán aquí -->
+                </div>
+                <div class="summary-total">
+                    <span>Total:</span>
+                    <span id="summary-total-amount">$0.00</span>
+                </div>
+            </aside>
+
+            <!-- Contenedor de Pasos (Formularios) -->
+            <section class="checkout-steps">
+                
+                <!-- Paso 1: Formulario de Envío -->
+                <div class="step-content active" id="step-shipping">
+                    <h2>Dirección de Envío</h2>
+                    <form id="shipping-form" class="checkout-form">
+                        <div class="form-group">
+                            <label for="full_name">Nombre Completo</label>
+                            <input type="text" id="full_name" name="full_name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="address">Dirección (Calle y Número)</label>
+                            <input type="text" id="address" name="address" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="city">Ciudad</label>
+                            <input type="text" id="city" name="city" required>
+                        </div>
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="state">Estado</label>
+                                <input type="text" id="state" name="state" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="zip_code">Código Postal</label>
+                                <input type="text" id="zip_code" name="zip_code" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="cta-button">Continuar al Pago</button>
+                    </form>
+                </div>
+
+                <!-- Paso 2: Formulario de Pago (Simulado) -->
+                <div class="step-content" id="step-payment">
+                    <h2>Información de Pago</h2>
+                    <form id="payment-form" class="checkout-form">
+                        <div class="form-group">
+                            <label for="card_number">Número de Tarjeta</label>
+                            <input type="text" id="card_number" name="card_number" placeholder="**** **** **** 1234" required>
+                        </div>
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="card_expiry">Expiración (MM/AA)</label>
+                                <input type="text" id="card_expiry" name="card_expiry" placeholder="MM/AA" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="card_cvc">CVC</label>
+                                <input type="text" id="card_cvc" name="card_cvc" placeholder="123" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="cta-button" id="place-order-btn">Finalizar Pedido</button>
+                    </form>
+                </div>
+
+                <!-- Paso 3: Confirmación -->
+                <div class="step-content" id="step-confirmation">
+                    <div class="confirmation-message">
+                        <i class="fas fa-check-circle"></i>
+                        <h2>¡Gracias por tu compra!</h2>
+                        <p>Tu pedido ha sido confirmado.</p>
+                        <p>Tu número de seguimiento (simulado) es:</p>
+                        <strong id="tracking-number"></strong>
+                        <a href="/index.html" class="cta-button">Volver a la Tienda</a>
+                    </div>
+                </div>
+
+            </section>
+        </div>
+    </main>
+
+    <script src="../js/checkout.js"></script>
+</body>
+</html>

@@ -1,0 +1,277 @@
+@import url('styleMain.css'); /* Reutiliza estilos de header/footer si están globales */
+
+body {
+    background-color: #0a0a0a;
+}
+
+/* Simplificación del header para checkout */
+.nav-links-simple a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #fff;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+.nav-links-simple a:hover {
+    background: #fff;
+    color: #0a0a0a;
+}
+
+.checkout-container {
+    max-width: 1200px;
+    margin: 100px auto 2rem auto; /* Espacio para el header fijo */
+    padding: 2rem;
+    color: #fff;
+}
+
+/* --- Estilos de la Línea de Tiempo (Stepper) --- */
+.timeline-stepper {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 3rem;
+}
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #555; /* Color inactivo */
+    font-weight: bold;
+    transition: color 0.4s ease;
+}
+.step-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #333;
+    border: 2px solid #555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all 0.4s ease;
+}
+.step span {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+.step-line {
+    flex-grow: 1;
+    height: 2px;
+    background: #555;
+    margin: 25px 0.5rem 0 0.5rem; /* Alinear con el centro del icono */
+    transition: background 0.4s ease;
+}
+
+/* Estilos de pasos ACTIVOS o COMPLETADOS */
+.step.active {
+    color: #fff;
+}
+.step.active .step-icon {
+    background: #fff;
+    color: #0a0a0a;
+    border-color: #fff;
+}
+.step.completed .step-icon {
+    background: #4CAF50; /* Verde para completado */
+    color: #fff;
+    border-color: #4CAF50;
+}
+.step.completed + .step-line {
+    background: #4CAF50; /* Línea verde */
+}
+.step.completed {
+    color: #4CAF50;
+}
+
+
+/* --- Contenido del Checkout --- */
+.checkout-content {
+    display: flex;
+    flex-wrap: wrap; /* Para responsive */
+    gap: 2rem;
+}
+
+.order-summary {
+    flex: 1;
+    min-width: 280px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    padding: 1.5rem;
+    border-radius: 8px;
+    height: fit-content; /* Se ajusta al contenido */
+}
+.order-summary h2 {
+    border-bottom: 1px solid #333;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+#summary-items {
+    max-height: 400px;
+    overflow-y: auto;
+}
+.summary-item {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.summary-item-img {
+    width: 60px;
+    height: 60px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 4px;
+}
+.summary-item-info {
+    flex-grow: 1;
+}
+.summary-item-info h4 {
+    font-size: 0.9rem;
+    margin: 0;
+}
+.summary-item-info p {
+    font-size: 0.8rem;
+    color: #aaa;
+}
+.summary-item-price {
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+.summary-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-top: 1px solid #333;
+    padding-top: 1rem;
+    margin-top: 1rem;
+}
+
+.checkout-steps {
+    flex: 2;
+    min-width: 300px;
+}
+
+/* Oculta todos los pasos por defecto */
+.step-content {
+    display: none;
+}
+/* Muestra solo el paso activo */
+.step-content.active {
+    display: block;
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Estilos de Formularios */
+.checkout-form {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    padding: 2rem;
+    border-radius: 8px;
+}
+.form-group {
+    margin-bottom: 1.5rem;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #ccc;
+    font-size: 0.9rem;
+}
+.form-group input {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    background: #333;
+    border: 1px solid #555;
+    color: #fff;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+.form-group-row {
+    display: flex;
+    gap: 1rem;
+}
+.form-group-row .form-group {
+    flex: 1;
+}
+
+.cta-button {
+    display: inline-block;
+    background: #fff;
+    color: #000;
+    padding: 1rem 2.5rem;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 2px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    width: 100%;
+}
+.cta-button:hover {
+    background: #ccc;
+}
+
+/* Mensaje de Confirmación */
+.confirmation-message {
+    text-align: center;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    padding: 3rem 2rem;
+    border-radius: 8px;
+}
+.confirmation-message .fa-check-circle {
+    font-size: 4rem;
+    color: #4CAF50;
+    margin-bottom: 1.5rem;
+}
+.confirmation-message h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+.confirmation-message p {
+    color: #ccc;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+.confirmation-message #tracking-number {
+    font-size: 1.2rem;
+    color: #fff;
+    background: #333;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .checkout-content {
+        flex-direction: column-reverse; /* El resumen va arriba en móvil */
+    }
+    .timeline-stepper {
+        margin: 0 auto 2rem auto;
+        max-width: 350px; /* Evita que se expanda demasiado */
+    }
+    .step span {
+        font-size: 0.8rem;
+    }
+    .step-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    .step-line {
+        margin-top: 20px;
+    }
+}

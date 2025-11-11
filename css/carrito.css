@@ -188,3 +188,13 @@
             clip: rect(0,0,0,0);
             border: 0;
         }
+
+        .cart-item-img {
+        width: 90px;  /* Dale un ancho */
+        height: 90px; /* Dale un alto */
+        background-size: cover;
+        background-position: center;
+        border-radius: 4px;
+        flex-shrink: 0; /* Evita que se encoja */
+        border: 1px solid #333;
+    }
