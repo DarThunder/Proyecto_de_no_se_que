@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Cupones - Admin</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/cupones.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class='bx bx-gift'></i> Gestión de Cupones</h1>
+            <div class="user-info">
+                <span id="username-display">Administrador</span>
+                <button class="logout-btn" onclick="logout()">
+                    <i class='bx bx-log-out'></i> Cerrar Sesión
+                </button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="form-section">
+                <h2>Crear Nuevo Cupón</h2>
+                <div id="alert-message"></div>
+                <form id="cupon-form">
+                    <div class="input-group">
+                        <label for="nombre">Nombre del Cupón</label>
+                        <input type="text" id="nombre" name="nombre" required placeholder="Ej: Descuento Verano">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="descuento">Descuento (%)</label>
+                        <input type="number" id="descuento" name="descuento" min="1" max="100" required placeholder="Ej: 20">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="fecha_expiracion">Fecha de Expiración (Opcional)</label>
+                        <input type="date" id="fecha_expiracion" name="fecha_expiracion">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="usos_maximos">Límite de Usos (Opcional)</label>
+                        <input type="number" id="usos_maximos" name="usos_maximos" min="1" placeholder="Ej: 100">
+                    </div>
+
+                    <button type="submit" class="btn-primary" id="submit-btn">
+                        <i class='bx bx-plus'></i> Crear Cupón
+                    </button>
+                </form>
+            </div>
+
+            <div class="list-section">
+                <div class="section-header">
+                    <h2>Cupones Existentes</h2>
+                    <button class="refresh-btn" onclick="cargarCupones()">
+                        <i class='bx bx-refresh'></i> Actualizar
+                    </button>
+                </div>
+                
+                <div id="cupones-list" class="cupones-grid">
+                    <div class="loading">Cargando cupones...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/cupones.js"></script>
+</body>
+</html>
