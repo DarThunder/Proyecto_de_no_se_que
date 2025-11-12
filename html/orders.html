@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis Compras - Shadow & Stitch</title>
     <link rel="stylesheet" href="../css/styleMain.css">
-    <link rel="stylesheet" href="../css/HistorialC.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/orders.css"> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <!-- HEADER SOLO CON LOGO Y MENÚ -->
+    <audio autoplay preload loop id="Bg_music" src="../sources/audio/Bg_music.mp3"></audio>
+    
     <header class="header">
         <nav class="nav">
             <div class="logo">
@@ -57,7 +57,6 @@
                         </ul>
                     </li>
                 </ul>
-                
                 <div class="menu-footer">
                     <div class="social-icons">
                         <a href="#"><i class="fab fa-instagram"></i></a>
@@ -69,44 +68,34 @@
         </nav>
     </header>
 
-    <!-- CONTENIDO PRINCIPAL CON EL TÍTULO -->
-    <main class="orders-container">
-        <div class="container">
-            <!-- TÍTULO PRINCIPAL DE LA PÁGINA -->
-            <div class="page-header">
-                <h1 class="page-title">MIS COMPRAS</h1>
-                <p class="page-subtitle">Revisa tu historial de compras y los detalles de cada pedido</p>
+    <main class="orders-main">
+        <div class="orders-container">
+            <div class="orders-header">
+                <h1><i class="fas fa-receipt"></i> Mis Compras</h1>
+                <p>Tu historial de pedidos en Shadow & Stitch.</p>
             </div>
 
-            <div class="orders-list" id="ordersList">
-                <!-- Las órdenes se cargarán aquí dinámicamente -->
-                
-            </div>
+            <div class="orders-list-container" id="orders-list">
+                <div class="loading-message" id="loading-message">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Cargando tu historial...</p>
+                </div>
 
-            <div class="no-orders" id="noOrders" style="display: none;">
-                <i class="fas fa-shopping-bag"></i>
-                <h3>Aún no tienes compras</h3>
-                <p>Descubre nuestra colección y realiza tu primera compra</p>
-                <a href="../index.html" class="cta-button">EXPLORAR COLECCIÓN</a>
-            </div>
+                <div class="empty-orders" id="empty-orders-message" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="fas fa-box-open"></i>
+                    </div>
+                    <h2>No tienes pedidos</h2>
+                    <p>Aún no has realizado ninguna compra. ¡Explora nuestros productos!</p>
+                    <a href="../index.html" class="cta-button">Ver Productos</a>
+                </div>
+
+                </div>
         </div>
     </main>
 
-    <!-- Modal para detalles de orden -->
-    <div class="modal" id="orderModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Detalles de la Orden</h2>
-                <button class="close-modal" id="closeModal">&times;</button>
-            </div>
-            <div class="modal-body" id="modalBody">
-                <!-- Los detalles de la orden se cargarán aquí -->
-            </div>
-        </div>
-    </div>
-
     <footer class="footer">
-        <div class="footer-content">
+         <div class="footer-content">
             <div class="footer-section">
                 <h3>SHADOW & STITCH</h3>
                 <p>Tu destino para el estilo urbano auténtico</p>
@@ -130,7 +119,5 @@
         </div>
     </footer>
 
-    <script src="../js/HistorialC.js"></script>
-    <script src="../js/scriptMain.js"></script>
-</body>
+    <script src="../js/orders.js"></script> <script src="../js/scriptMain.js"></script> </body>
 </html>

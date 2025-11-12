@@ -1,0 +1,192 @@
+body {
+    background-color: #0a0a0a;
+}
+
+.orders-main {
+    padding-top: 100px;
+    min-height: 100vh;
+    color: #fff;
+}
+
+.orders-container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.orders-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    border-bottom: 1px solid #333;
+    padding-bottom: 2rem;
+}
+
+.orders-header h1 {
+    font-size: 2.5rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 0.5rem;
+}
+
+.orders-header p {
+    font-size: 1.1rem;
+    color: #aaa;
+}
+
+/* Mensajes de Carga y Vacío */
+.loading-message, .empty-orders {
+    text-align: center;
+    padding: 3rem;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #aaa;
+}
+.loading-message .fa-spinner {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+.empty-orders .empty-icon {
+    font-size: 4rem;
+    color: #555;
+    margin-bottom: 1.5rem;
+}
+.empty-orders h2 {
+    color: #fff;
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+}
+.empty-orders .cta-button {
+    margin-top: 2rem;
+    display: inline-block;
+    width: auto; /* Anula el width: 100% de styleMain */
+}
+
+/* Estilo para cada tarjeta de pedido */
+.order-card {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+    /* Animación de entrada */
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+.order-card-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    background: #222;
+    padding: 1.5rem;
+    gap: 1rem;
+}
+
+.order-info {
+    font-size: 0.9rem;
+    color: #ccc;
+    min-width: 150px; /* Para que no se aprieten mucho */
+}
+.order-info strong {
+    color: #fff;
+    display: block;
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+.order-info span {
+    font-family: monospace;
+    color: #4CAF50; /* Verde para el tracking */
+}
+.order-info a {
+    color: #4CAF50;
+    text-decoration: none;
+    transition: text-decoration 0.3s;
+}
+.order-info a:hover {
+    text-decoration: underline;
+}
+
+.order-status {
+    background: #555;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    text-transform: capitalize;
+}
+/* Colores de estado */
+.order-status.processing { background-color: #f39c12; } /* Naranja */
+.order-status.shipped { background-color: #3498db; } /* Azul */
+.order-status.delivered { background-color: #4CAF50; } /* Verde */
+.order-status.cancelled { background-color: #e74c3c; } /* Rojo */
+
+
+.order-card-body {
+    padding: 1.5rem;
+}
+
+.order-card-body h4 {
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #333;
+    padding-bottom: 0.5rem;
+}
+
+.order-item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.order-item {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.order-item-img {
+    width: 70px;
+    height: 70px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 4px;
+    border: 1px solid #333;
+    flex-shrink: 0;
+}
+
+.order-item-details {
+    flex-grow: 1;
+}
+.order-item-details h5 {
+    font-size: 1rem;
+    color: #fff;
+    margin-bottom: 0.25rem;
+}
+.order-item-details p {
+    font-size: 0.9rem;
+    color: #aaa;
+}
+
+.order-item-price {
+    font-size: 1rem;
+    font-weight: bold;
+    text-align: right;
+    color: #fff;
+}
+.order-item-price span {
+    font-size: 0.9rem;
+    color: #aaa;
+    display: block;
+}

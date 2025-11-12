@@ -8,7 +8,6 @@ import verifyToken from "../middleware/verifyToken.js";
 import hasPermission from "../middleware/hasPermission.js";
 
 // --- RUTA POS (CAJERO) ---
-// (Esta es tu ruta original, la dejamos como estaba)
 router.post("/", verifyToken, hasPermission(1), async (req, res) => {
   const { user, cashier, items, transaction_type, payment_method } = req.body;
 
@@ -59,11 +58,8 @@ router.post("/", verifyToken, hasPermission(1), async (req, res) => {
 });
 
 // --- RUTA CHECKOUT (WEB) ---
-// (Esta es la ruta corregida, con toda la lógica DENTRO del try...catch)
 router.post("/checkout", verifyToken, async (req, res) => {
   try {
-    // 1. Mover la lógica DENTRO del try
-    // Si req.user es undefined (porque el token es malo), el catch lo atrapará
     const userId = req.user.id; 
     const { shipping_address } = req.body;
 
@@ -71,7 +67,6 @@ router.post("/checkout", verifyToken, async (req, res) => {
       return res.status(400).json({ error: "Faltan datos de envío" });
     }
 
-    // 2. Encontrar el carrito del usuario
     const cart = await Cart.findOne({ user: userId }).populate({
       path: "items.variant",
       populate: { path: "product" },
@@ -81,7 +76,6 @@ router.post("/checkout", verifyToken, async (req, res) => {
       return res.status(400).json({ error: "No hay productos en el carrito" });
     }
 
-    // 3. Preparar los items de la venta y verificar stock
     let total = 0;
     const saleItems = [];
     const stockUpdates = [];
@@ -89,7 +83,6 @@ router.post("/checkout", verifyToken, async (req, res) => {
     for (const cartItem of cart.items) {
       const variant = cartItem.variant;
 
-      // Verificación de seguridad
       if (!variant || !variant.product) {
         return res.status(404).json({ error: "Un producto en tu carrito ya no existe."});
       }
@@ -108,16 +101,14 @@ router.post("/checkout", verifyToken, async (req, res) => {
         variant: variant._id,
         quantity: cartItem.quantity,
         unit_price: unit_price,
-        discount_rate: 0, // Implementar cupones aquí si se desea
+        discount_rate: 0, 
       });
 
       total += cartItem.quantity * unit_price;
     }
 
-    // 4. Crear el número de seguimiento (simulado)
     const tracking_number = `SS-${Date.now()}`;
 
-    // 5. Crear la nueva venta (Sale)
     const newSale = new Sale({
       user: userId,
       items: saleItems,
@@ -130,20 +121,17 @@ router.post("/checkout", verifyToken, async (req, res) => {
     });
 
     await newSale.save();
-    await Promise.all(stockUpdates); // Actualizar stock
+    await Promise.all(stockUpdates); 
 
-    // 6. Vaciar el carrito del usuario
     cart.items = [];
     await cart.save();
 
-    // 7. Responder con éxito
     res.status(201).json({
       message: "Pedido realizado exitosamente",
       saleId: newSale._id,
       trackingNumber: newSale.tracking_number,
     });
   } catch (err) {
-    // 8. Si algo falla (incluyendo req.user.id), se envía un error 500
     console.error("Error en /orders/checkout:", err);
     res
       .status(500)
@@ -153,7 +141,6 @@ router.post("/checkout", verifyToken, async (req, res) => {
 
 
 // --- RUTA DE SEGUIMIENTO ---
-// (La dejamos como estaba)
 router.get("/track/:trackingNumber", async (req, res) => {
   try {
     const { trackingNumber } = req.params;
@@ -177,5 +164,36 @@ router.get("/track/:trackingNumber", async (req, res) => {
     res.status(500).json({ error: "Error al buscar el pedido", details: err.message });
   }
 });
+
+// --- ===== NUEVA RUTA: OBTENER MIS COMPRAS ===== ---
+router.get("/my-orders", verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Busca todas las ventas (Sale) que coincidan con el ID del usuario
+    const orders = await Sale.find({ user: userId })
+      .sort({ createdAt: -1 }) // Ordena por más reciente primero
+      .populate({
+        path: "items.variant", // Puebla la variante dentro de los items
+        populate: {
+          path: "product", // Y puebla el producto dentro de la variante
+          model: "Product", // Asegúrate de que el modelo se llama 'Product'
+        },
+      });
+
+    if (!orders) {
+      return res.status(200).json([]); // Devuelve array vacío, no un error
+    }
+
+    res.status(200).json(orders);
+
+  } catch (err) {
+    console.error("Error en /my-orders:", err);
+    res
+      .status(500)
+      .json({ error: "Error al obtener el historial de pedidos", details: err.message });
+  }
+});
+// --- ========================================= ---
 
 export default router;
