@@ -205,41 +205,74 @@ function initializeWishlistButtons() {
         return;
       }
       
-      // Llama a la función de la API
-      await addToWishlist(variantId, this);
+      // Verificamos si el corazón está lleno ('fas') o vacío ('far')
+      const icon = this.querySelector('i');
+      const isWishlisted = icon.classList.contains('fas');
+
+      // Llamamos a la nueva función
+      await toggleWishlistItem(variantId, this, isWishlisted);
     });
   });
 }
 
-// --- NUEVA FUNCIÓN ASÍNCRONA PARA LLAMAR A LA API ---
-async function addToWishlist(variantId, button) {
-  try {
-    const response = await fetch("http://localhost:8080/wishlist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include", // Envía el token de autenticación
-      body: JSON.stringify({ variantId }),
-    });
+async function toggleWishlistItem(variantId, button, isWishlisted) {
+  const heartIcon = button.querySelector('i');
+  
+  if (isWishlisted) {
+    // --- LÓGICA PARA ELIMINAR (DELETE) ---
+    try {
+      const response = await fetch(`http://localhost:8080/wishlist/${variantId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
 
-    if (response.ok) {
-      // Éxito: Cambia el ícono del corazón a "lleno"
-      button.innerHTML = '<i class="fas fa-heart"></i>'; // 'fas' es el corazón lleno
-      button.title = "Añadido a lista de deseos";
-    } else if (response.status === 401 || response.status === 403) {
-      alert("Debes iniciar sesión para añadir a tu lista de deseos.");
-      window.location.href = "html/login.html";
-    } else if (response.status === 400) {
-      // El producto ya está en la lista, solo marca el corazón
-      button.innerHTML = '<i class="fas fa-heart"></i>';
-      button.title = "Ya está en tu lista";
-    } else {
-      throw new Error("Error al añadir a la lista de deseos");
+      if (response.ok) {
+        // Éxito: Cambia el ícono a "vacío"
+        heartIcon.classList.remove('fas');
+        heartIcon.classList.add('far');
+        button.title = "Añadir a lista de deseos";
+      } else if (response.status === 401 || response.status === 403) {
+        alert("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
+        window.location.href = "html/login.html";
+      } else {
+        throw new Error("Error al eliminar de la lista de deseos");
+      }
+    } catch (error) {
+      console.error("Error en toggleWishlistItem (DELETE):", error);
     }
-  } catch (error) {
-    console.error("Error en addToWishlist:", error);
+
+  } else {
+    // --- LÓGICA PARA AÑADIR (POST) ---
+    try {
+      const response = await fetch("http://localhost:8080/wishlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ variantId }),
+      });
+
+      if (response.ok) {
+        // Éxito: Cambia el ícono a "lleno"
+        heartIcon.classList.remove('far');
+        heartIcon.classList.add('fas');
+        button.title = "Eliminar de la lista de deseos";
+      } else if (response.status === 401 || response.status === 403) {
+        alert("Debes iniciar sesión para añadir a tu lista de deseos.");
+        window.location.href = "html/login.html";
+      } else if (response.status === 400) {
+        // El producto ya estaba (por si acaso), solo marca el corazón
+        heartIcon.classList.remove('far');
+        heartIcon.classList.add('fas');
+        button.title = "Ya está en tu lista";
+      } else {
+        throw new Error("Error al añadir a la lista de deseos");
+      }
+    } catch (error) {
+      console.error("Error en toggleWishlistItem (POST):", error);
+    }
   }
 }
-// --- FIN DE NUEVAS FUNCIONES ---
 
 
 // 4. NUEVA FUNCIÓN PARA INICIALIZAR LOS CARRUSELES

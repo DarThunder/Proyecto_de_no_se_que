@@ -222,36 +222,76 @@ function initializeCatWishlistButtons() {
         
         button.addEventListener("click", async function () {
             const variantId = this.dataset.variantId;
-            // Llamamos a la nueva función renombrada
-            await addToWishlistCat(variantId, this);
+            if (!variantId) {
+              console.error("El producto no tiene un ID de variante (data-variant-id).");
+              return;
+            }
+            
+            // Verificamos si el corazón está lleno ('fas') o vacío ('far')
+            const icon = this.querySelector('i');
+            const isWishlisted = icon.classList.contains('fas');
+      
+            // Llamamos a la nueva función
+            await toggleWishlistItemCat(variantId, this, isWishlisted);
         });
     });
 }
 
-// Renombrada de addToWishlist -> addToWishlistCat
-async function addToWishlistCat(variantId, button) {
-    try {
-        const response = await fetch("http://localhost:8080/wishlist", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ variantId }),
+async function toggleWishlistItemCat(variantId, button, isWishlisted) {
+    const heartIcon = button.querySelector('i');
+    
+    if (isWishlisted) {
+      // --- LÓGICA PARA ELIMINAR (DELETE) ---
+      try {
+        const response = await fetch(`http://localhost:8080/wishlist/${variantId}`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
         });
-
+  
         if (response.ok) {
-            button.innerHTML = '<i class="fas fa-heart"></i>';
-            button.title = "Añadido a lista de deseos";
+          // Éxito: Cambia el ícono a "vacío"
+          heartIcon.classList.remove('fas');
+          heartIcon.classList.add('far');
+          button.title = "Añadir a lista de deseos";
         } else if (response.status === 401 || response.status === 403) {
-            alert("Debes iniciar sesión para añadir a tu lista de deseos.");
-            window.location.href = "login.html"; // Ruta relativa desde /html/
-        } else if (response.status === 400) {
-            // El producto ya está en la lista (error 400 'amigable')
-            button.innerHTML = '<i class="fas fa-heart"></i>';
-            button.title = "Ya está en tu lista";
+          alert("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
+          window.location.href = "login.html"; // Ruta correcta desde /html/
         } else {
-            throw new Error("Error al añadir a la lista de deseos");
+          throw new Error("Error al eliminar de la lista de deseos");
         }
-    } catch (error) {
-        console.error("Error en addToWishlistCat:", error);
+      } catch (error) {
+        console.error("Error en toggleWishlistItemCat (DELETE):", error);
+      }
+  
+    } else {
+      // --- LÓGICA PARA AÑADIR (POST) ---
+      try {
+        const response = await fetch("http://localhost:8080/wishlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ variantId }),
+        });
+  
+        if (response.ok) {
+          // Éxito: Cambia el ícono a "lleno"
+          heartIcon.classList.remove('far');
+          heartIcon.classList.add('fas');
+          button.title = "Eliminar de la lista de deseos";
+        } else if (response.status === 401 || response.status === 403) {
+          alert("Debes iniciar sesión para añadir a tu lista de deseos.");
+          window.location.href = "login.html"; // Ruta correcta desde /html/
+        } else if (response.status === 400) {
+          // El producto ya estaba (por si acaso), solo marca el corazón
+          heartIcon.classList.remove('far');
+          heartIcon.classList.add('fas');
+          button.title = "Ya está en tu lista";
+        } else {
+          throw new Error("Error al añadir a la lista de deseos");
+        }
+      } catch (error) {
+        console.error("Error en toggleWishlistItemCat (POST):", error);
+      }
     }
 }
