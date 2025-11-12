@@ -111,7 +111,7 @@ function applyFilters() {
     // Aplicar filtro de Género
     if (selectedGenders.length > 0) {
         filteredProducts = filteredProducts.filter(variant =>
-            variant.product.category && // El campo 'category' tiene 'hombre', 'mujer', etc.
+            variant.product.category && 
             selectedGenders.includes(variant.product.category.toLowerCase())
         );
     }
@@ -126,7 +126,7 @@ function applyFilters() {
 }
 
 
-// --- 10. Función de renderizado (sin cambios) ---
+// --- 10. Función de renderizado (con la corrección de 'class') ---
 function renderProducts(productsToRender) {
     productGrid.innerHTML = ""; // Limpiamos el grid
 
@@ -160,16 +160,19 @@ function renderProducts(productsToRender) {
         productGrid.innerHTML += productCardHTML;
     });
 
-    // RE-INICIALIZAMOS LOS BOTONES
-    initializeProductButtons();
-    initializeWishlistButtons();
+    // --- ¡CAMBIO IMPORTANTE! ---
+    // Llamamos a las NUEVAS funciones renombradas
+    initializeCatProductButtons();
+    initializeCatWishlistButtons();
 }
 
 
-// --- (Funciones de botones - sin cambios) ---
+// --- (Funciones de botones RENOMBRADAS) ---
 
-function initializeProductButtons() {
+// Renombrada de initializeProductButtons -> initializeCatProductButtons
+function initializeCatProductButtons() {
     document.querySelectorAll(".product-grid .product-btn").forEach((button) => {
+        // Previene que se añadan múltiples listeners
         if (button.dataset.listenerAttached) return;
         button.dataset.listenerAttached = true;
 
@@ -211,19 +214,22 @@ function initializeProductButtons() {
     });
 }
 
-function initializeWishlistButtons() {
+// Renombrada de initializeWishlistButtons -> initializeCatWishlistButtons
+function initializeCatWishlistButtons() {
     document.querySelectorAll(".product-grid .wishlist-btn").forEach((button) => {
         if (button.dataset.listenerAttached) return;
         button.dataset.listenerAttached = true;
         
         button.addEventListener("click", async function () {
             const variantId = this.dataset.variantId;
-            await addToWishlist(variantId, this);
+            // Llamamos a la nueva función renombrada
+            await addToWishlistCat(variantId, this);
         });
     });
 }
 
-async function addToWishlist(variantId, button) {
+// Renombrada de addToWishlist -> addToWishlistCat
+async function addToWishlistCat(variantId, button) {
     try {
         const response = await fetch("http://localhost:8080/wishlist", {
             method: "POST",
@@ -239,12 +245,13 @@ async function addToWishlist(variantId, button) {
             alert("Debes iniciar sesión para añadir a tu lista de deseos.");
             window.location.href = "login.html"; // Ruta relativa desde /html/
         } else if (response.status === 400) {
+            // El producto ya está en la lista (error 400 'amigable')
             button.innerHTML = '<i class="fas fa-heart"></i>';
             button.title = "Ya está en tu lista";
         } else {
-            throw new Error("Error al añadir");
+            throw new Error("Error al añadir a la lista de deseos");
         }
     } catch (error) {
-        console.error("Error en addToWishlist:", error);
+        console.error("Error en addToWishlistCat:", error);
     }
 }
