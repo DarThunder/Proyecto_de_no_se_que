@@ -29,6 +29,7 @@ const productSchema = new Schema(
       trim: true,
       enum: ["hombre", "mujer", "unisex"], // Limita las categorías
     },
+    productType: { type: String, required: true, lowercase: true }
     // --- FIN CAMPOS NUEVOS ---
   },
   { timestamps: true }

@@ -1,0 +1,126 @@
+/* css/categoria.css */
+
+/* Contenedor principal de la página */
+.category-page-container {
+    display: grid;
+    /* En móviles, una sola columna */
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    /* Añadimos padding y margen superior para el header fijo */
+    padding: 2rem;
+    margin-top: 100px; /* Ajusta según la altura de tu header */
+}
+
+/* Columna de filtros (Sidebar) */
+.filter-sidebar {
+    background: #1a1a1a;
+    padding: 1.5rem;
+    border: 1px solid #333;
+    border-radius: 8px;
+    height: fit-content; /* Para que no se estire innecesariamente */
+}
+
+.filter-sidebar h2 {
+    font-size: 2rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #fff;
+    padding-bottom: 0.5rem;
+}
+
+.filter-sidebar h3 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.filter-group {
+    margin-bottom: 2rem;
+}
+
+.filter-group h4 {
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    color: #ccc;
+}
+
+.filter-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.filter-btn {
+    background: #333;
+    color: #fff;
+    border: 1px solid #555;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    border-radius: 4px;
+}
+
+.filter-btn:hover, .filter-btn.active {
+    background: #fff;
+    color: #000;
+}
+
+.filter-options.colors {
+    gap: 0.8rem;
+}
+
+.filter-color {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 2px solid #555;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.filter-color:hover, .filter-color.active {
+    transform: scale(1.1);
+    border: 2px solid #fff;
+}
+
+.filter-price-slider {
+    width: 100%;
+    margin-top: 1rem;
+}
+
+.price-range-display {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    color: #ccc;
+}
+
+/* Columna de productos (Grid) */
+.product-grid-area {
+    width: 100%;
+}
+
+.product-grid {
+    display: grid;
+    /* 2 columnas en tablet, 3 en desktop */
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Reutilizamos el estilo .product-card de styleMain.css
+  Si no lo encuentra, copia los estilos de .product-card 
+  de styleMain.css y pégalos aquí.
+*/
+
+
+/* Media Query para Desktop (cuando la pantalla sea > 992px) */
+@media (min-width: 992px) {
+    .category-page-container {
+        /* 2 columnas: 300px para filtros, 1fr para el resto */
+        grid-template-columns: 300px 1fr;
+    }
+}

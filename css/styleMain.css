@@ -368,7 +368,7 @@ body {
     font-size: 1.1rem;
 }
 
-.categories-grid, .products-grid {
+.categories-grid{
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 2rem;
@@ -494,7 +494,7 @@ body {
         font-size: 2.5rem;
     }
     
-    .categories-grid, .products-grid {
+    .categories-grid {
         grid-template-columns: 1fr;
         padding: 1rem;
     }
@@ -618,4 +618,64 @@ body {
 /* Este estilo se aplica cuando el JS cambia el ícono a 'fas' (lleno) */
 .wishlist-btn .fas.fa-heart {
     color: #e74c3c; /* Color rojo para el corazón lleno */
+}
+
+/* --- Estilos para Swiper.js --- */
+
+/* 1. Contenedor principal del carrusel */
+.swiper {
+  width: 100%;
+  padding: 20px 0;
+  margin-bottom: 30px;
+}
+
+/* 2. Slides del carrusel */
+.swiper-slide {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 480px;
+}
+
+/* 3. Botones de navegación (flechas) */
+.swiper-button-next,
+.swiper-button-prev {
+  --swiper-navigation-color: #ffffff;
+  opacity: 0.95;
+  transition: all 0.3s ease;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  width: 120px; /* ⬅️ Aumentado el tamaño del círculo */
+  height: 70px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Flechas más grandes y gruesas */
+.swiper-button-next::after,
+.swiper-button-prev::after {
+  font-size: 34px;  /* ⬅️ Tamaño del ícono aumentado */
+  font-weight: 900;
+}
+
+/* Hover más vistoso */
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+  background: rgba(255, 255, 255, 0.85);
+  --swiper-navigation-color: #000;
+  transform: scale(1.15);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+}
+
+/* 4. Paginación (bullets) */
+.swiper-pagination-bullet {
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 1;
+}
+
+.swiper-pagination-bullet-active {
+  background: #fff;
 }

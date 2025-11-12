@@ -6,6 +6,8 @@
     <title>Shadow & Stitch - Tienda de Ropa Urbana</title>
     <link rel="stylesheet" href="css/styleMain.css"> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
 </head>
 <body>
     <audio autoplay preload loop id="Bg_music" src="sources/audio/Bg_music.mp3"></audio>
@@ -87,32 +89,32 @@
         </div>
         <div class="categories-grid">
             <div class="category-card">
-                <div class="category-image">
-                    <img src="sources/img/pantalones.jpg" alt="Pantalones" onerror="this.style.display='none'">
-                </div>
-                <h3>PANTALONES</h3>
-                <a href="#" class="category-link">VER MÁS</a>
+    <div class="category-image">
+        <img src="sources/img/pantalones.jpg" alt="Pantalones" onerror="this.style.display='none'">
+    </div>
+    <h3>PANTALONES</h3>
+    <a href="html/categoria.html?tipo=pantalones" class="category-link">VER MÁS</a>
             </div>
             <div class="category-card">
                 <div class="category-image">
                     <img src="sources/img/shorts.jpg" alt="Shorts" onerror="this.style.display='none'">
                 </div>
                 <h3>SHORTS</h3>
-                <a href="#" class="category-link">VER MÁS</a>
+                <a href="html/categoria.html?tipo=shorts" class="category-link">VER MÁS</a>
             </div>
             <div class="category-card">
                 <div class="category-image">
                     <img src="sources/img/camisa.jpg" alt="Camisas" onerror="this.style.display='none'">
                 </div>
                 <h3>CAMISAS</h3>
-                <a href="#" class="category-link">VER MÁS</a>
+                <a href="html/categoria.html?tipo=camisas" class="category-link">VER MÁS</a>
             </div>
             <div class="category-card">
                 <div class="category-image">
                     <img src="sources/img/hoodie.jpg" alt="Hoodies" onerror="this.style.display='none'">
                 </div>
                 <h3>HOODIES</h3>
-                <a href="#" class="category-link">VER MÁS</a>
+                <a href="html/categoria.html?tipo=hoodie" class="category-link">VER MÁS</a>
             </div>
         </div>
     </section>
@@ -122,7 +124,12 @@
             <h2>COLECCIÓN HOMBRE</h2>
             <p>Estilo urbano para él</p>
         </div>
-        <div class="products-grid" id="productos-hombre-container"> 
+        <div class="swiper" id="swiper-hombre">
+            <div class="swiper-wrapper" id="productos-hombre-container">
+                </div>
+            <div class="swiper-button-next"></div>
+            <div class="swiper-button-prev"></div>
+            <div class="swiper-pagination"></div>
         </div>
     </section>
 
@@ -131,7 +138,12 @@
             <h2>COLECCIÓN MUJER</h2>
             <p>Actitud y estilo para ella</p>
         </div>
-        <div class="products-grid" id="productos-mujer-container">
+        <div class="swiper" id="swiper-mujer">
+            <div class="swiper-wrapper" id="productos-mujer-container">
+                </div>
+            <div class="swiper-button-next"></div>
+            <div class="swiper-button-prev"></div>
+            <div class="swiper-pagination"></div>
         </div>
     </section>
 
@@ -163,6 +175,7 @@
             </div>
         </footer>
 
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
     <script src="js/scriptMain.js"></script>
 </body>
 </html>

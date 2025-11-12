@@ -58,14 +58,19 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
   });
+  
+  if (document.querySelector("#productos-hombre-container")) {
+      loadProducts();
+    }
+    
+    setupScrollEffects();
+  });
 
-  loadProducts();
-  setupScrollEffects();
-});
 
 async function loadProducts() {
-  const menGrid = document.querySelector(".men-section .products-grid");
-  const womenGrid = document.querySelector(".women-section .products-grid");
+  // 1. APUNTAMOS A LOS NUEVOS CONTENEDORES (swiper-wrapper)
+  const menGrid = document.querySelector("#productos-hombre-container");
+  const womenGrid = document.querySelector("#productos-mujer-container");
 
   if (!menGrid || !womenGrid) {
     console.error("No se encontraron los contenedores de productos.");
@@ -80,44 +85,50 @@ async function loadProducts() {
 
     const variants = await response.json();
 
-    menGrid.innerHTML = "";
-    womenGrid.innerHTML = "";
+    let menHTML = "";
+    let womenHTML = "";
 
     variants.forEach((variant) => {
       const product = variant.product;
       if (!product) return; // Si un producto se borró pero la variante no
 
-      // --- CORRECCIÓN DE IMAGEN ---
-      // La página index.html está en la raíz, por lo que la ruta es directa
       const imageUrl = product.image_url || 'sources/img/logo_negro.png';
 
+      // 2. ENVOLVEMOS LA TARJETA EN <div class="swiper-slide">
       const productCardHTML = `
-        <div class="product-card">
-            <button class="wishlist-btn" data-variant-id="${variant._id}" title="Añadir a lista de deseos">
-                <i class="far fa-heart"></i> </button>
-            
-            <div class="product-image" style="background-image: url('${imageUrl}'); background-size: cover; background-position: center;">
+        <div class="swiper-slide">
+            <div class="product-card">
+                <button class="wishlist-btn" data-variant-id="${variant._id}" title="Añadir a lista de deseos">
+                    <i class="far fa-heart"></i> </button>
+                
+                <div class="product-image" style="background-image: url('${imageUrl}'); background-size: cover; background-position: center;">
+                </div>
+                
+                <h3>${product.name.toUpperCase()} (${variant.size})</h3>
+                <p>$${product.base_price.toFixed(2)} MXN</p>
+                
+                <button class="product-btn" data-variant-id="${variant._id}">
+                    AGREGAR AL CARRITO
+                </button>
             </div>
-            
-            <h3>${product.name.toUpperCase()} (${variant.size})</h3>
-            <p>$${product.base_price.toFixed(2)} MXN</p>
-            
-            <button class="product-btn" data-variant-id="${variant._id}">
-                AGREGAR AL CARRITO
-            </button>
         </div>
       `;
 
-      // --- CORRECCIÓN DE CATEGORÍA ---
       if (product.category === "hombre") {
-        menGrid.innerHTML += productCardHTML;
+        menHTML += productCardHTML;
       } else if (product.category === "mujer") {
-        womenGrid.innerHTML += productCardHTML;
+        womenHTML += productCardHTML;
       } else if (product.category === "unisex") {
-        menGrid.innerHTML += productCardHTML;
-        womenGrid.innerHTML += productCardHTML;
+        menHTML += productCardHTML;
+        womenHTML += productCardHTML;
       }
     });
+
+    menGrid.innerHTML = menHTML;
+    womenGrid.innerHTML = womenHTML;
+
+    // 3. INICIALIZAMOS LOS CARRUSELES DESPUÉS DE CARGAR EL HTML
+    initializeCarousels();
 
     initializeProductButtons();
     initializeWishlistButtons(); // <-- LLAMADA A LA NUEVA FUNCIÓN
@@ -229,6 +240,60 @@ async function addToWishlist(variantId, button) {
   }
 }
 // --- FIN DE NUEVAS FUNCIONES ---
+
+
+// 4. NUEVA FUNCIÓN PARA INICIALIZAR LOS CARRUSELES
+function initializeCarousels() {
+  const swiperHombre = new Swiper('#swiper-hombre', {
+    loop: true,
+    slidesPerView: 1, // 1 slide en móvil
+    spaceBetween: 30,
+    pagination: {
+      el: '#swiper-hombre .swiper-pagination',
+      clickable: true,
+    },
+    navigation: {
+      nextEl: '#swiper-hombre .swiper-button-next',
+      prevEl: '#swiper-hombre .swiper-button-prev',
+    },
+    breakpoints: {
+      // > 640px
+      640: {
+        slidesPerView: 2,
+        spaceBetween: 20,
+      },
+      // > 1024px
+      1024: {
+        slidesPerView: 3,
+        spaceBetween: 30,
+      },
+    }
+  });
+  
+  const swiperMujer = new Swiper('#swiper-mujer', {
+    loop: true,
+    slidesPerView: 1, // 1 slide en móvil
+    spaceBetween: 30,
+    pagination: {
+      el: '#swiper-mujer .swiper-pagination',
+      clickable: true,
+    },
+    navigation: {
+      nextEl: '#swiper-mujer .swiper-button-next',
+      prevEl: '#swiper-mujer .swiper-button-prev',
+    },
+    breakpoints: {
+      640: {
+        slidesPerView: 2,
+        spaceBetween: 20,
+      },
+      1024: {
+        slidesPerView: 3,
+        spaceBetween: 30,
+      },
+    }
+  });
+}
 
 
 function setupScrollEffects() {
