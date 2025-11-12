@@ -99,10 +99,13 @@ async function loadProducts() {
         <div class="swiper-slide">
             <div class="product-card">
                 <button class="wishlist-btn" data-variant-id="${variant._id}" title="Añadir a lista de deseos">
-                    <i class="far fa-heart"></i> </button>
+                    <i class="far fa-heart"></i> 
+                </button>
                 
-                <div class="product-image" style="background-image: url('${imageUrl}'); background-size: cover; background-position: center;">
-                </div>
+                <a href="html/producto.html?id=${variant._id}">
+                  <div class="product-image" style="background-image: url('${imageUrl}'); background-size: cover; background-position: center;">
+                  </div>
+                </a>
                 
                 <h3>${product.name.toUpperCase()} (${variant.size})</h3>
                 <p>$${product.base_price.toFixed(2)} MXN</p>

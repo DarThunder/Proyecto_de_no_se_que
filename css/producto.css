@@ -1,0 +1,138 @@
+/* css/producto.css */
+
+.product-detail-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    /* Margen superior para el header fijo */
+    margin-top: 120px;
+    padding: 2rem;
+    display: grid;
+    /* 1 columna en móvil */
+    grid-template-columns: 1fr;
+    gap: 2rem;
+}
+
+.product-image-column img {
+    width: 100%;
+    max-width: 500px; /* Evita que sea gigante */
+    height: auto;
+    border: 1px solid #333;
+    background-color: #1a1a1a;
+    border-radius: 8px;
+    margin: 0 auto;
+    display: block;
+}
+
+.product-info-column h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 1rem;
+}
+
+.product-info-column .price {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #fff; /* O un color de acento */
+    margin-bottom: 2rem;
+}
+
+.product-options {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    align-items: center;
+}
+
+.option-group {
+    font-size: 1.1rem;
+}
+
+.option-group label {
+    color: #ccc;
+    margin-right: 0.5rem;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+
+.size-display {
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+}
+
+#quantity-input {
+    width: 60px;
+    padding: 0.5rem;
+    background: #333;
+    color: #fff;
+    border: 1px solid #555;
+    border-radius: 4px;
+    font-size: 1rem;
+    text-align: center;
+}
+
+/* Reutilizamos .cta-button de styleMain.css */
+#add-to-cart-btn {
+    width: 100%;
+    padding: 1.2rem 2rem;
+    font-size: 1.1rem;
+    background: #fff;
+    color: #000;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#add-to-cart-btn:hover {
+    background: #ccc;
+}
+
+/* Estado de carga o éxito */
+#add-to-cart-btn.loading {
+    background: #555;
+    cursor: not-allowed;
+}
+#add-to-cart-btn.success {
+    background: #4CAF50; /* Verde */
+}
+
+.product-description {
+    margin-top: 2rem;
+    border-top: 1px solid #333;
+    padding-top: 2rem;
+}
+
+.product-description h3 {
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+
+.product-description p {
+    color: #ccc;
+    line-height: 1.7;
+}
+
+/* Media Query para 2 columnas en Desktop */
+@media (min-width: 768px) {
+    .product-detail-container {
+        /* 2 columnas */
+        grid-template-columns: 1fr 1fr;
+        gap: 3rem;
+    }
+
+    .product-image-column {
+        /* Se alinea solo (grid) */
+        margin: 0;
+    }
+}

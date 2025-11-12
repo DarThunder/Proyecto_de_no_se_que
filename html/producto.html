@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Producto - Shadow & Stitch</title>
+    <link rel="stylesheet" href="../css/styleMain.css"> 
+    
+    <link rel="stylesheet" href="../css/producto.css"> 
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">
+                <a href="../index.html" style="text-decoration: none; color: #fff;">
+                    <h1>SHADOW & STITCH</h1>
+                </a>
+            </div>
+            <div class="hamburger-menu">
+                <div class="hamburger-icon"><span></span><span></span><span></span></div>
+            </div>
+            <div class="mobile-menu">
+                <div class="menu-header"><h3>S&S</h3></div>
+                <ul class="mobile-nav-links">
+                    <li><a href="../index.html"><i class="fas fa-home"></i> Inicio</a></li>
+                    <li><a href="../index.html#categorias"><i class="fas fa-th-large"></i> Categorías</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle"><i class="fas fa-user"></i> Cuenta <i class="fas fa-chevron-down dropdown-arrow"></i></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="login.html" class="dropdown-link">Iniciar Sesión</a></li>
+                            <li><a href="CrearCuenta.html" class="dropdown-link">Crear Cuenta</a></li>
+                        </ul>
+                    </li>
+                    <li><a href="carrito.html"><i class="fas fa-shopping-bag"></i> Carrito</a></li>
+                    <li><a href="Listadeseos.html"><i class="fas fa-heart"></i> Lista de Deseos</a></li>
+                    <li><a href="seguimiento.html"><i class="fas fa-route"></i> Seguimiento</a></li>
+                    <li><a href="orders.html"><i class="fas fa-receipt"></i> Mis Compras</a></li>
+                    <li><a href="../index.html#nuevo"><i class="fas fa-star"></i> Nuevo</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle"><i class="fas fa-star"></i> Reseñas <i class="fas fa-chevron-down dropdown-arrow"></i></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="misreseñas.html" class="dropdown-link">Mis Reseñas</a></li>
+                            <li><a href="reseñaUser.html" class="dropdown-link">Crear Reseña</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <div class="menu-footer">
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-tiktok"></i></a>
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="product-detail-container">
+        
+        <div class="product-image-column">
+            <img id="product-main-image" src="../sources/img/logo_negro.png" alt="Producto">
+        </div>
+
+        <div class="product-info-column">
+            <h1 id="product-name">Cargando...</h1>
+            <p class="price" id="product-price">$0.00</p>
+            
+            <div class="product-options">
+                <div class="option-group">
+                    <label>Talla:</label>
+                    <span id="product-size" class="size-display"></span> 
+                </div>
+
+                <div class="option-group">
+                    <label for="quantity-input">Cantidad:</label>
+                    <input type="number" id="quantity-input" value="1" min="1" max="10">
+                </div>
+            </div>
+            
+            <button id="add-to-cart-btn" class="cta-button">
+                <i class="fas fa-shopping-bag"></i> Agregar al Carrito
+            </button>
+            
+            <div class="product-description">
+                <h3>Descripción</h3>
+                <p id="product-description">Cargando descripción...</p>
+            </div>
+        </div>
+
+    </main>
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section"><h3>SHADOW & STITCH</h3></div>
+            <div class="footer-section">
+                <h4>ENLACES RÁPIDOS</h4>
+                <ul>
+                    <li><a href="../index.html#inicio">Inicio</a></li>
+                    <li><a href="../index.html#categorias">Categorías</a></li>
+                    <li><a href="../index.html#nuevo">Nuevo</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>CONTACTO</h4>
+                <p>info@shadowstitch.com</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Shadow & Stitch. Todos los derechos reservados.</p>
+        </div>
+    </footer>
+
+    <script src="../js/scriptMain.js"></script>
+    <script src="../js/producto.js"></script>
+</body>
+</html>
