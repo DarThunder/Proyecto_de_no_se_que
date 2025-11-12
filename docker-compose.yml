@@ -1,37 +1,38 @@
-version: "3.8"
+  version: "3.8"
 
-services:
-  mongo:
-    image: mongo:6.0
-    container_name: ropadb_mongo_container
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: tu_password_segura
-    ports:
-      - "27017:27017"
-    command: mongod --bind_ip 0.0.0.0
-    volumes:
-      - mongo_data:/data/db
-      - ./backend/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
+  services:
+    mongo:
+      image: mongo:6.0
+      container_name: ropadb_mongo_container
+      restart: always
+      environment:
+        MONGO_INITDB_ROOT_USERNAME: admin
+        MONGO_INITDB_ROOT_PASSWORD: tu_password_segura
+      ports:
+        - "27017:27017"
+      command: mongod --bind_ip 0.0.0.0
+      volumes:
+        - mongo_data:/data/db
+        - ./backend/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
+        - ./backend/product-data.js:/docker-entrypoint-initdb.d/product-data.js
 
-  backend:
-    build: ./backend
-    container_name: ropa_backend_node_container
-    restart: always
-    ports:
-      - "8080:8080"
-    depends_on:
-      - mongo
-    environment:
-      PORT: 8080
-      MONGODB_URI: "mongodb://admin:tu_password_segura@mongo:27017/ropadb?authSource=admin"
-      JWT_SECRET: "ArZfGtW9yVnnJV9Yf1f5zeSLlqIzCLRGD2XmjgkeF8fQhKVtyaB7x34SWv07U0p2"
-      JWT_SECRET_RESET: "823eb664c46a94959b92028de092c3a2670aaf3512e8d439c5e768ec58129181bc7e931ca2aab4599f6a8ad49f61a1fbce6c83fa2ae9b5a01ffc7fec4b11ae7d"
-      NODE_ENV: "testing"
-      EMAIL_HOST_USER: "tu_correo_electronico@gmail.com"
-      EMAIL_HOST_PASSWORD: "tu_contraseña_de_aplicacion"
-      EMAIL_SERVICE: "Gmail"
+    backend:
+      build: ./backend
+      container_name: ropa_backend_node_container
+      restart: always
+      ports:
+        - "8080:8080"
+      depends_on:
+        - mongo
+      environment:
+        PORT: 8080
+        MONGODB_URI: "mongodb://admin:tu_password_segura@mongo:27017/ropadb?authSource=admin"
+        JWT_SECRET: "ArZfGtW9yVnnJV9Yf1f5zeSLlqIzCLRGD2XmjgkeF8fQhKVtyaB7x34SWv07U0p2"
+        JWT_SECRET_RESET: "823eb664c46a94959b92028de092c3a2670aaf3512e8d439c5e768ec58129181bc7e931ca2aab4599f6a8ad49f61a1fbce6c83fa2ae9b5a01ffc7fec4b11ae7d"
+        NODE_ENV: "testing"
+        EMAIL_HOST_USER: "tu_correo_electronico@gmail.com"
+        EMAIL_HOST_PASSWORD: "tu_contraseña_de_aplicacion"
+        EMAIL_SERVICE: "Gmail"
 
-volumes:
-  mongo_data:
+  volumes:
+    mongo_data:

@@ -2,7 +2,7 @@ const db = db.getSiblingDB("ropadb");
 
 db.createCollection("coupons");
 
-// Cuponcillo por defecto - Buen Fin
+// --- Lógica de Cupones (sin cambios) ---
 let cuponBuenFin = {
   name: "Buen Fin 2024",
   discount: 20,
@@ -14,8 +14,6 @@ let cuponBuenFin = {
   createdAt: new Date(),
   updatedAt: new Date(),
 };
-
-// Cupón de temporada jejejej
 let cuponVerano = {
   name: "Descuento de Verano",
   discount: 15,
@@ -27,117 +25,62 @@ let cuponVerano = {
   createdAt: new Date(),
   updatedAt: new Date(),
 };
-
-// Cupón para nuevos clientes
 let cuponBienvenida = {
   name: "Bienvenida Nuevos Clientes",
   discount: 10,
   code: "BIENVENIDA10",
   active: true,
-  expiration_date: null, // Sin fecha de expiración
-  maximum_uses: null, // Sin límite de usos w
+  expiration_date: null,
+  maximum_uses: null,
   actual_uses: 0,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
-
 db.coupons.insertMany([cuponBuenFin, cuponVerano, cuponBienvenida]);
-print("Insertando productos y variantes de prueba...");
 
-// 1. Insertar los productos base primero
-db.products.insertMany([
-  {
-    name: "Hoodie Clásica",
-    base_price: 799.0,
-    description: "Hoodie de algodón grueso, cómoda y duradera.",
-    image_url: "sources/img/hoodie.jpg", // <--- NUEVO
-    category: "hombre", // <--- NUEVO
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    name: "Pantalón Cargo",
-    base_price: 650.5,
-    description: "Pantalón estilo cargo con múltiples bolsillos.",
-    image_url: "sources/img/pantalones.jpg", // <--- NUEVO
-    category: "hombre", // <--- NUEVO
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    name: "Camiseta Básica",
-    base_price: 350.0,
-    description: "Camiseta de algodón suave, corte regular.",
-    image_url: "sources/img/camisa.jpg", // <--- NUEVO
-    category: "mujer", // <--- NUEVO
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }
-]);
+// --- ===== INICIO DE LA NUEVA LÓGICA DE PRODUCTOS ===== ---
+print("Cargando datos de productos desde product-data.js...");
 
-// 2. Obtener los IDs de los productos que acabamos de crear
-const hoodie = db.products.findOne({ name: "Hoodie Clásica" });
-const pantalon = db.products.findOne({ name: "Pantalón Cargo" });
-const camiseta = db.products.findOne({ name: "Camiseta Básica" });
+// ===== CORRECCIÓN AQUÍ =====
+// Especifica la ruta absoluta dentro del contenedor
+load('/docker-entrypoint-initdb.d/product-data.js'); 
 
-// 3. Insertar las variantes para cada producto, usando sus IDs
-if (hoodie) {
-  db.productvariants.insertMany([
-    {
-      product: hoodie._id,
-      size: "M",
-      sku: "HOOD-CLA-M",
-      stock: 50,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      product: hoodie._id,
-      size: "L",
-      sku: "HOOD-CLA-L",
-      stock: 30,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+if (typeof productsToInsert === 'undefined') {
+  print("ERROR: No se pudo cargar la variable 'productsToInsert' desde product-data.js.");
+} else {
+  print(`Encontrados ${productsToInsert.length} productos para insertar.`);
+  
+  productsToInsert.forEach(productData => {
+    const variantsData = productData.variants;
+    delete productData.variants; 
+
+    productData.createdAt = new Date();
+    productData.updatedAt = new Date();
+
+    const insertResult = db.products.insertOne(productData);
+    const newProductId = insertResult.insertedId;
+
+    if (newProductId) {
+      const variantsToInsert = variantsData.map(variant => {
+        return {
+          ...variant,
+          product: newProductId, 
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+      });
+      db.productvariants.insertMany(variantsToInsert);
+      print(`Producto '${productData.name}' y sus ${variantsToInsert.length} variantes insertados.`);
+    } else {
+      print(`ERROR: No se pudo insertar el producto '${productData.name}'.`);
     }
-  ]);
-}
-
-if (pantalon) {
-  db.productvariants.insertOne({
-    product: pantalon._id,
-    size: "M", // <-- CORREGIDO: "32" cambiado a "M"
-    sku: "PANT-CAR-M", // <-- CORREGIDO: SKU actualizado
-    stock: 40,
-    createdAt: new Date(),
-    updatedAt: new Date(),
   });
+  print("¡Todos los productos y variantes fueron insertados exitosamente!");
 }
-
-if (camiseta) {
-  db.productvariants.insertMany([
-    {
-      product: camiseta._id,
-      size: "S",
-      sku: "CAMI-BAS-S",
-      stock: 100,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    {
-      product: camiseta._id,
-      size: "M",
-      sku: "CAMI-BAS-M",
-      stock: 120,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
-  ]);
-}
-
-print("¡Productos y variantes insertados exitosamente!");
+// --- ===== FIN DE LA NUEVA LÓGICA DE PRODUCTOS ===== ---
 
 
-
+// --- Lógica de Roles y Usuarios (sin cambios) ---
 db.roles.insertMany([
   {
     name: "admin",
@@ -164,7 +107,7 @@ const cashierRole = db.roles.findOne({ name: "cashier" });
 const userRole = db.roles.findOne({ name: "user" });
 
 const samplePasswordHash =
-  "$2b$10$zNZEVbIXGs84eNZS3VmVyO/IPeoglQ9Jc90muzjRms/SwWQPBjHay"; // este es el hash de la contraseña: password123
+  "$2b$10$zNZEVbIXGs84eNZS3VmVyO/IPeoglQ9Jc90muzjRms/SwWQPBjHay"; // hash de: password123
 
 if (adminRole && cashierRole && userRole) {
   db.users.insertMany([
