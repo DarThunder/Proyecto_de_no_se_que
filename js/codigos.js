@@ -1,76 +1,117 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const productNameInput = document.getElementById('productName');
+    const productSelect = document.getElementById('productSelect');
     const generateBtn = document.getElementById('generateBtn');
     const printBtn = document.getElementById('printBtn');
     const backBtn = document.getElementById('backBtn');
+    const refreshBtn = document.getElementById('refreshBtn');
     const barcodeResult = document.getElementById('barcodeResult');
     const productDisplay = document.getElementById('productDisplay');
+    const productDetails = document.getElementById('productDetails');
     const barcodeText = document.getElementById('barcodeText');
-    const recentProductsList = document.getElementById('recentProductsList');
+    const loadingSection = document.getElementById('loadingSection');
     const barcodeSvg = document.getElementById('barcode');
     
-    // Almacenar productos recientes
-    let recentProducts = JSON.parse(localStorage.getItem('recentProducts')) || [];
-    updateRecentProductsList();
-    
+    let products = [];
+    let selectedProduct = null;
+
+    // Cargar productos al iniciar
+    loadProducts();
+
+    // Función para cargar productos desde la API
+    async function loadProducts() {
+        showLoading(true);
+        try {
+            const response = await fetch('http://localhost:8080/products');
+            
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+            
+            const variants = await response.json();
+            
+            // Procesar las variantes de productos
+            products = variants.map(variant => ({
+                id: variant._id,
+                name: variant.product?.name || 'Producto sin nombre',
+                base_price: variant.product?.base_price || 0,
+                description: variant.product?.description || '',
+                category: variant.product?.category || 'unisex',
+                size: variant.size,
+                sku: variant.sku,
+                stock: variant.stock,
+                image_url: variant.product?.image_url || 'sources/img/logo_negro.png'
+            }));
+            
+            updateProductSelect();
+            
+        } catch (error) {
+            console.error('Error cargando productos:', error);
+            alert('Error al cargar los productos: ' + error.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    // Actualizar el select de productos
+    function updateProductSelect() {
+        productSelect.innerHTML = '<option value="">-- Selecciona un producto --</option>';
+        
+        products.forEach(product => {
+            const option = document.createElement('option');
+            option.value = product.id;
+            option.textContent = `${product.name} - ${product.size} (SKU: ${product.sku}) - $${product.base_price.toFixed(2)}`;
+            productSelect.appendChild(option);
+        });
+    }
+
+    // Seleccionar producto
+    function selectProduct(product) {
+        selectedProduct = product;
+        productSelect.value = product.id;
+        generateBarcode(product);
+    }
+
     // Función hash simple para convertir texto a valor numérico consistente
     function stringToConsistentNumber(str) {
-        // Convertir a minúsculas para hacerlo case-insensitive
         str = str.toLowerCase();
         
         let hash = 0;
         for (let i = 0; i < str.length; i++) {
             const char = str.charCodeAt(i);
             hash = ((hash << 5) - hash) + char;
-            hash = hash & hash; // Convertir a entero de 32 bits
+            hash = hash & hash;
         }
         
-        // Asegurarse de que el número sea positiva
         hash = Math.abs(hash);
         
-        // Convertir a cadena y asegurar que tenga al menos 8 dígitos
         let numericString = hash.toString();
         while (numericString.length < 8) {
             numericString = '0' + numericString;
         }
         
-        // Limitar a 12 dígitos para formato estándar
         return numericString.substring(0, 12);
     }
-    
-    // Generar código de barras cuando se hace clic en el botón
-    generateBtn.addEventListener('click', function() {
-        const productName = productNameInput.value.trim();
-        
-        if (!productName) {
-            alert('Por favor, ingresa un nombre de producto');
+
+    // Función para generar el código de barras
+    function generateBarcode(product) {
+        if (!product) {
+            alert('Por favor, selecciona un producto');
             return;
         }
-        
-        generateBarcode(productName);
-        
-        // Guardar en productos recientes (sin duplicados, usando minúsculas para comparar)
-        const productNameLower = productName.toLowerCase();
-        const exists = recentProducts.some(product => product.toLowerCase() === productNameLower);
-        
-        if (!exists) {
-            recentProducts.unshift(productName);
-            // Mantener solo los últimos 5 productos
-            if (recentProducts.length > 5) {
-                recentProducts = recentProducts.slice(0, 5);
-            }
-            localStorage.setItem('recentProducts', JSON.stringify(recentProducts));
-            updateRecentProductsList();
-        }
-    });
-    
-    // Función para generar el código de barras
-    function generateBarcode(productName) {
+
         // Convertir el nombre del producto a un código numérico consistente
-        const barcodeValue = stringToConsistentNumber(productName);
+        const barcodeValue = stringToConsistentNumber(product.name + product.sku);
         
-        // Mostrar el nombre del producto
-        productDisplay.textContent = productName;
+        // Mostrar información del producto
+        productDisplay.textContent = product.name;
+        productDetails.innerHTML = `
+            <div class="product-info-detail">
+                <strong>SKU:</strong> ${product.sku} | 
+                <strong>Talla:</strong> ${product.size} | 
+                <strong>Precio:</strong> $${product.base_price.toFixed(2)} | 
+                <strong>Stock:</strong> ${product.stock}
+            </div>
+        `;
         
         // Limpiar SVG anterior
         barcodeSvg.innerHTML = '';
@@ -87,107 +128,99 @@ document.addEventListener('DOMContentLoaded', function() {
             background: "#ffffff"
         });
         
-        // Asegurar que el SVG tenga los atributos correctos para impresión
         barcodeSvg.setAttribute('style', 'display: block; background: white;');
-        
-        // Mostrar el valor del código de barras
         barcodeText.textContent = `Código: ${barcodeValue}`;
-        
-        // Mostrar la sección de resultados
         barcodeResult.classList.remove('hidden');
     }
-    
-    // Actualizar la lista de productos recientes
-    function updateRecentProductsList() {
-        recentProductsList.innerHTML = '';
-        recentProducts.forEach(product => {
-            const productTag = document.createElement('span');
-            productTag.className = 'product-tag';
-            productTag.textContent = product;
-            productTag.addEventListener('click', function() {
-                productNameInput.value = product;
+
+    // Mostrar/ocultar loading
+    function showLoading(show) {
+        if (show) {
+            loadingSection.classList.remove('hidden');
+        } else {
+            loadingSection.classList.add('hidden');
+        }
+    }
+
+    // Event Listeners
+    generateBtn.addEventListener('click', function() {
+        if (productSelect.value) {
+            const product = products.find(p => p.id === productSelect.value);
+            if (product) {
                 generateBarcode(product);
-            });
-            recentProductsList.appendChild(productTag);
+            }
+        } else {
+            alert('Por favor, selecciona un producto de la lista');
+        }
+    });
+
+    productSelect.addEventListener('change', function() {
+        if (this.value) {
+            const product = products.find(p => p.id === this.value);
+            if (product) {
+                selectProduct(product);
+            }
+        } else {
+            selectedProduct = null;
+            barcodeResult.classList.add('hidden');
+        }
+    });
+
+    printBtn.addEventListener('click', function() {
+        if (!selectedProduct) {
+            alert('No hay ningún producto seleccionado para imprimir');
+            return;
+        }
+        
+        applyPrintStyles();
+        setTimeout(() => {
+            window.print();
+            setTimeout(restoreNormalStyles, 500);
+        }, 100);
+    });
+
+    function applyPrintStyles() {
+        const barcodeSvg = document.getElementById('barcode');
+        const paths = barcodeSvg.querySelectorAll('path');
+        const rects = barcodeSvg.querySelectorAll('rect');
+        const texts = barcodeSvg.querySelectorAll('text');
+        
+        barcodeSvg.style.background = 'white';
+        barcodeSvg.style.border = '1px solid #ccc';
+        barcodeSvg.style.padding = '10px';
+        
+        paths.forEach(path => {
+            if (path.getAttribute('fill') !== '#ffffff') {
+                path.style.fill = '#000000';
+                path.style.stroke = '#000000';
+            }
+        });
+        
+        rects.forEach(rect => {
+            if (rect.getAttribute('fill') === '#ffffff') {
+                rect.style.fill = '#ffffff';
+                rect.style.stroke = '#ffffff';
+            }
+        });
+        
+        texts.forEach(text => {
+            text.style.fill = '#000000';
+            text.style.stroke = 'none';
         });
     }
-    
-    // Imprimir cuando se hace clic en el botón de imprimir
-    // Reemplaza la función de impresión existente
-printBtn.addEventListener('click', function() {
-    // Primero aplicar estilos de impresión manualmente
-    applyPrintStyles();
-    
-    // Pequeño delay para asegurar que los estilos se apliquen
-    setTimeout(() => {
-        window.print();
-        
-        // Restaurar estilos normales después de imprimir
-        setTimeout(restoreNormalStyles, 500);
-    }, 100);
-});
 
-// Función para aplicar estilos de impresión
-function applyPrintStyles() {
-    const barcodeSvg = document.getElementById('barcode');
-    const paths = barcodeSvg.querySelectorAll('path');
-    const rects = barcodeSvg.querySelectorAll('rect');
-    const texts = barcodeSvg.querySelectorAll('text');
+    function restoreNormalStyles() {
+        const barcodeSvg = document.getElementById('barcode');
+        barcodeSvg.style.background = '';
+        barcodeSvg.style.border = '';
+        barcodeSvg.style.padding = '';
+    }
     
-    // Aplicar estilos directos al SVG para impresión
-    barcodeSvg.style.background = 'white';
-    barcodeSvg.style.border = '1px solid #ccc';
-    barcodeSvg.style.padding = '10px';
-    
-    // Asegurar que las barras sean negras
-    paths.forEach(path => {
-        if (path.getAttribute('fill') !== '#ffffff') {
-            path.style.fill = '#000000';
-            path.style.stroke = '#000000';
-        }
-    });
-    
-    // Asegurar que el fondo sea blanco
-    rects.forEach(rect => {
-        if (rect.getAttribute('fill') === '#ffffff') {
-            rect.style.fill = '#ffffff';
-            rect.style.stroke = '#ffffff';
-        }
-    });
-    
-    // Asegurar que el texto sea negro
-    texts.forEach(text => {
-        text.style.fill = '#000000';
-        text.style.stroke = 'none';
-    });
-}
-
-// Función para restaurar estilos normales
-function restoreNormalStyles() {
-    const barcodeSvg = document.getElementById('barcode');
-    barcodeSvg.style.background = '';
-    barcodeSvg.style.border = '';
-    barcodeSvg.style.padding = '';
-}
-    
-    // Regresar a admin.html cuando se hace clic en el botón de regresar
     backBtn.addEventListener('click', function() {
         window.location.href = 'admin.html';
     });
-    
-    // Permitir generar con la tecla Enter
-    productNameInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            generateBtn.click();
-        }
+
+    refreshBtn.addEventListener('click', function() {
+        loadProducts();
     });
-    
-    // Ejemplo de prueba al cargar la página
-    if (recentProducts.length === 0) {
-        productNameInput.value = "Producto Ejemplo";
-        // Generar automáticamente el código de ejemplo
-        setTimeout(() => {
-            generateBtn.click();
-        }, 500);
-    }
 });
