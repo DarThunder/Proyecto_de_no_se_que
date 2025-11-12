@@ -12,29 +12,30 @@
     
     <div class="container">
         <div class="input-section">
-            <label for="productName">Nombre del Producto:</label>
-            <input type="text" id="productName" placeholder="Ingresa el nombre del producto">
+            <label for="productSelect">Seleccionar Producto:</label>
+            <select id="productSelect" class="product-select">
+                <option value="">-- Selecciona un producto --</option>
+            </select>
             <div class="btn-group">
                 <button id="generateBtn">Generar Código de Barras</button>
                 <button id="printBtn" class="print-btn">Imprimir Código</button>
                 <button id="backBtn" class="btn-secondary">Regresar al Admin</button>
+                <button id="refreshBtn" class="btn-secondary">Actualizar Lista</button>
             </div>
         </div>
         
         <div id="barcodeResult" class="hidden">
             <div class="barcode-container">
                 <div id="productDisplay" class="product-name"></div>
+                <div id="productDetails" class="product-details"></div>
                 <svg id="barcode" class="barcode-image"></svg>
                 <div id="barcodeText" class="barcode-value"></div>
             </div>
         </div>
         
-        <div class="recent-products">
-            <h3>Productos recientes:</h3>
-            <div id="recentProductsList"></div>
+        <div class="loading-section hidden" id="loadingSection">
+            <div class="loading-spinner">Cargando productos...</div>
         </div>
-        
-        
     </div>
 
     <script src="../js/codigos.js"></script>
