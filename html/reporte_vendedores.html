@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Administración</title>
+    <title>Reporte por Vendedor</title>
     <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="../css/cupones.css"> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
@@ -14,7 +15,7 @@
                 <h1>S&S Admin</h1>
             </div>
             <ul>
-                <li class="active">
+                <li>
                     <a href="admin.html">
                         <i class="fas fa-tachometer-alt"></i> Dashboard
                     </a>
@@ -52,49 +53,36 @@
 
         <main class="admin-content">
             <header class="admin-header">
-                <h2>Dashboard</h2>
+                <h2>Reporte de Ventas por Vendedor (HU 25)</h2>
                 <div class="user-info">
                     Bienvenido, <span id="admin-username">cargando...</span>
                 </div>
             </header>
 
             <section class="content-area">
-                <h3>Resumen de Ventas por Canal (HU 27)</h3>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h4>Ingresos (Online)</h4>
-                        <p id="stats-online-revenue">$0.00</p>
+                <div class="content-header">
+                    <h3>Rendimiento de Vendedores</h3>
                     </div>
-                    <div class="stat-card">
-                        <h4>Ventas (Online)</h4>
-                        <p id="stats-online-sales">0</p>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <h4>Ingresos (POS)</h4>
-                        <p id="stats-pos-revenue">$0.00</p>
-                    </div>
-                    <div class="stat-card">
-                        <h4>Ventas (POS)</h4>
-                        <p id="stats-pos-sales">0</p>
-                    </div>
-                </div>
                 
-                <h3 style="margin-top: 2rem;">Analíticas (HU 34)</h3>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h4>Visitas Hoy</h4>
-                        <p>1,234</p>
-                    </div>
-                    <div class="stat-card">
-                        <h4>Tasa de Conversión</h4>
-                        <p>3.4%</p>
-                    </div>
+                <div class="table-container">
+                    <table id="report-table">
+                        <thead>
+                            <tr>
+                                <th>Vendedor (Username)</th>
+                                <th>Email</th>
+                                <th>Ventas Totales (Transacciones)</th>
+                                <th>Ingresos Totales</th>
+                                <th>Ticket Promedio</th>
+                            </tr>
+                        </thead>
+                        <tbody id="report-table-body">
+                            </tbody>
+                    </table>
                 </div>
             </section>
         </main>
     </div>
     
-    <script src="../js/admin.js"></script>
+    <script src="../js/reporte_vendedores.js"></script>
 </body>
 </html>
