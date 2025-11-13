@@ -1,404 +1,193 @@
+/* css/admin.css */
+/* --- Estilos base tomados de stylePOS.css --- */
 :root {
-            --primary: #3498db;
-            --secondary: #2c3e50;
-            --success: #2ecc71;
-            --danger: #e74c3c;
-            --warning: #f39c12;
-            --light: #ecf0f1;
-            --dark: #34495e;
-            --gray: #95a5a6;
-        }
+    --primary: #3498db;
+    --secondary: #2c3e50;
+    --success: #2ecc71;
+    --danger: #e74c3c;
+    --warning: #f39c12;
+    --light: #ecf0f1;
+    --dark: #34495e;
+    --gray: #95a5a6;
+}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
 
-        body {
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-            color: #ffffff;
-            line-height: 1.6;
-            min-height: 100vh;
-        }
+body {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    color: #ffffff;
+    line-height: 1.6;
+    min-height: 100vh;
+}
+/* --- Fin de estilos base --- */
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
 
-        header {
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 15px 0;
-            border-radius: 12px 12px 0 0;
-            margin-bottom: 20px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
+.admin-container {
+    display: flex;
+    min-height: 100vh;
+}
 
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-        }
+/* Barra Lateral (Aplicamos estilo 'glass' de POS) */
+.admin-nav {
+    width: 250px;
+    background: rgba(255, 255, 255, 0.05);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0; /* Evita que se encoja */
+}
 
-        .logo {
-            font-size: 28px;
-            font-weight: 800;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            background: linear-gradient(45deg, #ffffff, #cccccc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
+.admin-logo {
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
 
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 500;
-        }
+.admin-logo h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    background: linear-gradient(45deg, #ffffff, #cccccc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
 
-        .user-avatar {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, var(--primary), #2980b9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-        }
+.admin-nav ul {
+    list-style: none;
+    padding: 1rem 0;
+    margin: 0;
+    flex-grow: 1; 
+}
 
-        .main-content {
-            display: grid;
-            grid-template-columns: 350px 1fr;
-            gap: 25px;
-        }
+.admin-nav li a {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    text-decoration: none;
+    color: var(--gray);
+    transition: all 0.3s ease;
+}
 
-        @media (max-width: 1024px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-        }
+.admin-nav li a:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+}
 
-        .card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            padding: 25px;
-            margin-bottom: 25px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
+.admin-nav li.active a {
+    color: #ffffff;
+    border-left: 3px solid var(--primary);
+    background: linear-gradient(90deg, rgba(52, 152, 219, 0.2), transparent);
+}
 
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-        }
+.admin-nav li a i {
+    width: 20px;
+    text-align: center;
+}
 
-        .card-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            color: #ffffff;
-            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-            padding-bottom: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
+.admin-nav li:last-child {
+    margin-top: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-        .form-group {
-            margin-bottom: 20px;
-        }
+/* Contenido Principal */
+.admin-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #e0e0e0;
-        }
+/* Header (Aplicamos estilo de header de POS) */
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.8);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
 
-        input[type="text"],
-        input[type="number"],
-        select {
-            width: 100%;
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            font-size: 16px;
-            color: #ffffff;
-            transition: all 0.3s ease;
-        }
+.admin-header h2 {
+    margin: 0;
+    font-weight: 700;
+}
 
-        input[type="text"]:focus,
-        input[type="number"]:focus,
-        select:focus {
-            outline: none;
-            border-color: var(--primary);
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
-        }
+/* User Info (Tomado de stylePOS.css) */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+}
 
-        input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
+#admin-username {
+    font-weight: bold;
+}
 
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            width: 100%;
-        }
+/* Área de contenido */
+.content-area {
+    padding: 2rem;
+    flex-grow: 1;
+}
 
-        .btn-primary {
-            background: linear-gradient(45deg, var(--primary), #2980b9);
-            color: white;
-        }
+.content-area h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #ffffff;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
 
-        .btn-primary:hover {
-            background: linear-gradient(45deg, #2980b9, var(--primary));
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
-        }
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
 
-        .btn-success {
-            background: linear-gradient(45deg, var(--success), #27ae60);
-            color: white;
-        }
+/* Stat Card (Aplicamos estilo .card de POS) */
+.stat-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    padding: 25px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
 
-        .btn-success:hover {
-            background: linear-gradient(45deg, #27ae60, var(--success));
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
-        }
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
 
-        .btn-warning {
-            background: linear-gradient(45deg, var(--warning), #e67e22);
-            color: white;
-        }
+.stat-card h4 {
+    margin: 0 0 0.5rem 0;
+    color: var(--gray);
+    font-size: 1rem;
+    font-weight: 600;
+}
 
-        .btn-warning:hover {
-            background: linear-gradient(45deg, #e67e22, var(--warning));
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
-        }
-
-        .btn-red {
-            background: linear-gradient(45deg, var(--warning), #ff1810);
-            color: white;
-        }
-
-        .btn-red:hover {
-            background: linear-gradient(45deg, #ef1111, var(--warning));
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
-        }
-
-        .stat-card {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-3px);
-            background: rgba(255, 255, 255, 0.08);
-        }
-
-        .stat-value {
-            font-size: 32px;
-            font-weight: 800;
-            margin: 12px 0;
-            color: #ffffff;
-            background: linear-gradient(45deg, #ffffff, #cccccc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .stat-label {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .filter-section {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .filter-section input {
-            flex: 1;
-            min-width: 250px;
-        }
-
-        .filter-section select {
-            min-width: 150px;
-        }
-
-        .table-container {
-            overflow-x: auto;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: transparent;
-        }
-
-        th, td {
-            padding: 15px 18px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        th {
-            background: rgba(255, 255, 255, 0.1);
-            font-weight: 700;
-            color: #ffffff;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-
-        tbody tr {
-            transition: background 0.2s ease;
-        }
-
-        tbody tr:hover {
-            background: rgba(255, 255, 255, 0.08);
-        }
-
-        .actions-cell {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-small {
-            padding: 6px 12px;
-            font-size: 14px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-edit {
-            background: linear-gradient(45deg, var(--primary), #2980b9);
-            color: white;
-        }
-
-        .btn-edit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
-        }
-
-        .btn-delete {
-            background: linear-gradient(45deg, var(--danger), #c0392b);
-            color: white;
-        }
-
-        .btn-delete:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
-        }
-
-        .stock-badge {
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-            display: inline-block;
-        }
-
-        .stock-high {
-            background: rgba(46, 204, 113, 0.2);
-            color: #2ecc71;
-            border: 1px solid rgba(46, 204, 113, 0.3);
-        }
-
-        .stock-medium {
-            background: rgba(243, 156, 18, 0.2);
-            color: #f39c12;
-            border: 1px solid rgba(243, 156, 18, 0.3);
-        }
-
-        .stock-low {
-            background: rgba(231, 76, 60, 0.2);
-            color: #e74c3c;
-            border: 1px solid rgba(231, 76, 60, 0.3);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .empty-state i {
-            font-size: 64px;
-            margin-bottom: 20px;
-            display: block;
-            opacity: 0.7;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin-top: 20px;
-            padding: 15px;
-        }
-
-        .pagination button {
-            padding: 8px 16px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 6px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .pagination button:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .pagination button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .pagination .page-info {
-            color: rgba(255, 255, 255, 0.8);
-            font-weight: 600;
-        }
+.stat-card p {
+    margin: 0;
+    font-size: 2.2rem;
+    font-weight: 800;
+    /* Color de acento de POS */
+    background: linear-gradient(45deg, #ffffff, #cccccc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}

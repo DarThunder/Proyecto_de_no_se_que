@@ -1,8 +1,7 @@
 const db = db.getSiblingDB("ropadb");
 
+// --- Lógica de Cupones (Sin cambios) ---
 db.createCollection("coupons");
-
-// --- Lógica de Cupones (sin cambios) ---
 let cuponBuenFin = {
   name: "Buen Fin 2024",
   discount: 20,
@@ -37,11 +36,12 @@ let cuponBienvenida = {
   updatedAt: new Date(),
 };
 db.coupons.insertMany([cuponBuenFin, cuponVerano, cuponBienvenida]);
+print("Cupones de prueba creados.");
 
-// --- ===== INICIO DE LA NUEVA LÓGICA DE PRODUCTOS ===== ---
+
+// --- Lógica de Productos (Sin cambios) ---
 print("Cargando datos de productos desde product-data.js...");
 
-// ===== CORRECCIÓN AQUÍ =====
 // Especifica la ruta absoluta dentro del contenedor
 load('/docker-entrypoint-initdb.d/product-data.js'); 
 
@@ -77,45 +77,70 @@ if (typeof productsToInsert === 'undefined') {
   });
   print("¡Todos los productos y variantes fueron insertados exitosamente!");
 }
-// --- ===== FIN DE LA NUEVA LÓGICA DE PRODUCTOS ===== ---
 
 
-// --- Lógica de Roles y Usuarios (sin cambios) ---
+// --- ===== Lógica de Roles y Usuarios (MODIFICADA) ===== ---
+
+print("Borrando roles y usuarios antiguos para re-crear con 'Gerente'...");
+db.roles.deleteMany({});
+db.users.deleteMany({});
+
+print("Creando nueva estructura de Roles...");
 db.roles.insertMany([
   {
     name: "admin",
-    permission_ring: 0,
+    permission_ring: 0, // Máxima autoridad
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    name: "gerente", // <-- NUEVO ROL
+    permission_ring: 1, // Autoridad alta (para HUs 25-34)
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
     name: "cashier",
-    permission_ring: 1,
+    permission_ring: 2, // Autoridad media (antes 1)
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
     name: "user",
-    permission_ring: 2,
+    permission_ring: 3, // Autoridad baja (antes 2)
     createdAt: new Date(),
     updatedAt: new Date(),
   },
 ]);
 
+print("Roles 'admin', 'gerente', 'cashier', 'user' creados.");
+
+// Obtenemos los IDs de los nuevos roles
 const adminRole = db.roles.findOne({ name: "admin" });
+const gerenteRole = db.roles.findOne({ name: "gerente" }); // <-- NUEVO
 const cashierRole = db.roles.findOne({ name: "cashier" });
 const userRole = db.roles.findOne({ name: "user" });
 
+// Hash de: password123 (la misma que usabas)
 const samplePasswordHash =
-  "$2b$10$zNZEVbIXGs84eNZS3VmVyO/IPeoglQ9Jc90muzjRms/SwWQPBjHay"; // hash de: password123
+  "$2b$10$zNZEVbIXGs84eNZS3VmVyO/IPeoglQ9Jc90muzjRms/SwWQPBjHay"; 
 
-if (adminRole && cashierRole && userRole) {
+if (adminRole && gerenteRole && cashierRole && userRole) {
+  print("Insertando usuarios por defecto...");
   db.users.insertMany([
     {
       username: "superadmin",
       password_hash: samplePasswordHash,
       email: "admin@ropadb.com",
       role: adminRole._id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      username: "gerente01", // <-- NUEVO USUARIO
+      password_hash: samplePasswordHash, 
+      email: "gerente01@ropadb.com",
+      role: gerenteRole._id,
       createdAt: new Date(),
       updatedAt: new Date(),
     },
@@ -136,7 +161,9 @@ if (adminRole && cashierRole && userRole) {
       updatedAt: new Date(),
     },
   ]);
+  print("Usuarios por defecto (admin, gerente01, cajero01, cliente01) creados.");
+} else {
+  print("ERROR: No se pudieron encontrar todos los roles para crear usuarios.");
 }
 
 print("Datos iniciales de Roles y Usuarios creados en ropadb.");
-print("Cupon de prueba creo que también w");

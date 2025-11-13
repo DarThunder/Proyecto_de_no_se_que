@@ -4,7 +4,8 @@ import Coupon from "../models/Coupon.js";
 import verifyToken from "../middleware/verifyToken.js";
 import hasPermission from "../middleware/hasPermission.js";
 
-router.get("/", verifyToken, hasPermission(0), async (req, res) => {
+// Ver todos los cupones (Admin y Gerente)
+router.get("/", verifyToken, hasPermission(1), async (req, res) => {
   try {
     const coupons = await Coupon.find().sort({ createdAt: -1 });
     res.json(coupons);
@@ -13,7 +14,8 @@ router.get("/", verifyToken, hasPermission(0), async (req, res) => {
   }
 });
 
-router.get("/:id", verifyToken, hasPermission(0), async (req, res) => {
+// Ver un cupón (Admin y Gerente)
+router.get("/:id", verifyToken, hasPermission(1), async (req, res) => {
   try {
     const coupon = await Coupon.findById(req.params.id);
     if (!coupon) {
@@ -25,7 +27,8 @@ router.get("/:id", verifyToken, hasPermission(0), async (req, res) => {
   }
 });
 
-router.post("/", verifyToken, hasPermission(0), async (req, res) => {
+// Crear un cupón (Admin y Gerente)
+router.post("/", verifyToken, hasPermission(1), async (req, res) => {
   try {
     const { name, discount, expiration_date, maximum_uses } = req.body;
 
@@ -49,7 +52,8 @@ router.post("/", verifyToken, hasPermission(0), async (req, res) => {
   }
 });
 
-router.put("/:id", verifyToken, hasPermission(0), async (req, res) => {
+// Actualizar un cupón (Admin y Gerente)
+router.put("/:id", verifyToken, hasPermission(1), async (req, res) => {
   try {
     const coupon = await Coupon.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -64,7 +68,8 @@ router.put("/:id", verifyToken, hasPermission(0), async (req, res) => {
   }
 });
 
-router.delete("/:id", verifyToken, hasPermission(0), async (req, res) => {
+// Eliminar un cupón (Admin y Gerente)
+router.delete("/:id", verifyToken, hasPermission(1), async (req, res) => {
   try {
     const coupon = await Coupon.findByIdAndDelete(req.params.id);
     if (!coupon) {
@@ -76,10 +81,11 @@ router.delete("/:id", verifyToken, hasPermission(0), async (req, res) => {
   }
 });
 
+// Validar un cupón (Admin, Gerente y Cajero)
 router.get(
   "/validate/:code",
   verifyToken,
-  hasPermission(1),
+  hasPermission(2), // <-- Cambiado de 1 a 2
   async (req, res) => {
     try {
       const code = req.params.code.toUpperCase();
@@ -116,7 +122,8 @@ router.get(
   }
 );
 
-router.get("/search/:code", verifyToken, hasPermission(1), async (req, res) => {
+// Buscar un cupón (Admin, Gerente y Cajero)
+router.get("/search/:code", verifyToken, hasPermission(2), async (req, res) => { // <-- Cambiado de 1 a 2
   try {
     const code = req.params.code.toUpperCase();
 

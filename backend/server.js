@@ -11,7 +11,7 @@ import userRoutes from "./routes/userRoute.js";
 import cartRoutes from "./routes/cartRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import couponRoutes from "./routes/couponRoutes.js";
-import wishlistRoutes from "./routes/wishlistRoutes.js"; // <--- 1. AÑADIR ESTA LÍNEA
+import wishlistRoutes from "./routes/wishlistRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -59,7 +59,7 @@ app.use("/users", userRoutes);
 app.use("/cart", cartRoutes);
 app.use("/reviews", reviewRoutes);
 app.use("/coupons", couponRoutes);
-app.use("/wishlist", wishlistRoutes); // <--- 2. AÑADIR ESTA LÍNEA
+app.use("/wishlist", wishlistRoutes);
 
 app.use((_, res) => {
   res.status(404).json({ error: "Recurso no encontrado" });

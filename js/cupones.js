@@ -1,247 +1,278 @@
-class CuponManager {
-  constructor() {
-    this.API_BASE = "http://localhost:8080/coupons";
-    this.init();
-  }
+// js/cupones.js
 
-  async init() {
-    await this.verificarAutenticacion();
-    await this.cargarCupones();
-    this.configurarEventListeners();
-  }
+// Estado global para saber si estamos editando o creando
+let isEditing = false;
+let editingCouponId = null;
 
-  async verificarAutenticacion() {
+// Referencias al DOM
+const modal = document.getElementById('coupon-modal');
+const modalTitle = document.getElementById('modal-title');
+const couponForm = document.getElementById('coupon-form');
+const tableBody = document.getElementById('coupons-table-body');
+const addBtn = document.getElementById('add-coupon-btn');
+const cancelBtn = document.getElementById('cancel-btn');
+
+/*
+ * ===============================================
+ * INICIO: Autenticación y Carga Inicial
+ * (Copiado y adaptado de admin.js)
+ * ===============================================
+ */
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Verificar la autenticación y permisos
     try {
-      const response = await fetch("http://localhost:8080/users/me", {
-        method: "GET",
-        credentials: "include",
-      });
+        const meResponse = await fetch("http://localhost:8080/users/me", {
+            method: "GET",
+            credentials: "include", // Envía la cookie de sesión
+        });
 
-      if (!response.ok) {
-        throw new Error("No autenticado");
-      }
+        if (!meResponse.ok) {
+            throw new Error("No autorizado. Redirigiendo al login.");
+        }
 
-      const userData = await response.json();
+        const userInfo = await meResponse.json();
 
-      if (userData.role.permission_ring !== 0) {
-        this.mostrarError(
-          "No tienes permisos de administrador para acceder a esta página"
-        );
-        setTimeout(() => {
-          window.location.href = "../index.html";
-        }, 3000);
-        return;
-      }
+        // Verificamos el rol (Admin=0, Gerente=1)
+        if (userInfo.role && userInfo.role.permission_ring <= 1) {
+            document.getElementById('admin-username').textContent = userInfo.username || 'Admin';
+            // Si el usuario es válido, cargamos los cupones
+            await loadCoupons();
+        } else {
+            throw new Error("Acceso denegado. Redirigiendo al login.");
+        }
 
-      document.getElementById("username-display").textContent =
-        userData.username;
     } catch (error) {
-      console.error("Error de autenticación:", error);
-      this.mostrarError("Debes iniciar sesión como administrador");
-      setTimeout(() => {
-        window.location.href = "login.html";
-      }, 3000);
+        console.error(error.message);
+        alert("Acceso denegado. Debes iniciar sesión como Gerente o Administrador.");
+        window.location.href = 'login.html';
     }
-  }
 
-  configurarEventListeners() {
-    const form = document.getElementById("cupon-form");
-    form.addEventListener("submit", (e) => this.crearCupon(e));
-  }
+    // 2. Lógica del botón de Cerrar Sesión
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                await fetch("http://localhost:8080/auth/logout", {
+                    method: "POST",
+                    credentials: "include",
+                });
+            } catch (err) {
+                console.error("Error al cerrar sesión", err);
+            } finally {
+                alert("Sesión cerrada.");
+                window.location.href = 'login.html';
+            }
+        });
+    }
 
-  async crearCupon(event) {
-    event.preventDefault();
+    // 3. Listeners del Modal
+    addBtn.addEventListener('click', openCreateModal);
+    cancelBtn.addEventListener('click', closeCouponModal);
+    couponForm.addEventListener('submit', handleFormSubmit);
+});
+/*
+ * ===============================================
+ * FIN: Autenticación y Carga Inicial
+ * ===============================================
+ */
 
-    const formData = new FormData(event.target);
-    const cuponData = {
-      nombre: formData.get("nombre"),
-      descuento: parseInt(formData.get("descuento")),
-      fecha_expiracion: formData.get("fecha_expiracion") || null,
-      usos_maximos: formData.get("usos_maximos")
-        ? parseInt(formData.get("usos_maximos"))
-        : null,
+
+/**
+ * Carga todos los cupones desde la API y los muestra en la tabla
+ */
+async function loadCoupons() {
+    try {
+        const response = await fetch("http://localhost:8080/coupons", {
+            credentials: 'include'
+        });
+        if (!response.ok) {
+            throw new Error('Error al cargar los cupones.');
+        }
+        const coupons = await response.json();
+        
+        tableBody.innerHTML = ''; // Limpiamos la tabla
+        
+        if (coupons.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="7">No se encontraron cupones.</td></tr>';
+            return;
+        }
+
+        coupons.forEach(coupon => {
+            const tr = document.createElement('tr');
+            
+            // Formatear fecha (si existe)
+            const expDate = coupon.expiration_date 
+                ? new Date(coupon.expiration_date).toLocaleDateString()
+                : 'Nunca';
+            
+            // Usos
+            const uses = `${coupon.actual_uses} / ${coupon.maximum_uses || '∞'}`;
+            
+            // Estado
+            const status = coupon.active 
+                ? '<span class="status-active">Activo</span>' 
+                : '<span class="status-inactive">Inactivo</span>';
+
+            tr.innerHTML = `
+                <td>${coupon.name}</td>
+                <td>${coupon.code}</td>
+                <td>${coupon.discount}%</td>
+                <td>${uses}</td>
+                <td>${expDate}</td>
+                <td>${status}</td>
+                <td class="coupon-actions">
+                    <button class="btn btn-secondary" onclick="openEditModal('${coupon._id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-danger" onclick="deleteCoupon('${coupon._id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            tableBody.appendChild(tr);
+        });
+
+    } catch (error) {
+        console.error(error.message);
+        tableBody.innerHTML = `<tr><td colspan="7">${error.message}</td></tr>`;
+    }
+}
+
+/**
+ * Abre el modal para crear un nuevo cupón
+ */
+function openCreateModal() {
+    isEditing = false;
+    editingCouponId = null;
+    
+    modalTitle.textContent = 'Crear Nuevo Cupón';
+    couponForm.reset(); // Limpia el formulario
+    document.getElementById('coupon-active').checked = true; // Activo por defecto
+    
+    modal.style.display = 'flex';
+}
+
+/**
+ * Abre el modal para editar un cupón existente
+ */
+async function openEditModal(id) {
+    isEditing = true;
+    editingCouponId = id;
+
+    try {
+        const response = await fetch(`http://localhost:8080/coupons/${id}`, {
+            credentials: 'include'
+        });
+        if (!response.ok) throw new Error('No se pudo cargar el cupón');
+        
+        const coupon = await response.json();
+
+        // Llenamos el formulario con los datos
+        modalTitle.textContent = `Editar Cupón: ${coupon.code}`;
+        document.getElementById('coupon-id').value = coupon._id;
+        document.getElementById('coupon-name').value = coupon.name;
+        document.getElementById('coupon-discount').value = coupon.discount;
+        // Formatear la fecha para el input type="date" (YYYY-MM-DD)
+        document.getElementById('coupon-expiration').value = coupon.expiration_date
+            ? new Date(coupon.expiration_date).toISOString().split('T')[0]
+            : '';
+        document.getElementById('coupon-uses').value = coupon.maximum_uses || '';
+        document.getElementById('coupon-active').checked = coupon.active;
+
+        modal.style.display = 'flex';
+        
+    } catch (error) {
+        console.error(error.message);
+        alert('Error al cargar datos del cupón.');
+    }
+}
+
+/**
+ * Cierra el modal
+ */
+function closeCouponModal() {
+    modal.style.display = 'none';
+    couponForm.reset();
+}
+
+/**
+ * Maneja el envío del formulario (Crear o Editar)
+ */
+async function handleFormSubmit(e) {
+    e.preventDefault();
+    const saveBtn = document.getElementById('save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Guardando...';
+
+    // Recolectamos los datos del formulario
+    const data = {
+        name: document.getElementById('coupon-name').value,
+        discount: parseInt(document.getElementById('coupon-discount').value),
+        expiration_date: document.getElementById('coupon-expiration').value || null,
+        maximum_uses: parseInt(document.getElementById('coupon-uses').value) || null,
+        active: document.getElementById('coupon-active').checked,
     };
 
-    const submitBtn = document.getElementById("submit-btn");
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin"></i> Creando...';
+    let url = "http://localhost:8080/coupons";
+    let method = 'POST';
+
+    if (isEditing) {
+        url = `http://localhost:8080/coupons/${editingCouponId}`;
+        method = 'PUT';
+    }
 
     try {
-      const response = await fetch(this.API_BASE, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(cuponData),
-      });
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(data),
+        });
 
-      const data = await response.json();
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Error al guardar el cupón');
+        }
 
-      if (!response.ok) {
-        throw new Error(data.message || "Error al crear cupón");
-      }
+        // Éxito
+        closeCouponModal();
+        await loadCoupons(); // Recargamos la tabla
 
-      this.mostrarMensaje("Cupón creado exitosamente", "success");
-      event.target.reset();
-      await this.cargarCupones();
     } catch (error) {
-      this.mostrarError(error.message);
+        console.error(error.message);
+        alert(`Error: ${error.message}`);
     } finally {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="bx bx-plus"></i> Crear Cupón';
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Guardar';
     }
-  }
-
-  async cargarCupones() {
-    const cuponesList = document.getElementById("cupones-list");
-    cuponesList.innerHTML = '<div class="loading">Cargando cupones...</div>';
-
-    try {
-      const response = await fetch(this.API_BASE, {
-        method: "GET",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al cargar cupones");
-      }
-
-      const cupones = await response.json();
-      this.mostrarCupones(cupones);
-    } catch (error) {
-      cuponesList.innerHTML = `<div class="alert alert-error">Error al cargar cupones: ${error.message}</div>`;
-    }
-  }
-
-  mostrarCupones(cupones) {
-    const cuponesList = document.getElementById("cupones-list");
-
-    if (cupones.length === 0) {
-      cuponesList.innerHTML =
-        '<div class="loading">No hay cupones creados</div>';
-      return;
-    }
-
-    cuponesList.innerHTML = cupones
-      .map(
-        (cupon) => `
-            <div class="cupon-card">
-                <div class="cupon-header">
-                    <span class="cupon-codigo">${cupon.code}</span>
-                    <span class="cupon-descuento">${cupon.discount}% OFF</span>
-                </div>
-                <div class="cupon-nombre">${cupon.name}</div>
-                <div class="cupon-info">
-                    <span>Creado: ${new Date(
-                      cupon.createdAt
-                    ).toLocaleDateString()}</span>
-                    <span>Usos: ${cupon.actual_uses}${
-          cupon.maximum_uses ? `/${cupon.maximum_uses}` : ""
-        }</span>
-                </div>
-                <div class="cupon-info">
-                    <span>Estado: ${cupon.active ? "Activo" : "Inactivo"}</span>
-                    ${
-                      cupon.fecha_expiracion
-                        ? `<span>Expira: ${new Date(
-                            cupon.fecha_expiracion
-                          ).toLocaleDateString()}</span>`
-                        : "<span>Sin expiración</span>"
-                    }
-                </div>
-                <div class="cupon-actions">
-                    <button class="btn-danger" onclick="cuponManager.eliminarCupon('${
-                      cupon._id
-                    }')">
-                        <i class='bx bx-trash'></i> Eliminar
-                    </button>
-                    <button class="btn-secondary" onclick="cuponManager.toggleActivo('${
-                      cupon._id
-                    }', ${!cupon.active})">
-                        ${cupon.active ? "Desactivar" : "Activar"}
-                    </button>
-                </div>
-            </div>
-        `
-      )
-      .join("");
-  }
-
-  async eliminarCupon(id) {
-    if (!confirm("¿Estás seguro de que quieres eliminar este cupón?")) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`${this.API_BASE}/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al eliminar cupón");
-      }
-
-      this.mostrarMensaje("Cupón eliminado exitosamente", "success");
-      await this.cargarCupones();
-    } catch (error) {
-      this.mostrarError(error.message);
-    }
-  }
-
-  async toggleActivo(id, nuevoEstado) {
-    try {
-      const response = await fetch(`${this.API_BASE}/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ activo: nuevoEstado }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Error al actualizar cupón");
-      }
-
-      this.mostrarMensaje(
-        `Cupón ${nuevoEstado ? "activado" : "desactivado"} exitosamente`,
-        "success"
-      );
-      await this.cargarCupones();
-    } catch (error) {
-      this.mostrarError(error.message);
-    }
-  }
-
-  mostrarMensaje(mensaje, tipo) {
-    const alertDiv = document.getElementById("alert-message");
-    alertDiv.innerHTML = `
-            <div class="alert alert-${tipo}">
-                ${mensaje}
-            </div>
-        `;
-
-    setTimeout(() => {
-      alertDiv.innerHTML = "";
-    }, 5000);
-  }
-
-  mostrarError(mensaje) {
-    this.mostrarMensaje(mensaje, "error");
-  }
 }
 
-// Funciones globales
-function logout() {
-  document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-  window.location.href = "login.html";
+/**
+ * Elimina un cupón
+ */
+async function deleteCoupon(id) {
+    // Pedimos confirmación
+    if (!confirm('¿Estás seguro de que quieres eliminar este cupón? Esta acción no se puede deshacer.')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`http://localhost:8080/coupons/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Error al eliminar');
+        }
+
+        // Éxito
+        await loadCoupons(); // Recargamos la tabla
+
+    } catch (error) {
+        console.error(error.message);
+        alert(`Error: ${error.message}`);
+    }
 }
-
-// Inicializar el manager cuando se cargue la página
-const cuponManager = new CuponManager();
-
-// Hacer funciones disponibles globalmente
-window.cargarCupones = () => cuponManager.cargarCupones();
-window.cuponManager = cuponManager;

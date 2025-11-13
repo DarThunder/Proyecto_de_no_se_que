@@ -1,121 +1,76 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Administración - Productos</title>
+    <title>Panel de Administración</title>
     <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <div class="logo">Panel de Administración</div>
+    <div class="admin-container">
+        <nav class="admin-nav">
+            <div class="admin-logo">
+                <h1>S&S Admin</h1>
+            </div>
+            <ul>
+                <li class="active">
+                    <a href="admin.html">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="cupones.html">
+                        <i class="fas fa-tags"></i> Gestión de Cupones
+                    </a>
+                </li>
+                <li>
+                    <a href="#"><i class="fas fa-chart-line"></i> Reporte Ventas</a>
+                </li>
+                <li>
+                    <a href="#"><i class="fas fa-users"></i> Gestión Empleados</a>
+                </li>
+                <li>
+                    <a href="../index.html"><i class="fas fa-store"></i> Ver Tienda</a>
+                </li>
+                <li>
+                    <a href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                </li>
+            </ul>
+        </nav>
+
+        <main class="admin-content">
+            <header class="admin-header">
+                <h2>Dashboard</h2>
                 <div class="user-info">
-                    <div class="user-avatar">A</div>
-                    <div id="userName">Administrador</div>
+                    Bienvenido, <span id="admin-username">cargando...</span>
                 </div>
-            </div>
-        </header>
-        
-        <div class="main-content">
-            <div class="left-panel">
-                <!-- Acciones rápidas -->
-                <div class="card">
-                    <h2 class="card-title">Acciones Rápidas</h2>
-                    <div style="display: grid; gap: 12px;">
-                        <button class="btn btn-success" id="addProductBtn">
-                            Nuevo Producto
-                        </button>
-                        <button class="btn btn-primary" id="exportBtn">
-                            Exportar Datos
-                        </button>
-                        <button class="btn btn-warning" id="lowStockBtn">
-                            Ver Stock Bajo
-                        </button>
-                        <button class="btn btn-red" id="cuponBtn" onclick="cambiarPagina('cupones.html')">
-                            Crear Nuevo Cupon
-                        </button>
-                        <button class="btn btn-success" id="cuponBtn" onclick="cambiarPagina('codigos.html')">
-                            Generar Etiqueta de Producto
-                        </button>
+            </header>
+
+            <section class="content-area">
+                <h3>Resumen Rápido (HU 34)</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>Visitas Hoy</h4>
+                        <p>1,234</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Ventas del Día</h4>
+                        <p>$5,678.00</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Nuevos Clientes</h4>
+                        <p>42</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Tasa de Conversión</h4>
+                        <p>3.4%</p>
                     </div>
                 </div>
-
-                <div class="card">
-                    <h2 class="card-title">Listas</h2>
-                    <div style="display: grid; gap: 12px;">
-                        <button class="btn btn-success" id="addProductBtn">
-                            Mostrar Productos
-                        </button>
-                        <button class="btn btn-primary" id="exportBtn">
-                            Mostrar Proveedores
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="right-panel">
-                <!-- Tabla de productos -->
-                <div class="card">
-                    <h2 class="card-title">Gestión de Productos</h2>
-                    
-                    <!-- Filtros de búsqueda -->
-                    <div class="filter-section">
-                        <input 
-                            type="text" 
-                            id="searchInput" 
-                            placeholder="Buscar por ID, nombre o descripción..."
-                            oninput="filterTable()"
-                        >
-                        <select id="stockFilter" onchange="filterTable()">
-                            <option value="all">Todos los stocks</option>
-                            <option value="high">Stock alto (&gt;50)</option>
-                            <option value="medium">Stock medio (11-50)</option>
-                            <option value="low">Stock bajo (≤10)</option>
-                        </select>
-                    </div>
-                    
-                    <!-- Tabla -->
-                    <div class="table-container">
-                        <table id="productsTable">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Nombre</th>
-                                    <th>Categoría</th>
-                                    <th>Precio</th>
-                                    <th>Stock</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableBody">
-                                <!-- Datos de ejemplo -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Estado vacío -->
-                    <div class="empty-state" id="emptyState" style="display: none;">
-                        <i>📦</i>
-                        <p>No se encontraron productos</p>
-                        <p>Intenta ajustar los filtros de búsqueda</p>
-                    </div>
-
-                    <!-- Paginación -->
-                    <div class="pagination">
-                        <button onclick="previousPage()">◀ Anterior</button>
-                        <span class="page-info">
-                            Página <span id="currentPage">1</span> de <span id="totalPages">5</span>
-                        </span>
-                        <button onclick="nextPage()">Siguiente ▶</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+                </section>
+        </main>
     </div>
+    
     <script src="../js/admin.js"></script>
 </body>
 </html>
