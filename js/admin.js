@@ -17,6 +17,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (userInfo.role && userInfo.role.permission_ring <= 1) {
             // El usuario es Admin o Gerente, cargamos sus datos
             document.getElementById('admin-username').textContent = userInfo.username || 'Admin';
+            
+            // --- ¡NUEVO! ---
+            // Una vez autenticado, carga las estadísticas del dashboard
+            await loadDashboardStats();
+
         } else {
             // No es Admin ni Gerente
             throw new Error("Acceso denegado. Redirigiendo al login.");
@@ -49,3 +54,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 });
+
+
+// --- ========= FUNCIÓN NUEVA PARA HU 27 ========= ---
+
+/**
+ * Carga las estadísticas del dashboard (HU 27)
+ */
+async function loadDashboardStats() {
+    try {
+        const response = await fetch("http://localhost:8080/reports/sales-by-channel", {
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            throw new Error('No se pudieron cargar las estadísticas');
+        }
+
+        const stats = await response.json(); // { online: {...}, pos: {...} }
+
+        // Función para formatear a moneda
+        const formatCurrency = (amount) => new Intl.NumberFormat('es-MX', {
+            style: 'currency',
+            currency: 'MXN'
+        }).format(amount || 0);
+
+        // Actualizar el HTML
+        document.getElementById('stats-online-revenue').textContent = formatCurrency(stats.online.revenue);
+        document.getElementById('stats-online-sales').textContent = stats.online.salesCount;
+        document.getElementById('stats-pos-revenue').textContent = formatCurrency(stats.pos.revenue);
+        document.getElementById('stats-pos-sales').textContent = stats.pos.salesCount;
+
+    } catch (error) {
+        console.error(error.message);
+        // Si falla, los stats se quedan en 0, pero la app no se rompe.
+    }
+}
