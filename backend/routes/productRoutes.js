@@ -89,4 +89,26 @@ router.post("/", verifyToken, hasPermission(1), async (req, res) => {
   }
 });
 
+// Ruta para obtener productos con sus variantes (PARA EL INVENTARIO)
+router.get("/inventory", async (_, res) => {
+  try {
+    const variants = await ProductVariant.find().populate("product");
+    
+    // Transformar los datos para el frontend de inventario
+    const inventoryData = variants.map(variant => ({
+      _id: variant._id,
+      product: variant.product,
+      size: variant.size,
+      sku: variant.sku,
+      stock: variant.stock,
+      createdAt: variant.createdAt,
+      updatedAt: variant.updatedAt
+    }));
+    
+    res.status(200).json(inventoryData);
+  } catch (err) {
+    res.status(500).json({ error: "Error al obtener inventario", details: err.message });
+  }
+});
+
 export default router;

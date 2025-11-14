@@ -3,6 +3,8 @@ import express, { json } from "express";
 import { connect } from "mongoose";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import path from "path"; 
+import { fileURLToPath } from "url"; 
 
 import productRoutes from "./routes/productRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
@@ -17,11 +19,17 @@ import reportRoutes from "./routes/reportRoutes.js";
 const app = express();
 const PORT = process.env.PORT || 8080;
 const MONGODB_URI = process.env.MONGODB_URI;
+
+// Configurar __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const allowedOrigins = new Set([
   "http://127.0.0.1:5500",
   "http://127.0.0.1:3000",
   "http://localhost:5500",
   "http://localhost:3000",
+  "http://localhost:8080", 
 ]);
 
 const corsOptions = {
@@ -40,6 +48,11 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(json());
 app.use(cookieParser());
+
+// SERVIR ARCHIVOS ESTÁTICOS CORRECTAMENTE
+app.use(express.static(path.join(__dirname, 'public'))); // Para /css, /js, etc.
+app.use(express.static(path.join(__dirname, 'html')));   // Para archivos HTML
+app.use('/sources', express.static(path.join(__dirname, '..', 'sources')));
 
 connect(MONGODB_URI)
   .then(() => {
@@ -62,6 +75,10 @@ app.use("/reviews", reviewRoutes);
 app.use("/coupons", couponRoutes);
 app.use("/wishlist", wishlistRoutes);
 app.use("/reports", reportRoutes);
+
+app.get("/inventario-stock-bajo", (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'html', 'InventarioStockB.html'));
+});
 
 app.use((_, res) => {
   res.status(404).json({ error: "Recurso no encontrado" });

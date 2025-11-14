@@ -426,3 +426,33 @@ th {
     font-weight: bold;
     margin-right: 10px;
 }
+
+
+/* Colores para los estados de stock */
+.stock-bajo {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+.stock-medio {
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.stock-normal {
+    color: var(--success);
+    font-weight: 600;
+}
+
+/* También actualiza los íconos si es necesario */
+.stock-bajo i {
+    color: var(--danger);
+}
+
+.stock-medio i {
+    color: var(--warning);
+}
+
+.stock-normal i {
+    color: var(--success);
+}
