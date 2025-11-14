@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Proveedores</title>
+    <title>Gestión de Usuarios</title>
     <link rel="stylesheet" href="../css/admin.css">
     <link rel="stylesheet" href="../css/cupones.css"> 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -19,10 +19,8 @@
                 <li><a href="cupones.html"><i class="fas fa-tags"></i> Gestión de Cupones</a></li>
                 <li><a href="reporte_productos.html"><i class="fas fa-star"></i> Prod. Más Vendidos</a></li>
                 <li><a href="reporte_vendedores.html"><i class="fas fa-users"></i> Reporte Vendedores</a></li>
+                <li><a href="proveedores.html"><i class="fas fa-truck-field"></i> Proveedores</a></li>
                 <li class="active">
-                    <a href="proveedores.html"><i class="fas fa-truck-field"></i> Proveedores</a>
-                </li>
-                <li>
                     <a href="gestion_usuarios.html"><i class="fas fa-user-shield"></i> Gestión Usuarios</a>
                 </li>
                 <li><a href="../index.html"><i class="fas fa-store"></i> Ver Tienda</a></li>
@@ -32,7 +30,7 @@
 
         <main class="admin-content">
             <header class="admin-header">
-                <h2>Gestión de Proveedores (HU 30)</h2>
+                <h2>Gestión de Usuarios y Roles (HU 33)</h2>
                 <div class="user-info">
                     Bienvenido, <span id="admin-username">cargando...</span>
                 </div>
@@ -40,25 +38,20 @@
 
             <section class="content-area">
                 <div class="content-header">
-                    <h3>Todos los Proveedores</h3>
-                    <button id="add-provider-btn" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Crear Nuevo Proveedor
-                    </button>
+                    <h3>Todos los Usuarios del Sistema</h3>
                 </div>
                 
                 <div class="table-container">
-                    <table id="providers-table">
+                    <table id="users-table">
                         <thead>
                             <tr>
-                                <th>Nombre</th>
-                                <th>Contacto</th>
+                                <th>Username</th>
                                 <th>Email</th>
-                                <th>Teléfono</th>
-                                <th>Estado</th>
+                                <th>Rol Actual</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
-                        <tbody id="providers-table-body">
+                        <tbody id="users-table-body">
                             </tbody>
                     </table>
                 </div>
@@ -66,45 +59,32 @@
         </main>
     </div>
 
-    <div id="provider-modal" class="modal-overlay" style="display: none;">
+    <div id="user-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
-            <form id="provider-form">
-                <h3 id="modal-title">Crear Nuevo Proveedor</h3>
-                <input type="hidden" id="provider-id">
+            <form id="user-form">
+                <h3 id="modal-title">Cambiar Rol de Usuario</h3>
+                <input type="hidden" id="user-id">
                 
                 <div class="form-group">
-                    <label for="provider-name">Nombre del Proveedor</label>
-                    <input type="text" id="provider-name" required>
+                    <label>Usuario:</label>
+                    <p id="user-username-display" style="font-weight: bold;"></p>
                 </div>
+
                 <div class="form-group">
-                    <label for="provider-contactName">Nombre de Contacto</label>
-                    <input type="text" id="provider-contactName" required>
-                </div>
-                <div class="form-group">
-                    <label for="provider-email">Email</label>
-                    <input type="email" id="provider-email" required>
-                </div>
-                <div class="form-group">
-                    <label for="provider-phone">Teléfono</label>
-                    <input type="tel" id="provider-phone" required>
-                </div>
-                <div class="form-group">
-                    <label for="provider-address">Dirección (Opcional)</label>
-                    <input type="text" id="provider-address">
-                </div>
-                <div class="form-group checkbox-group">
-                    <input type="checkbox" id="provider-active" checked>
-                    <label for="provider-active">Activo</label>
+                    <label for="user-role-select">Asignar Nuevo Rol</label>
+                    <select id="user-role-select" required>
+                        <option value="">Cargando roles...</option>
+                    </select>
                 </div>
 
                 <div class="modal-actions">
                     <button type="button" id="cancel-btn" class="btn btn-secondary">Cancelar</button>
-                    <button type="submit" id="save-btn" class="btn btn-primary">Guardar</button>
+                    <button type="submit" id="save-btn" class="btn btn-primary">Guardar Cambio</button>
                 </div>
             </form>
         </div>
     </div>
     
-    <script src="../js/proveedores.js"></script>
+    <script src="../js/gestion_usuarios.js"></script>
 </body>
 </html>
