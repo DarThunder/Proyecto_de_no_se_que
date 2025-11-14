@@ -27,6 +27,124 @@ document.addEventListener('DOMContentLoaded', function() {
         NORMAL: 50    // Normal: 50+ unidades 
     };
 
+    // Función para enviar notificación al gerente
+    async function sendManagerNotification(orderDetails) {
+        try {
+            console.log('Enviando notificación al gerente:', orderDetails);
+            
+            const baseUrl = window.location.origin.includes('5500') 
+                ? 'http://localhost:8080' 
+                : window.location.origin;
+                
+            const response = await fetch(`${baseUrl}/messages/reorder`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    productName: orderDetails.productName,
+                    variantId: orderDetails.productId,
+                    supplier: orderDetails.supplier,
+                    supplierName: orderDetails.supplierName,
+                    quantity: parseInt(orderDetails.quantity),
+                    urgency: orderDetails.urgency,
+                    orderId: orderDetails.orderId || 'N/A',
+                    requestedBy: "Encargado de Inventario",
+                    notes: orderDetails.notes || "Solicitud de reabastecimiento por stock bajo"
+                })
+            });
+
+            if (response.ok) {
+                console.log('✅ Notificación enviada al gerente correctamente');
+                return true;
+            } else {
+                console.error('❌ Error al enviar notificación al gerente:', response.status);
+                return false;
+            }
+        } catch (error) {
+            console.error('❌ Error enviando notificación:', error);
+            return false;
+        }
+    }
+
+    // Función para abrir el formulario
+    function openReorderForm(productId, productName) {
+        const form = document.getElementById('reorderForm');
+        const productInput = document.getElementById('productName');
+        
+        productInput.value = productName;
+        form.style.display = 'block';
+        form.dataset.productId = productId;
+        
+        // Auto-seleccionar urgencia basada en el stock
+        const product = allProducts.find(p => p.id === productId);
+        if (product) {
+            const urgencySelect = document.getElementById('urgency');
+            if (urgencySelect) {
+                if (product.stock <= 5) {
+                    urgencySelect.value = 'critical';
+                } else if (product.stock <= 15) {
+                    urgencySelect.value = 'urgent';
+                } else {
+                    urgencySelect.value = 'normal';
+                }
+            }
+        }
+    }
+
+    // Función para enviar el formulario
+    async function submitReorderForm() {
+        const form = document.getElementById('reorderForm');
+        const productId = form.dataset.productId;
+        const productName = document.getElementById('productName').value;
+        const supplierSelect = document.getElementById('supplier');
+        const quantity = document.getElementById('quantity').value;
+        const urgency = document.getElementById('urgency').value;
+
+        if (!supplierSelect.value) {
+            alert('Por favor selecciona un proveedor');
+            return;
+        }
+
+        const supplier = supplierSelect.value;
+        const supplierName = supplierSelect.options[supplierSelect.selectedIndex].text;
+
+        try {
+            // Enviar notificación al gerente
+            const notificationSent = await sendManagerNotification({
+                productId: productId,
+                productName: productName,
+                supplier: supplier,
+                supplierName: supplierName,
+                quantity: quantity,
+                urgency: urgency
+            });
+
+            if (notificationSent) {
+                alert(`✅ ¡Solicitud enviada al gerente!\n\nProducto: ${productName}\nCantidad: ${quantity}\nProveedor: ${supplierName}\nUrgencia: ${urgency}`);
+            } else {
+                alert(`⚠️ Error al enviar notificación\n\nProducto: ${productName}\nCantidad: ${quantity}\nProveedor: ${supplierName}`);
+            }
+            
+            closeReorderForm();
+            
+        } catch (error) {
+            console.error('Error realizando pedido:', error);
+            alert('Error al realizar el pedido');
+        }
+    }
+
+    // Función para cerrar formulario
+    function closeReorderForm() {
+        document.getElementById('reorderForm').style.display = 'none';
+        document.getElementById('orderForm').reset();
+    }
+
+    // Hacer funciones globales
+    window.openReorderForm = openReorderForm;
+    window.closeReorderForm = closeReorderForm;
+    window.submitReorderForm = submitReorderForm;
+
     // Inicializar la aplicación
     async function init() {
         await loadUserInfo();
@@ -37,7 +155,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Cargar información del usuario
     async function loadUserInfo() {
         try {
-            // En una aplicación real, esto vendría del sistema de autenticación
             const user = {
                 name: 'Inventario',
                 role: 'Encargado del Inventario',
@@ -54,43 +171,31 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Cargar los productos
     async function loadProducts() {
-    try {
-        showLoadingState();
-        
-        console.log('Cargando productos desde API...');
-        
-        // URL DINÁMICA - funciona en cualquier entorno
-        const baseUrl = window.location.origin.includes('5500') 
-            ? 'http://localhost:8080' 
-            : window.location.origin;
+        try {
+            showLoadingState();
             
-        const response = await fetch(`${baseUrl}/products`);
-        
-        console.log('URL utilizada:', `${baseUrl}/products`);
-        console.log('Respuesta recibida:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`Error ${response.status}: ${response.statusText}`);
+            const baseUrl = window.location.origin.includes('5500') 
+                ? 'http://localhost:8080' 
+                : window.location.origin;
+                
+            const response = await fetch(`${baseUrl}/products`);
+            
+            if (!response.ok) {
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            }
+            
+            const variants = await response.json();
+            allProducts = processProductData(variants);
+            
+            applyFilter('all');
+            updateStats();
+            updateAlertBanner();
+            
+        } catch (error) {
+            console.error('Error cargando productos:', error);
+            showErrorState('Error al cargar los productos.');
         }
-        
-        const variants = await response.json();
-        
-        console.log('Datos recibidos:', variants.length, 'variantes');
-        
-        // Procesar los datos
-        allProducts = processProductData(variants);
-        
-        console.log('Productos procesados:', allProducts.length);
-        
-        applyFilter('all');
-        updateStats();
-        updateAlertBanner();
-        
-    } catch (error) {
-        console.error('Error cargando productos:', error);
-        showErrorState('Error al cargar los productos. Verifica la consola para más detalles.');
     }
-}
 
     // Procesar datos de variantes a formato de inventario
     function processProductData(variants) {
@@ -104,20 +209,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const stockLevel = getStockLevel(variant.stock);
             
-            // DEPURACIÓN: Verificar y corregir la URL de la imagen
             let imageUrl = product.image_url || '/sources/img/logo_negro.png';
-            
-            // Asegurar que la ruta empiece con /
             if (!imageUrl.startsWith('/')) {
                 imageUrl = '/' + imageUrl;
             }
-            
-            console.log('🔍 Depuración de imagen:', {
-                nombre: product.name,
-                image_url_original: product.image_url,
-                image_url_corregida: imageUrl,
-                stock: variant.stock
-            });
             
             return {
                 id: variant._id,
@@ -135,14 +230,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }).filter(product => product !== null);
     }
 
-    // Determinar nivel de stock CORREGIDO
+    // Determinar nivel de stock
     function getStockLevel(stock) {
-    if (stock <= STOCK_LEVELS.BAJO) return 'bajo';        // 0-15
-    if (stock < STOCK_LEVELS.NORMAL) return 'medio';      // 16-49
-    return 'normal';                                      // 50+
+        if (stock <= STOCK_LEVELS.BAJO) return 'bajo';
+        if (stock < STOCK_LEVELS.NORMAL) return 'medio';
+        return 'normal';
     }
 
-    // Obtener texto del estado CORREGIDO
+    // Obtener texto del estado
     function getStockStatus(level) {
         const statusMap = {
             bajo: 'Bajo',
@@ -152,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return statusMap[level] || 'Desconocido';
     }
 
-    // Aplicar filtro CORREGIDO
+    // Aplicar filtro
     function applyFilter(filter) {
         currentFilter = filter;
         
@@ -167,14 +262,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 filteredProducts = allProducts.filter(p => p.stockLevel === 'normal');
                 break;
             default:
-                filteredProducts = allProducts; // "Todos" - muestra todos los productos
+                filteredProducts = allProducts;
         }
         
         renderTable();
         updateFilterButtons();
     }
 
-    // Renderizar tabla CORREGIDA
+    // Renderizar tabla
     function renderTable() {
         if (filteredProducts.length === 0) {
             tableBody.innerHTML = `
@@ -182,9 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td colspan="5" style="text-align: center; padding: 40px; color: #666;">
                         <i class="fas fa-check-circle" style="font-size: 2rem; margin-bottom: 10px; color: var(--success);"></i>
                         <br>
-                        ${currentFilter === 'all' ? 'No hay productos con stock bajo' : 
-                        currentFilter === 'critical' ? 'No hay productos con stock crítico' : 
-                        'No hay productos con stock bajo'}
+                        ${currentFilter === 'all' ? 'No hay productos con stock bajo' : 'No hay productos'}
                     </td>
                 </tr>
             `;
@@ -225,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function() {
         `).join('');
     }
 
-    // Actualizar botones de filtro CORREGIDO
+    // Actualizar botones de filtro
     function updateFilterButtons() {
         filterButtons.forEach(btn => {
             const filterType = btn.textContent.toLowerCase();
@@ -237,15 +330,16 @@ document.addEventListener('DOMContentLoaded', function() {
             );
         });
     }
-    // Actualizar estadísticas CORREGIDA
+
+    // Actualizar estadísticas
     function updateStats() {
         const bajoCount = allProducts.filter(p => p.stockLevel === 'bajo').length;
         const medioCount = allProducts.filter(p => p.stockLevel === 'medio').length;
         const normalCount = allProducts.filter(p => p.stockLevel === 'normal').length;
 
-        statsCritical.textContent = bajoCount;      // Productos con stock BAJO
-        statsWarning.textContent = medioCount;      // Productos con stock MEDIO
-        statsNormal.textContent = normalCount;      // Productos con stock NORMAL
+        statsCritical.textContent = bajoCount;
+        statsWarning.textContent = medioCount;
+        statsNormal.textContent = normalCount;
     }
 
     // Actualizar banner de alerta
@@ -254,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (criticalProducts.length > 0) {
             alertMessage.textContent = 
-                `${criticalProducts.length} producto(s) tienen niveles de inventario por debajo del mínimo (${STOCK_LEVELS.CRITICAL} unidades). Se recomienda realizar pedidos de inmediato.`;
+                `${criticalProducts.length} producto(s) tienen niveles de inventario por debajo del mínimo.`;
             alertBanner.style.display = 'flex';
         } else {
             alertBanner.style.display = 'none';
@@ -293,21 +387,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Configurar event listeners
     function setupEventListeners() {
-    // Filtros
-    filterButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const filter = this.textContent.toLowerCase();
-            const filterMap = {
-                'todos': 'all',
-                'normal': 'normal',
-                'medio': 'medio',
-                'bajo': 'bajo'
-            };
-            applyFilter(filterMap[filter] || 'all');
+        filterButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const filter = this.textContent.toLowerCase();
+                const filterMap = {
+                    'todos': 'all',
+                    'normal': 'normal',
+                    'medio': 'medio',
+                    'bajo': 'bajo'
+                };
+                applyFilter(filterMap[filter] || 'all');
+            });
         });
-    });
 
-        // Formulario de pedido
         closeForm.addEventListener('click', closeReorderForm);
         
         orderForm.addEventListener('submit', function(e) {
@@ -315,7 +407,6 @@ document.addEventListener('DOMContentLoaded', function() {
             submitReorderForm();
         });
 
-        // Cerrar formulario al hacer clic fuera
         document.addEventListener('click', function(e) {
             if (reorderForm.style.display === 'block' && 
                 !reorderForm.contains(e.target) && 
@@ -325,61 +416,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Inicializar la aplicación
+    // Inicializar
     init();
 });
-
-// Funciones globales para los botones
-function openReorderForm(productId, productName) {
-    const form = document.getElementById('reorderForm');
-    const productInput = document.getElementById('productName');
-    
-    productInput.value = productName;
-    form.style.display = 'block';
-    
-    // Almacenar el ID del producto en el formulario
-    form.dataset.productId = productId;
-}
-
-function closeReorderForm() {
-    document.getElementById('reorderForm').style.display = 'none';
-    document.getElementById('orderForm').reset();
-}
-
-async function submitReorderForm() {
-    const form = document.getElementById('reorderForm');
-    const productId = form.dataset.productId;
-    const productName = document.getElementById('productName').value;
-    const supplier = document.getElementById('supplier').value;
-    const quantity = document.getElementById('quantity').value;
-    const urgency = document.getElementById('urgency').value;
-
-    if (!supplier) {
-        alert('Por favor selecciona un proveedor');
-        return;
-    }
-
-    try {
-        // Simular envío del pedido (en una app real, harías una petición a tu API)
-        console.log('Realizando pedido:', {
-            productId,
-            productName,
-            supplier,
-            quantity,
-            urgency
-        });
-
-        // Mostrar confirmación
-        alert(`¡Pedido realizado exitosamente!\n\nProducto: ${productName}\nCantidad: ${quantity}\nProveedor: ${document.getElementById('supplier').options[document.getElementById('supplier').selectedIndex].text}\nUrgencia: ${urgency}`);
-        
-        // Cerrar formulario
-        closeReorderForm();
-        
-        // Recargar los datos (opcional)
-        // await loadProducts();
-        
-    } catch (error) {
-        console.error('Error realizando pedido:', error);
-        alert('Error al realizar el pedido: ' + error.message);
-    }
-}
