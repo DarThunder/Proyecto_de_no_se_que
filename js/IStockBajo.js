@@ -94,33 +94,46 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Procesar datos de variantes a formato de inventario
     function processProductData(variants) {
-    return variants.map(variant => {
-        const product = variant.product;
-        
-        // Verificar que el producto existe
-        if (!product) {
-            console.warn('Variante sin producto:', variant);
-            return null;
-        }
-        
-        const stockLevel = getStockLevel(variant.stock);
-        
-        return {
-            id: variant._id,
-            productId: product._id,
-            name: product.name,
-            category: product.category,
-            size: variant.size,
-            sku: variant.sku,
-            stock: variant.stock,
-            stockLevel: stockLevel,
-            status: getStockStatus(stockLevel),
-            minStock: STOCK_LEVELS.BAJO,
-            image: product.image_url || '/sources/img/logo_negro.png'
-
-        };
-    }).filter(product => product !== null);
-}
+        return variants.map(variant => {
+            const product = variant.product;
+            
+            if (!product) {
+                console.warn('Variante sin producto:', variant);
+                return null;
+            }
+            
+            const stockLevel = getStockLevel(variant.stock);
+            
+            // DEPURACIÓN: Verificar y corregir la URL de la imagen
+            let imageUrl = product.image_url || '/sources/img/logo_negro.png';
+            
+            // Asegurar que la ruta empiece con /
+            if (!imageUrl.startsWith('/')) {
+                imageUrl = '/' + imageUrl;
+            }
+            
+            console.log('🔍 Depuración de imagen:', {
+                nombre: product.name,
+                image_url_original: product.image_url,
+                image_url_corregida: imageUrl,
+                stock: variant.stock
+            });
+            
+            return {
+                id: variant._id,
+                productId: product._id,
+                name: product.name,
+                category: product.category,
+                size: variant.size,
+                sku: variant.sku,
+                stock: variant.stock,
+                stockLevel: stockLevel,
+                status: getStockStatus(stockLevel),
+                minStock: STOCK_LEVELS.BAJO,
+                image: imageUrl
+            };
+        }).filter(product => product !== null);
+    }
 
     // Determinar nivel de stock CORREGIDO
     function getStockLevel(stock) {
