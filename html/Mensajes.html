@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mensajes - Panel de Administración</title>
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="../css/mensajes.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="admin-container">
+        <nav class="admin-nav">
+            <div class="admin-logo">
+                <h1>S&S Admin</h1>
+            </div>
+            <ul>
+                <li>
+                    <a href="admin.html">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="cupones.html">
+                        <i class="fas fa-tags"></i> Gestión de Cupones
+                    </a>
+                </li>
+                <li>
+                    <a href="reporte_productos.html">
+                        <i class="fas fa-star"></i> Prod. Más Vendidos
+                    </a>
+                </li>
+                <li>
+                    <a href="reporte_vendedores.html">
+                        <i class="fas fa-users"></i> Reporte Vendedores
+                    </a>
+                </li>
+                <li>
+                    <a href="#"><i class="fas fa-users"></i> Gestión Empleados</a>
+                </li>
+                <li>
+                    <a href="GestionCategorias.html">
+                        <i class="fas fa-box"></i> Gestión Productos
+                    </a>
+                </li>
+                <li>
+                    <a href="GestionProduc.html">
+                        <i class="fas fa-tags"></i> Gestión Categorias
+                    </a>
+                </li>
+                <li class="active">
+                    <a href="Mensajes.html">
+                        <i class="fas fa-envelope"></i> Mensajes
+                    </a>
+                </li>
+                <li>
+                    <a href="../index.html">
+                        <i class="fas fa-store"></i> Ver Tienda
+                    </a>
+                </li>
+                <li>
+                    <a href="#" id="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <main class="admin-content">
+            <header class="admin-header">
+                <h2>Mensajes y Notificaciones</h2>
+                <div class="user-info">
+                    Bienvenido, <span id="admin-username">Gerente</span>
+                </div>
+            </header>
+
+            <section class="content-area">
+                <div class="messages-header">
+                    <h3>Solicitudes de Reabastecimiento</h3>
+                    <div class="messages-actions">
+                        <button class="btn btn-primary" id="markAllRead">
+                            <i class="fas fa-check-double"></i> Marcar todos como leídos
+                        </button>
+                        <button class="btn btn-secondary" id="refreshMessages">
+                            <i class="fas fa-sync-alt"></i> Actualizar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="messages-stats">
+                    <div class="message-stat">
+                        <span class="stat-number" id="totalMessages">0</span>
+                        <span class="stat-label">Total mensajes</span>
+                    </div>
+                    <div class="message-stat">
+                        <span class="stat-number" id="unreadMessages">0</span>
+                        <span class="stat-label">No leídos</span>
+                    </div>
+                    <div class="message-stat">
+                        <span class="stat-number" id="pendingOrders">0</span>
+                        <span class="stat-label">Pedidos pendientes</span>
+                    </div>
+                </div>
+
+                <div class="messages-container">
+                    <div class="messages-list" id="messagesList">
+                        <!-- Los mensajes se cargarán aquí dinámicamente -->
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <h4>No hay mensajes</h4>
+                            <p>Las solicitudes de reabastecimiento aparecerán aquí</p>
+                        </div>
+                    </div>
+                    
+                    <div class="message-detail" id="messageDetail">
+                        <div class="empty-detail">
+                            <i class="fas fa-envelope-open"></i>
+                            <h4>Selecciona un mensaje</h4>
+                            <p>Haz clic en una solicitud para ver los detalles</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <script src="../js/mensajes.js"></script>
+</body>
+</html>

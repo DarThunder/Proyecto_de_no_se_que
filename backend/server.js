@@ -15,6 +15,7 @@ import reviewRoutes from "./routes/reviewRoutes.js";
 import couponRoutes from "./routes/couponRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
+import messageRoutes from "./routes/messageRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -48,6 +49,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(json());
 app.use(cookieParser());
+app.use("/messages", messageRoutes);
 
 // SERVIR ARCHIVOS ESTÁTICOS CORRECTAMENTE
 app.use(express.static(path.join(__dirname, 'public'))); // Para /css, /js, etc.
