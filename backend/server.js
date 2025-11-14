@@ -16,6 +16,7 @@ import couponRoutes from "./routes/couponRoutes.js";
 import wishlistRoutes from "./routes/wishlistRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
+import providerRoutes from "./routes/providerRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -77,6 +78,7 @@ app.use("/reviews", reviewRoutes);
 app.use("/coupons", couponRoutes);
 app.use("/wishlist", wishlistRoutes);
 app.use("/reports", reportRoutes);
+app.use("/providers", providerRoutes);
 
 app.get("/inventario-stock-bajo", (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'html', 'InventarioStockB.html'));
