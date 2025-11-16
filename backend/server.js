@@ -19,6 +19,7 @@ import messageRoutes from "./routes/messageRoutes.js";
 import providerRoutes from "./routes/providerRoutes.js";
 // SE METIO ESTO PARA TERMINOS Y CONDICIONES
 import contentRoutes from "./routes/contentRoutes.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -52,7 +53,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(json());
 app.use(cookieParser());
-app.use("/messages", messageRoutes);
 
 // SERVIR ARCHIVOS ESTÁTICOS CORRECTAMENTE
 app.use(express.static(path.join(__dirname, 'public'))); // Para /css, /js, etc.
@@ -84,9 +84,20 @@ app.use("/reports", reportRoutes);
 app.use("/providers", providerRoutes);
 // SE METIO ESTO PARA TERMINOS Y CONDICIONES
 app.use("/content", contentRoutes);
+app.use("/categories", categoryRoutes);
+app.use("/messages", messageRoutes);
 
 app.get("/inventario-stock-bajo", (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'html', 'InventarioStockB.html'));
+});
+
+// DEBUG: Mostrar rutas cargadas
+app._router.stack.forEach((middleware) => {
+  if (middleware.route) {
+    console.log(`🛣️  Ruta directa: ${Object.keys(middleware.route.methods)} ${middleware.route.path}`);
+  } else if (middleware.name === 'router') {
+    console.log(`🛣️  Router montado: ${middleware.regexp}`);
+  }
 });
 
 app.use((_, res) => {

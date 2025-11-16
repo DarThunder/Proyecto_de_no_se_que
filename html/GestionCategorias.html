@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Categorías - Panel de Administración</title>
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="../css/categories.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="admin-container">
+        <nav class="admin-nav">
+            <div class="admin-logo">
+                <h1>S&S Admin</h1>
+            </div>
+            <ul>
+                <li>
+                    <a href="admin.html">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                </li>
+                <li>
+                    <a href="cupones.html">
+                        <i class="fas fa-tags"></i> Gestión de Cupones
+                    </a>
+                </li>
+                <li>
+                    <a href="reporte_productos.html">
+                        <i class="fas fa-star"></i> Prod. Más Vendidos
+                    </a>
+                </li>
+                <li>
+                    <a href="reporte_vendedores.html"><i class="fas fa-users"></i> Reporte Vendedores</a>
+                </li>
+                <li>
+                    <a href="#"><i class="fas fa-users"></i> Gestión Empleados</a>
+                </li>
+                <li class="active">
+                    <a href="GestionCategorias.html"><i class="fas fa-box"></i> Gestión Categorías</a>
+                </li>
+                <li>
+                    <a href="GestionProduc.html"><i class="fas fa-tags"></i> Gestión Productos</a>
+                </li>
+                <li>
+                    <a href="Mensajes.html"><i class="fas fa-envelope"></i> Mensajes</a>
+                </li>
+                <li>
+                    <a href="../index.html"><i class="fas fa-store"></i> Ver Tienda</a>
+                </li>
+                <li>
+                    <a href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+                </li>
+            </ul>
+        </nav>
+
+        <main class="admin-content">
+            <header class="admin-header">
+                <h2>Gestión de Categorías</h2>
+                <div class="user-info">
+                    Bienvenido, <span id="admin-username">cargando...</span>
+                </div>
+            </header>
+
+            <section class="content-area">
+                <!-- Botón para agregar nueva categoría -->
+                <div class="action-bar">
+                    <button class="btn btn-primary" id="add-category-btn">
+                        <i class="fas fa-plus"></i> Agregar Categoría
+                    </button>
+                </div>
+
+                <!-- Lista de categorías -->
+                <div class="categories-grid" id="categories-grid">
+                    <!-- Las categorías se cargarán aquí dinámicamente -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal para agregar/editar categoría -->
+    <div id="category-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Agregar Categoría</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="category-form">
+                    <input type="hidden" id="category-id">
+                    
+                    <div class="form-group">
+                        <label for="category-name">Nombre de la Categoría:</label>
+                        <input type="text" id="category-name" required placeholder="Ej: Abrigos, Camisetas, Pantalones">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category-description">Descripción:</label>
+                        <textarea id="category-description" rows="3" placeholder="Descripción opcional de la categoría..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category-image">Imagen de la Categoría:</label>
+                        <input type="file" id="category-image-file" accept="image/*" style="display: none;">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="text" id="category-image" placeholder="URL de imagen o selecciona archivo">
+                            <button type="button" class="btn btn-secondary" id="select-image-btn">
+                                <i class="fas fa-folder-open"></i>
+                            </button>
+                        </div>
+                        <small style="color: #95a5a6; margin-top: 5px; display: block;">
+                            Ingresa URL o selecciona imagen (opcional)
+                        </small>
+                        <div id="image-preview" style="margin-top: 10px; display: none;">
+                            <img id="preview-img" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.1)">
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="active-toggle" style="display: none;">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="category-active" checked>
+                            <span class="checkmark"></span>
+                            Categoría activa (visible en la tienda)
+                        </label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Guardar Categoría</button>
+                        <button type="button" class="btn btn-secondary" id="cancel-btn">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmación para eliminar -->
+    <div id="delete-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirmar Eliminación</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p id="delete-message">¿Estás seguro de que quieres eliminar esta categoría? Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="confirm-delete">Eliminar</button>
+                <button class="btn btn-secondary" id="cancel-delete">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/admin.js"></script>
+    <script src="../js/GestionCategorias.js"></script>
+</body>
+</html>
