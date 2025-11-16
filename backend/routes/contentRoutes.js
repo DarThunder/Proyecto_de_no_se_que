@@ -5,9 +5,9 @@ import Content from '../models/Content.js';
 
 // Importamos los middlewares de seguridad
 // 'verifyToken' revisa si el usuario ha iniciado sesión (autenticación)
-import { verifyToken } from '../middleware/verifyToken.js';
+import verifyToken from '../middleware/verifyToken.js';
 // 'hasPermission' revisa si el usuario tiene el rol correcto (autorización)
-import { hasPermission } from '../middleware/hasPermission.js';
+import hasPermission from '../middleware/hasPermission.js';
 
 // Creamos una nueva instancia del Router
 const router = Router();
