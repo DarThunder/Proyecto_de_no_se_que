@@ -688,3 +688,24 @@ body {
 .swiper-pagination-bullet-active {
   background: #fff;
 }
+/* En tu styleMain.css - Agregar estas reglas */
+
+/* Asegurar que el grid de categorías funcione correctamente */
+.categories-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+    gap: 2rem !important;
+    width: 100% !important;
+}
+
+/* Específico para el contenedor de categorías dinámicas */
+#dynamic-categories-container {
+    display: contents !important; /* Hace que los hijos sean parte del grid padre */
+}
+
+/* Asegurar que las tarjetas de categoría tengan el mismo estilo */
+#dynamic-categories-container .category-card {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+}

@@ -62,6 +62,9 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.querySelector("#productos-hombre-container")) {
       loadProducts();
     }
+
+    // CARGAR CATEGORÍAS DINÁMICAS (NUEVA LÍNEA)
+    loadDynamicCategories();
     
     setupScrollEffects();
   });
@@ -163,6 +166,53 @@ async function loadProducts() {
     menGrid.innerHTML =
       "<p>No se pudieron cargar los productos. Intenta más tarde.</p>";
   }
+}
+
+async function loadDynamicCategories() {
+    const dynamicContainer = document.getElementById('dynamic-categories-container');
+    if (!dynamicContainer) return;
+
+    try {
+        const response = await fetch('http://localhost:8080/categories');
+        if (!response.ok) {
+            throw new Error('Error al cargar categorías dinámicas');
+        }
+
+        const categories = await response.json();
+        
+        if (categories.length === 0) {
+            return; // No hay categorías dinámicas, no mostrar nada
+        }
+
+        let categoriesHTML = '';
+        categories.forEach(category => {
+            // Procesar URL de imagen
+            let imageUrl = category.image_url || 'sources/img/category_default.png';
+            if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+                imageUrl = 'sources/img/' + imageUrl;
+            }
+
+            categoriesHTML += `
+                <div class="category-card">
+                    <div class="category-image">
+                        <img src="${imageUrl}" alt="${category.name}" 
+                             onerror="this.src='sources/img/category_default.png'">
+                    </div>
+                    <h3>${category.name.toUpperCase()}</h3>
+                    <a href="html/categoria.html?tipo=${encodeURIComponent(category.name.toLowerCase())}" 
+                       class="category-link">
+                        VER MÁS
+                    </a>
+                </div>
+            `;
+        });
+
+        dynamicContainer.innerHTML = categoriesHTML;
+        
+    } catch (error) {
+        console.error('Error cargando categorías dinámicas:', error);
+        // No mostrar error para no afectar la experiencia del usuario
+    }
 }
 
 function initializeProductButtons() {
