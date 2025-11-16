@@ -959,3 +959,239 @@ body {
 .btn-info:hover {
     background: #138496;
 }
+
+
+/* Agregar estos estilos al final de admin.css */
+
+/* Modal extra ancho para códigos de barras */
+.extra-wide-modal {
+    max-width: 1000px !important;
+    width: 95% !important;
+}
+
+/* Contenedor de códigos de barras */
+.barcodes-container {
+    padding: 0;
+}
+
+/* Sección de entrada */
+.barcodes-container .input-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Select de productos */
+.barcodes-container .product-select {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    font-size: 16px;
+    color: #ffffff;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 20px;
+}
+
+.barcodes-container .product-select:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.barcodes-container .product-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+}
+
+.barcodes-container .product-select option {
+    background: #2d2d2d;
+    color: #ffffff;
+    padding: 12px;
+}
+
+/* Grupo de botones */
+.barcodes-container .btn-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.barcodes-container .btn {
+    flex: 1;
+    min-width: 120px;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* Contenedor del código de barras */
+.barcodes-container .barcode-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    min-height: 300px;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+}
+
+.barcodes-container .product-name {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #ffffff;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.barcodes-container .product-details {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(41, 128, 185, 0.05));
+    border-radius: 10px;
+    border: 1px solid rgba(52, 152, 219, 0.2);
+    font-size: 0.95rem;
+    text-align: center;
+    line-height: 1.6;
+}
+
+.barcodes-container .product-info-detail {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    align-items: center;
+}
+
+.barcodes-container .product-info-detail strong {
+    color: var(--primary);
+}
+
+/* Imagen del código de barras */
+.barcodes-container .barcode-image {
+    max-width: 100%;
+    margin: 1.5rem 0;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Texto del código de barras */
+.barcodes-container .barcode-value {
+    margin-top: 1rem;
+    font-family: 'Courier New', monospace;
+    font-size: 1.1rem;
+    color: #e0e0e0;
+    text-align: center;
+    word-break: break-all;
+    max-width: 100%;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Loading */
+.barcodes-container .loading-section {
+    text-align: center;
+    padding: 2rem;
+}
+
+.barcodes-container .loading-spinner {
+    color: var(--primary);
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.barcodes-container .loading-spinner::after {
+    content: '';
+    width: 18px;
+    height: 18px;
+    border: 2px solid transparent;
+    border-top: 2px solid var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Estados ocultos */
+.barcodes-container .hidden {
+    display: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .extra-wide-modal {
+        max-width: 95% !important;
+        margin: 2% auto !important;
+    }
+    
+    .barcodes-container .btn-group {
+        flex-direction: column;
+    }
+    
+    .barcodes-container .btn {
+        width: 100%;
+    }
+    
+    .barcodes-container .product-info-detail {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .barcodes-container .barcode-container {
+        padding: 1.5rem;
+        min-height: 250px;
+    }
+}
+
+/* Estilos de impresión */
+@media print {
+    .barcodes-container .barcode-container {
+        background: white !important;
+        border: 2px solid #000 !important;
+        color: black !important;
+    }
+    
+    .barcodes-container .product-name {
+        color: #000 !important;
+    }
+    
+    .barcodes-container .barcode-value {
+        color: #000 !important;
+        background: white !important;
+        border: 1px solid #ccc !important;
+    }
+    
+    .barcodes-container .barcode-image {
+        background: white !important;
+        border: 1px solid #ccc !important;
+    }
+}
