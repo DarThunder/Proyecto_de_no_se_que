@@ -53,6 +53,40 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
+
+    // --- Cargar Términos y Condiciones del Usuario ---
+    
+    // 1. MOSTRAR TERMINOS Y CONDICIONES
+    const cargarTerminosUsuario = async () => {
+        // Seleccionamos el 'div' contenedor que pusimos en el HTML
+        const container = document.getElementById('terminos-content-usuario');
+        // Si el contenedor no existe en esta página, no hacemos nada.
+        if (!container) return; 
+
+        try {
+            // Hacemos una petición GET a la ruta pública (la misma que usa el admin para cargar)
+            const res = await fetch('http://localhost:8080/content/terms'); 
+            const data = await res.json();
+            
+            if (res.ok) {
+                // ¡IMPORTANTE!
+                // Usamos '.innerHTML' para que el navegador interprete las etiquetas HTML
+                // (como <p>, <strong>, etc.) que el admin guardó en la BD.
+                container.innerHTML = data.htmlContent; 
+            } else {
+                // Si la API falla, mostramos un error
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            // Si el 'fetch' falla (ej. servidor caído), mostramos un error
+            container.innerHTML = '<p>No se pudieron cargar los términos y condiciones en este momento.</p>';
+            console.error('Error fetching T&C:', error);
+        }
+    };
+
+    // 2. Carga inicial
+    // Llamamos a la función en cuanto la página carga
+    cargarTerminosUsuario();
 });
 
 

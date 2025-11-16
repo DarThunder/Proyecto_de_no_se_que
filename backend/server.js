@@ -17,6 +17,8 @@ import wishlistRoutes from "./routes/wishlistRoutes.js";
 import reportRoutes from "./routes/reportRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import providerRoutes from "./routes/providerRoutes.js";
+// SE METIO ESTO PARA TERMINOS Y CONDICIONES
+import contentRoutes from "./routes/contentRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -69,6 +71,7 @@ connect(MONGODB_URI)
     process.exit(1);
   });
 
+// Le decimos a express que use estas rutas
 app.use("/products", productRoutes);
 app.use("/auth", authRoutes);
 app.use("/orders", orderRoutes);
@@ -79,6 +82,8 @@ app.use("/coupons", couponRoutes);
 app.use("/wishlist", wishlistRoutes);
 app.use("/reports", reportRoutes);
 app.use("/providers", providerRoutes);
+// SE METIO ESTO PARA TERMINOS Y CONDICIONES
+app.use("/content", contentRoutes);
 
 app.get("/inventario-stock-bajo", (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'html', 'InventarioStockB.html'));

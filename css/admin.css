@@ -32,6 +32,15 @@ body {
     min-height: 100vh;
 }
 
+/* LO DEL CONTENEDOR PARA MOVERLE A LOS TERMINOS Y CONDICIONES */
+.admin-section {
+
+}
+
+.content {
+    padding: 10vh;
+}
+
 /* Barra Lateral (Aplicamos estilo 'glass' de POS) */
 .admin-nav {
     width: 250px;

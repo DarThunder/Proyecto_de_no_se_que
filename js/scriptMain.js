@@ -66,6 +66,28 @@ document.addEventListener("DOMContentLoaded", () => {
     setupScrollEffects();
   });
 
+  // CARGAR TERMINOS Y CONDICIONES EN EL INDEX
+    const cargarTerminosUsuario = async () => {
+        const container = document.getElementById('terminos-content-usuario');
+        if (!container) return; // Salir si el elemento no existe en esta página
+
+        try {
+            const res = await fetch('http://localhost:8080/content/terms'); // Llama a la ruta pública
+            const data = await res.json();
+            
+            if (res.ok) {
+                container.innerHTML = data.htmlContent; // Inserta el HTML directamente
+            } else {
+                throw new Error(data.message);
+            }
+        } catch (error) {
+            container.innerHTML = '<p>No se pudieron cargar los términos y condiciones en este momento.</p>';
+            console.error('Error fetching T&C:', error);
+        }
+    };
+
+    cargarTerminosUsuario();
+
 
 async function loadProducts() {
   // 1. APUNTAMOS A LOS NUEVOS CONTENEDORES (swiper-wrapper)
@@ -330,6 +352,8 @@ function initializeCarousels() {
     }
   });
 }
+
+
 
 
 function setupScrollEffects() {

@@ -39,6 +39,15 @@ body {
     text-transform: uppercase;
 }
 
+/* TERMINOS Y CONDICIONES */
+.terminosCondiciones {
+    font-size: 0.8em; 
+    max-height: 150px; 
+    overflow-y: auto; 
+    border: 1px solid #444; 
+    padding: 10px;
+}
+
 /* Menú Hamburguesa - MEJORADO */
 .hamburger-menu {
     cursor: pointer;
