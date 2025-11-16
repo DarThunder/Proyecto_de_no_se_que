@@ -883,3 +883,79 @@ body {
     font-style: italic;
     grid-column: 1 / -1;
 }
+
+/* Estilos para la gestión de stock */
+.variants-stock-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.variant-stock-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #34495e;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.variant-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.variant-info strong {
+    color: #3498db;
+    font-size: 1.1em;
+}
+
+.variant-info span {
+    color: #bdc3c7;
+    font-size: 0.9em;
+}
+
+.stock-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.stock-controls label {
+    color: #ecf0f1;
+    font-weight: bold;
+}
+
+.stock-controls input {
+    width: 100px;
+    padding: 8px;
+    border: 1px solid #34495e;
+    border-radius: 4px;
+    background: #2c3e50;
+    color: #ecf0f1;
+}
+
+.manage-stock-btn {
+    background: #17a2b8;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+    margin-top: 5px;
+}
+
+.manage-stock-btn:hover {
+    background: #138496;
+}
+
+.btn-info {
+    background: #17a2b8;
+}
+
+.btn-info:hover {
+    background: #138496;
+}

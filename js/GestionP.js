@@ -35,14 +35,11 @@ class ProductManager {
         } catch (error) {
             console.error(error.message);
             
-            // Mostrar alerta personalizada con botón de Aceptar (Login) y Cancelar (Dashboard)
             const userConfirmed = confirm("Acceso denegado. Debes iniciar sesión como Administrador.\n\n¿Deseas ir al Login? (Cancelar para ir al Dashboard)");
             
             if (userConfirmed) {
-                // Si hace click en "Aceptar", va al LOGIN
                 window.location.href = 'login.html';
             } else {
-                // Si hace click en "Cancelar", va al DASHBOARD
                 window.location.href = 'admin.html';
             }
             throw error;
@@ -79,7 +76,7 @@ class ProductManager {
         if (this.products.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" style="text-align: center; padding: 2rem;">
+                    <td colspan="8" style="text-align: center; padding: 2rem;">
                         No hay productos registrados
                     </td>
                 </tr>
@@ -93,12 +90,14 @@ class ProductManager {
             const totalStock = product.variants ? 
                 product.variants.reduce((sum, variant) => sum + (variant.stock || 0), 0) : 0;
 
-            // PROCESAR LA URL DE LA IMAGEN
+            // Información de variantes para mostrar
+            const variantsInfo = product.variants && product.variants.length > 0 ? 
+                product.variants.map(v => `${v.size}: ${v.stock}`).join(', ') : 'Sin variantes';
+
             let imageUrl = product.image_url || '/sources/img/logo_negro.png';
             if (!imageUrl.startsWith('/')) {
                 imageUrl = '/' + imageUrl;
             }
-            // Si estamos en el admin, necesitamos retroceder un nivel
             if (imageUrl.startsWith('/sources/')) {
                 imageUrl = '..' + imageUrl;
             }
@@ -115,6 +114,13 @@ class ProductManager {
                 <td>${this.capitalizeFirstLetter(product.category)}</td>
                 <td>${this.escapeHtml(product.productType)}</td>
                 <td>${totalStock}</td>
+                <td>
+                    <small>${variantsInfo}</small>
+                    <br>
+                    <button class="btn btn-sm btn-info manage-stock-btn" data-id="${product._id}">
+                        <i class="fas fa-warehouse"></i> Gestionar Stock
+                    </button>
+                </td>
                 <td>
                     <button class="btn btn-sm btn-edit" data-id="${product._id}">
                         <i class="fas fa-edit"></i>
@@ -166,13 +172,11 @@ class ProductManager {
                 if (e.target.files && e.target.files[0]) {
                     const file = e.target.files[0];
                     
-                    // Validar tamaño (máximo 5MB)
                     if (file.size > 5 * 1024 * 1024) {
                         this.showNotification('La imagen es muy grande. Máximo 5MB.', 'error');
                         return;
                     }
 
-                    // Mostrar preview
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         previewImg.src = e.target.result;
@@ -184,7 +188,6 @@ class ProductManager {
                 }
             });
 
-            // Preview cuando se ingresa una URL
             imageUrlInput.addEventListener('input', (e) => {
                 const url = e.target.value.trim();
                 if (url && (url.startsWith('http') || url.startsWith('/') || url.startsWith('../'))) {
@@ -253,6 +256,24 @@ class ProductManager {
             }
         }
 
+        // Modal de gestión de stock
+        const stockModal = document.getElementById('stock-modal');
+        if (stockModal) {
+            const stockCloseBtn = stockModal.querySelector('.close');
+            const cancelStockBtn = document.getElementById('cancel-stock-btn');
+            const saveStockBtn = document.getElementById('save-stock-btn');
+
+            if (stockCloseBtn) stockCloseBtn.addEventListener('click', () => this.closeStockModal());
+            if (cancelStockBtn) cancelStockBtn.addEventListener('click', () => this.closeStockModal());
+            if (saveStockBtn) saveStockBtn.addEventListener('click', () => this.saveStockChanges());
+            
+            window.addEventListener('click', (e) => {
+                if (e.target === stockModal) {
+                    this.closeStockModal();
+                }
+            });
+        }
+
         // Botón de cerrar sesión
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
@@ -282,12 +303,19 @@ class ProductManager {
         });
 
         document.querySelectorAll('.btn-danger').forEach(btn => {
-            if (!btn.closest('.modal-footer')) {
+            if (!btn.closest('.modal-footer') && !btn.classList.contains('remove-variant')) {
                 btn.addEventListener('click', (e) => {
                     const productId = e.currentTarget.getAttribute('data-id');
                     this.openDeleteModal(productId);
                 });
             }
+        });
+
+        document.querySelectorAll('.manage-stock-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const productId = e.currentTarget.getAttribute('data-id');
+                this.openStockModal(productId);
+            });
         });
     }
 
@@ -329,7 +357,6 @@ class ProductManager {
         document.getElementById('product-category').value = product.category;
         document.getElementById('product-type').value = product.productType;
 
-        // Mostrar preview de imagen si existe
         const imageUrl = document.getElementById('product-image').value;
         const imagePreview = document.getElementById('image-preview');
         const previewImg = document.getElementById('preview-img');
@@ -394,46 +421,45 @@ class ProductManager {
     }
 
     async saveProduct() {
-    const formData = this.getFormData();
-    
-    if (!this.validateForm(formData)) {
-        return;
-    }
-
-    try {
-        const url = this.currentProductId ? 
-            `http://localhost:8080/products/admin/${this.currentProductId}` : 'http://localhost:8080/products/admin';
+        const formData = this.getFormData();
         
-        const method = this.currentProductId ? 'PUT' : 'POST';
-
-        console.log('Enviando datos a:', url, formData); // Para debug
-
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include', // <-- ESTO ES IMPORTANTE
-            body: JSON.stringify(formData)
-        });
-
-        if (response.ok) {
-            this.showNotification(
-                `Producto ${this.currentProductId ? 'actualizado' : 'creado'} correctamente`, 
-                'success'
-            );
-            this.closeProductModal();
-            await this.loadProducts();
-        } else {
-            // Obtener más detalles del error
-            const errorText = await response.text();
-            console.error('Error response:', errorText);
-            throw new Error(`Error ${response.status}: ${errorText}`);
+        if (!this.validateForm(formData)) {
+            return;
         }
-    } catch (error) {
-        console.error('Error:', error);
-        this.showNotification('Error al guardar el producto: ' + error.message, 'error');
-    }
+
+        try {
+            const url = this.currentProductId ? 
+                `http://localhost:8080/products/admin/${this.currentProductId}` : 'http://localhost:8080/products/admin';
+            
+            const method = this.currentProductId ? 'PUT' : 'POST';
+
+            console.log('Enviando datos a:', url, formData);
+
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify(formData)
+            });
+
+            if (response.ok) {
+                this.showNotification(
+                    `Producto ${this.currentProductId ? 'actualizado' : 'creado'} correctamente`, 
+                    'success'
+                );
+                this.closeProductModal();
+                await this.loadProducts();
+            } else {
+                const errorText = await response.text();
+                console.error('Error response:', errorText);
+                throw new Error(`Error ${response.status}: ${errorText}`);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            this.showNotification('Error al guardar el producto: ' + error.message, 'error');
+        }
     }
 
     getFormData() {
@@ -464,10 +490,7 @@ class ProductManager {
             variants: variants
         };
 
-        // Si hay un archivo de imagen seleccionado, procesarlo
         if (this.currentImageFile) {
-            // Por ahora, usamos un placeholder para la imagen subida
-            // En una implementación real, aquí subirías el archivo al servidor
             formData.image_url = `uploaded_${Date.now()}_${this.currentImageFile.name}`;
         }
 
@@ -530,6 +553,162 @@ class ProductManager {
         }
     }
 
+    // FUNCIONES CORREGIDAS PARA GESTIÓN DE STOCK
+    async openStockModal(productId) {
+        const product = this.products.find(p => p._id === productId);
+        if (!product) {
+            this.showNotification('Producto no encontrado', 'error');
+            return;
+        }
+
+        try {
+            // Cargar las variantes actualizadas del producto
+            const response = await fetch(`http://localhost:8080/products/${productId}/variants`, {
+                credentials: 'include'
+            });
+            
+            if (response.ok) {
+                const variants = await response.json();
+                product.variants = variants;
+            } else {
+                throw new Error('Error al cargar variantes');
+            }
+        } catch (error) {
+            console.error('Error al cargar variantes:', error);
+            this.showNotification('Error al cargar las variantes del producto', 'error');
+            return;
+        }
+
+        this.currentProductId = productId;
+        this.currentProductVariants = product.variants; // Guardar las variantes actuales
+        document.getElementById('stock-product-name').textContent = product.name;
+        
+        this.renderStockForm(product);
+        document.getElementById('stock-modal').style.display = 'block';
+    }
+
+    renderStockForm(product) {
+        const container = document.getElementById('variants-stock-list');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        if (!product.variants || product.variants.length === 0) {
+            container.innerHTML = '<p class="no-variants">No hay variantes para este producto.</p>';
+            return;
+        }
+
+        // Usar la misma lógica que en el modal de productos
+        product.variants.forEach(variant => {
+            const variantHtml = `
+                <div class="variant-stock-item" data-variant-id="${variant._id}">
+                    <div class="variant-info">
+                        <div class="variant-header">
+                            <strong>Talla: ${variant.size}</strong>
+                            <span class="variant-sku">SKU: ${variant.sku}</span>
+                        </div>
+                        <div class="stock-info">
+                            <span>Stock actual: <strong class="current-stock">${variant.stock}</strong></span>
+                        </div>
+                    </div>
+                    <div class="stock-controls">
+                        <label for="stock-${variant._id}">Nuevo Stock:</label>
+                        <input type="number" 
+                               id="stock-${variant._id}"
+                               class="stock-input" 
+                               value="${variant.stock}" 
+                               min="0" 
+                               required
+                               onchange="this.style.borderColor = this.value != ${variant.stock} ? '#3498db' : '#34495e'">
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', variantHtml);
+
+            // Agregar event listener para el input
+            const input = container.querySelector(`#stock-${variant._id}`);
+            if (input) {
+                input.addEventListener('change', function() {
+                    this.style.borderColor = this.value != variant.stock ? '#3498db' : '#34495e';
+                });
+            }
+        });
+    }
+
+    async saveStockChanges() {
+        if (!this.currentProductId || !this.currentProductVariants) {
+            this.showNotification('No hay producto seleccionado', 'error');
+            return;
+        }
+
+        const stockInputs = document.querySelectorAll('.stock-input');
+        const updatedVariants = [];
+        let hasChanges = false;
+
+        // Recopilar todos los cambios usando la misma estructura que en saveProduct
+        stockInputs.forEach(input => {
+            const variantId = input.closest('.variant-stock-item').getAttribute('data-variant-id');
+            const newStock = parseInt(input.value);
+            const originalVariant = this.currentProductVariants.find(v => v._id === variantId);
+
+            if (!originalVariant) {
+                this.showNotification(`Variante no encontrada: ${variantId}`, 'error');
+                return;
+            }
+
+            if (!isNaN(newStock) && newStock >= 0 && newStock !== originalVariant.stock) {
+                updatedVariants.push({
+                    ...originalVariant,
+                    stock: newStock
+                });
+                hasChanges = true;
+            }
+        });
+
+        if (!hasChanges) {
+            this.showNotification('No hay cambios para guardar', 'warning');
+            return;
+        }
+
+        try {
+            this.showNotification('Actualizando stock...', 'info');
+
+            // Usar el mismo endpoint que se usa para editar el producto completo
+            // Esto actualiza todas las variantes a la vez
+            const response = await fetch(`http://localhost:8080/products/admin/${this.currentProductId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    variants: updatedVariants
+                    // Mantener los otros campos del producto sin cambios
+                })
+            });
+
+            if (response.ok) {
+                this.showNotification('Stock actualizado correctamente', 'success');
+                this.closeStockModal();
+                await this.loadProducts(); // Recargar la lista para mostrar cambios
+            } else {
+                const errorText = await response.text();
+                throw new Error(`Error ${response.status}: ${errorText}`);
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            this.showNotification('Error al actualizar el stock: ' + error.message, 'error');
+        }
+    }
+
+    closeStockModal() {
+        const modal = document.getElementById('stock-modal');
+        if (modal) modal.style.display = 'none';
+        this.currentProductId = null;
+        this.currentProductVariants = null;
+    }
+
     openDeleteModal(productId) {
         this.currentProductId = productId;
         const modal = document.getElementById('delete-modal');
@@ -566,6 +745,13 @@ class ProductManager {
     }
 
     showNotification(message, type = 'info') {
+        const existingNotifications = document.querySelectorAll('.notification');
+        existingNotifications.forEach(notification => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        });
+
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
         notification.innerHTML = `
@@ -578,28 +764,57 @@ class ProductManager {
             top: 20px;
             right: 20px;
             padding: 15px 20px;
-            background: ${type === 'success' ? '#2ecc71' : type === 'error' ? '#e74c3c' : '#3498db'};
+            background: ${type === 'success' ? '#2ecc71' : type === 'error' ? '#e74c3c' : type === 'warning' ? '#f39c12' : '#3498db'};
             color: white;
             border-radius: 5px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            z-index: 1000;
+            z-index: 10000;
             display: flex;
             justify-content: space-between;
             align-items: center;
             min-width: 300px;
+            max-width: 500px;
+            animation: slideIn 0.3s ease-out;
         `;
+
+        if (!document.querySelector('#notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'notification-styles';
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                @keyframes slideOut {
+                    from { transform: translateX(0); opacity: 1; }
+                    to { transform: translateX(100%); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
 
         document.body.appendChild(notification);
 
-        setTimeout(() => {
+        const autoRemove = setTimeout(() => {
             if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
+                notification.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
             }
         }, 5000);
 
         notification.querySelector('.notification-close').addEventListener('click', () => {
+            clearTimeout(autoRemove);
             if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
+                notification.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
             }
         });
     }

@@ -89,6 +89,7 @@
                                 <th>Categoría</th>
                                 <th>Tipo</th>
                                 <th>Stock Total</th>
+                                <th>Variantes/Stock</th> 
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -186,6 +187,25 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal para stock -->
+<div id="stock-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Gestión de Stock - <span id="stock-product-name"></span></h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="variants-stock-list" id="variants-stock-list">
+                <!-- Las variantes con sus stocks se cargarán aquí -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="save-stock-btn">Guardar Cambios</button>
+                <button class="btn btn-secondary" id="cancel-stock-btn">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
 
     <!-- Modal de confirmación para eliminar -->
     <div id="delete-modal" class="modal">
