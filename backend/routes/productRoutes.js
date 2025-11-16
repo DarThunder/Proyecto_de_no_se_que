@@ -271,4 +271,40 @@ router.delete("/admin/:id", verifyToken, hasPermission(0), async (req, res) => {
   }
 });
 
+// ACTUALIZAR STOCK DE UNA VARIANTE ESPECÍFICA
+router.put("/variants/:variantId/stock", verifyToken, hasPermission(0), async (req, res) => {
+    try {
+        const { variantId } = req.params;
+        const { stock } = req.body;
+
+        if (!Types.ObjectId.isValid(variantId)) {
+            return res.status(400).json({ error: "ID de variante no válido" });
+        }
+
+        if (stock === undefined || stock < 0) {
+            return res.status(400).json({ error: "Stock debe ser un número mayor o igual a 0" });
+        }
+
+        const updatedVariant = await ProductVariant.findByIdAndUpdate(
+            variantId,
+            { stock: parseInt(stock) },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedVariant) {
+            return res.status(404).json({ error: "Variante no encontrada" });
+        }
+
+        res.status(200).json({
+            message: "Stock actualizado correctamente",
+            variant: updatedVariant
+        });
+    } catch (err) {
+        res.status(500).json({ 
+            error: "Error al actualizar el stock", 
+            details: err.message 
+        });
+    }
+});
+
 export default router;
