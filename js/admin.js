@@ -1,139 +1,95 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // 1. Verificar la autenticación y permisos
+    // ------------------------------------------------------
+    // 1. VERIFICACIÓN DE SEGURIDAD Y MENÚ (Se ejecuta en TODAS las páginas)
+    // ------------------------------------------------------
     try {
         const meResponse = await fetch("http://localhost:8080/users/me", {
             method: "GET",
-            credentials: "include", // Envía la cookie de sesión
+            credentials: "include",
         });
 
-        if (!meResponse.ok) {
-            // Si la sesión no es válida (ej. 401 Unauthorized)
-            throw new Error("No autorizado. Redirigiendo al login.");
-        }
+        if (!meResponse.ok) throw new Error("No autorizado");
 
         const userInfo = await meResponse.json();
 
-        // Verificamos el rol (Admin=0, Gerente=1)
-        if (userInfo.role && userInfo.role.permission_ring <= 1) {
-            // El usuario es Admin o Gerente, cargamos sus datos
-            document.getElementById('admin-username').textContent = userInfo.username || 'Admin';
-            
-            // --- ¡NUEVO! ---
-            // Una vez autenticado, carga las estadísticas del dashboard
-            await loadDashboardStats();
+        // A) Verificación básica de acceso (Admin o Gerente)
+        if (!userInfo.role || userInfo.role.permission_ring > 1) {
+             throw new Error("Acceso denegado");
+        }
 
-        } else {
-            // No es Admin ni Gerente
-            throw new Error("Acceso denegado. Redirigiendo al login.");
+        // B) Mostrar nombre de usuario (Existe en todas las páginas)
+        const usernameDisplay = document.getElementById('admin-username');
+        if (usernameDisplay) {
+            usernameDisplay.textContent = userInfo.username || 'Usuario';
+        }
+
+        // C) LÓGICA DE RESTRICCIÓN DE MENÚ (Aquí ocultamos las opciones)
+        // Si NO es Admin Supremo (Ring 0), ocultamos las opciones críticas
+        if (userInfo.role.permission_ring !== 0) {
+            const restrictedPages = [
+                "GestionProduc.html",      // Gestión Productos
+                "gestion_usuarios.html",   // Gestión Usuarios
+                "GestionCategorias.html"   // Gestión Categorías
+            ];
+
+            restrictedPages.forEach(page => {
+                // Busamos cualquier enlace que apunte a estas páginas
+                const linkElement = document.querySelector(`a[href="${page}"]`);
+                if (linkElement) {
+                    // Ocultamos el <li> completo que contiene el enlace
+                    linkElement.parentElement.style.display = 'none';
+                }
+            });
+            
+            // OPCIONAL: Si el usuario intenta entrar directamente por URL a una página prohibida, lo sacamos
+            // Obtenemos el nombre del archivo actual (ej: "GestionProduc.html")
+            const path = window.location.pathname;
+            const currentPage = path.substring(path.lastIndexOf('/') + 1);
+            
+            if (restrictedPages.includes(currentPage)) {
+                alert("No tienes permisos para acceder a esta sección.");
+                window.location.href = 'admin.html'; // De vuelta al dashboard
+            }
+        }
+
+        // ------------------------------------------------------
+        // 2. CARGA DE ELEMENTOS ESPECÍFICOS (Solo si existen en la página)
+        // ------------------------------------------------------
+        
+        // Solo cargamos estadísticas si estamos en el Dashboard (buscando un elemento único del dashboard)
+        if (document.getElementById('stats-online-revenue')) {
+            await loadDashboardStats();
+        }
+
+        // Solo cargamos lógica de Términos y Condiciones si existe el editor
+        if (document.getElementById('terminos-textarea')) {
+            // Aquí llamas a tu lógica de cargar términos (puedes encapsularla en una función si quieres)
+            // o dejar el código que ya tenías, pero asegurándote de que verifique `if (textarea)` como ya hacías.
         }
 
     } catch (error) {
-        console.error(error.message);
-        // Si falla la autenticación, lo sacamos al login
-        alert("Acceso denegado. Debes iniciar sesión como Gerente o Administrador.");
+        console.error("Error de autenticación:", error);
+        alert("Sesión no válida o permisos insuficientes.");
         window.location.href = 'login.html';
     }
 
-    // 2. Lógica del botón de Cerrar Sesión
+    // ------------------------------------------------------
+    // 3. LOGOUT Y OTRAS UTILIDADES
+    // ------------------------------------------------------
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async (e) => {
             e.preventDefault();
             try {
-                await fetch("http://localhost:8080/auth/logout", {
-                    method: "POST",
-                    credentials: "include",
-                });
-            } catch (err) {
-                console.error("Error al cerrar sesión (quizás el servidor ya te desconectó)", err);
-            } finally {
-                // Siempre redirigir al login
-                alert("Sesión cerrada.");
-                window.location.href = 'login.html';
-            }
+                await fetch("http://localhost:8080/auth/logout", { method: "POST", credentials: "include" });
+            } catch (err) { console.error(err); }
+            finally { window.location.href = 'login.html'; }
         });
     }
 
-    // --- Cargar Términos y Condiciones del Usuario ---
-    
-    // 1. MOSTRAR TERMINOS Y CONDICIONES
-    // 1. Seleccionamos los elementos del DOM que acabamos de crear
-    const textarea = document.getElementById('terminos-textarea');
-    const saveBtn = document.getElementById('guardar-terminos-btn');
-    const feedback = document.getElementById('terminos-feedback');
-
-    // 2. Función para CARGAR el contenido actual
-    const cargarTerminos = async () => {
-        // Si el textarea no existe en esta página, no hacemos nada.
-        if (!textarea) return; 
-        
-        try {
-            // Hacemos una petición GET a la ruta pública (no necesita token)
-            const res = await fetch('http://localhost:8080/content/terms'); 
-            const data = await res.json();
-            
-            if (res.ok) {
-                // Si todo va bien, ponemos el texto de la BD en el textarea
-                textarea.value = data.htmlContent;
-            } else {
-                // Si la API devuelve un error, lo mostramos
-                throw new Error(data.message);
-            }
-        } catch (error) {
-            feedback.textContent = `Error al cargar: ${error.message}`;
-            feedback.style.color = 'red';
-        }
-    };
-
-    // 3. Función para GUARDAR los cambios
-    const guardarTerminos = async () => {
-        // Damos feedback visual al admin
-        feedback.textContent = 'Guardando...';
-        feedback.style.color = 'blue';
-
-        try {
-            // Hacemos una petición PUT a la ruta protegida
-            const res = await fetch('http://localhost:8080/content/terms', { 
-                method: 'PUT', // Usamos el método PUT
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-
-                credentials: "include",
-                // Enviamos el contenido actual del textarea en el body, como JSON
-                body: JSON.stringify({ htmlContent: textarea.value })
-            });
-            
-            const data = await res.json();
-            
-            if (res.ok) {
-                // Si todo va bien, mostramos mensaje de éxito
-                feedback.textContent = '¡Guardado exitosamente!';
-                feedback.style.color = 'green';
-            } else {
-                // Si la API devuelve un error (ej. "sin permisos"), lo mostramos
-                throw new Error(data.message || 'Error del servidor');
-            }
-        } catch (error) {
-            feedback.textContent = `Error al guardar: ${error.message}`;
-            feedback.style.color = 'red';
-        }
-    };
-    
-    // 4. Asignamos los eventos
-    // Solo asignamos el evento si el botón existe en la página actual
-    if (saveBtn) {
-        saveBtn.addEventListener('click', guardarTerminos);
-    }
-    if (textarea) {
-        // Si 'textarea' existe, cargamos el contenido
-        cargarTerminos();
-    }
+    // Inicializar modal de códigos de barras (función ya existente al final de tu archivo)
+    initializeBarcodesModal();
 });
-
-
-
-// --- ========= FUNCIÓN NUEVA PARA HU 27 ========= ---
 
 /**
  * Carga las estadísticas del dashboard (HU 27)
