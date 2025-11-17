@@ -57,37 +57,80 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Cargar Términos y Condiciones del Usuario ---
     
     // 1. MOSTRAR TERMINOS Y CONDICIONES
-    const cargarTerminosUsuario = async () => {
-        // Seleccionamos el 'div' contenedor que pusimos en el HTML
-        const container = document.getElementById('terminos-content-usuario');
-        // Si el contenedor no existe en esta página, no hacemos nada.
-        if (!container) return; 
+    // 1. Seleccionamos los elementos del DOM que acabamos de crear
+    const textarea = document.getElementById('terminos-textarea');
+    const saveBtn = document.getElementById('guardar-terminos-btn');
+    const feedback = document.getElementById('terminos-feedback');
 
+    // 2. Función para CARGAR el contenido actual
+    const cargarTerminos = async () => {
+        // Si el textarea no existe en esta página, no hacemos nada.
+        if (!textarea) return; 
+        
         try {
-            // Hacemos una petición GET a la ruta pública (la misma que usa el admin para cargar)
+            // Hacemos una petición GET a la ruta pública (no necesita token)
             const res = await fetch('http://localhost:8080/content/terms'); 
             const data = await res.json();
             
             if (res.ok) {
-                // ¡IMPORTANTE!
-                // Usamos '.innerHTML' para que el navegador interprete las etiquetas HTML
-                // (como <p>, <strong>, etc.) que el admin guardó en la BD.
-                container.innerHTML = data.htmlContent; 
+                // Si todo va bien, ponemos el texto de la BD en el textarea
+                textarea.value = data.htmlContent;
             } else {
-                // Si la API falla, mostramos un error
+                // Si la API devuelve un error, lo mostramos
                 throw new Error(data.message);
             }
         } catch (error) {
-            // Si el 'fetch' falla (ej. servidor caído), mostramos un error
-            container.innerHTML = '<p>No se pudieron cargar los términos y condiciones en este momento.</p>';
-            console.error('Error fetching T&C:', error);
+            feedback.textContent = `Error al cargar: ${error.message}`;
+            feedback.style.color = 'red';
         }
     };
 
-    // 2. Carga inicial
-    // Llamamos a la función en cuanto la página carga
-    cargarTerminosUsuario();
+    // 3. Función para GUARDAR los cambios
+    const guardarTerminos = async () => {
+        // Damos feedback visual al admin
+        feedback.textContent = 'Guardando...';
+        feedback.style.color = 'blue';
+
+        try {
+            // Hacemos una petición PUT a la ruta protegida
+            const res = await fetch('http://localhost:8080/content/terms', { 
+                method: 'PUT', // Usamos el método PUT
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+
+                credentials: "include",
+                // Enviamos el contenido actual del textarea en el body, como JSON
+                body: JSON.stringify({ htmlContent: textarea.value })
+            });
+            
+            const data = await res.json();
+            
+            if (res.ok) {
+                // Si todo va bien, mostramos mensaje de éxito
+                feedback.textContent = '¡Guardado exitosamente!';
+                feedback.style.color = 'green';
+            } else {
+                // Si la API devuelve un error (ej. "sin permisos"), lo mostramos
+                throw new Error(data.message || 'Error del servidor');
+            }
+        } catch (error) {
+            feedback.textContent = `Error al guardar: ${error.message}`;
+            feedback.style.color = 'red';
+        }
+    };
+    
+    // 4. Asignamos los eventos
+    // Solo asignamos el evento si el botón existe en la página actual
+    if (saveBtn) {
+        saveBtn.addEventListener('click', guardarTerminos);
+    }
+    if (textarea) {
+        // Si 'textarea' existe, cargamos el contenido
+        cargarTerminos();
+    }
 });
+
 
 
 // --- ========= FUNCIÓN NUEVA PARA HU 27 ========= ---
