@@ -1,12 +1,12 @@
 :root {
-    --primary: #2c3e50;
-    --secondary: #3498db;
-    --danger: #e74c3c;
-    --warning: #f39c12;
-    --success: #2ecc71;
-    --light: #ecf0f1;
-    --dark: #2c3e50;
-    --gray: #95a5a6;
+    --primary: #3498db;           /* Cambiado a azul del admin */
+    --secondary: #2c3e50;         /* Cambiado a azul oscuro del admin */
+    --danger: #e74c3c;            /* Mantenido (rojo) */
+    --warning: #f39c12;           /* Mantenido (naranja) */
+    --success: #2ecc71;           /* Mantenido (verde) */
+    --light: #ecf0f1;             /* Mantenido */
+    --dark: #34495e;              /* Cambiado a azul más oscuro */
+    --gray: #95a5a6;              /* Mantenido */
 }
 
 * {
@@ -16,9 +16,10 @@
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* CAMBIO IMPORTANTE: Fondo igual al admin */
 body {
-    background-color: #f5f7fa;
-    color: #333;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); /* Fondo del admin */
+    color: #ffffff; /* Texto blanco */
     line-height: 1.6;
 }
 
@@ -27,16 +28,16 @@ body {
     min-height: 100vh;
 }
 
-/* Sidebar */
+/* Sidebar - Mantener igual */
 .sidebar {
     width: 250px;
-    background: var(--primary);
+    background: var(--primary); /* Ahora usa el azul del admin */
     color: white;
     padding: 20px 0;
     transition: all 0.3s;
 }
 
-/* Logo Container - ESTILOS NUEVOS */
+/* Logo Container */
 .logo-container {
     display: flex;
     align-items: center;
@@ -60,26 +61,6 @@ body {
     letter-spacing: 0.5px;
 }
 
-/* Elimina o comenta la clase .brand original ya que ahora usamos .logo-container */
-/*
-.brand {
-    padding: 0 20px 20px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    margin-bottom: 20px;
-}
-
-.brand h1 {
-    font-size: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.brand span {
-    color: var(--secondary);
-}
-*/
-
 .nav-links {
     list-style: none;
 }
@@ -91,7 +72,7 @@ body {
 
 .nav-links li.active {
     background: rgba(255,255,255,0.1);
-    border-left: 4px solid var(--secondary);
+    border-left: 4px solid var(--secondary); /* Ahora usa el azul oscuro */
 }
 
 .nav-links li:hover {
@@ -106,24 +87,26 @@ body {
     gap: 10px;
 }
 
-/* Main Content */
+/* Main Content - CAMBIOS EN FONDO */
 .main-content {
     flex: 1;
     padding: 20px;
     overflow-y: auto;
+    background: transparent; /* Fondo transparente para ver el gradient del body */
 }
 
+/* Header - CAMBIOS EN COLORES */
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
     padding-bottom: 15px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid rgba(255,255,255,0.1); /* Borde más suave */
 }
 
 .header h2 {
-    color: var(--primary);
+    color: #ffffff; /* Texto blanco */
     font-weight: 600;
 }
 
@@ -131,13 +114,14 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
+    color: #ffffff; /* Texto blanco */
 }
 
 .user-avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: var(--secondary);
+    background: var(--primary); /* Azul del admin */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -145,7 +129,7 @@ body {
     font-weight: bold;
 }
 
-/* Stats Cards */
+/* Stats Cards - CAMBIOS EN FONDO */
 .stats-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -154,19 +138,21 @@ body {
 }
 
 .stat-card {
-    background: white;
-    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05); /* Fondo glass como admin */
+    border-radius: 16px; /* Bordes más redondeados como admin */
     padding: 20px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* Sombra más pronunciada */
     display: flex;
     align-items: center;
     gap: 15px;
+    backdrop-filter: blur(10px); /* Efecto glass */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Borde sutil */
 }
 
 .stat-icon {
     width: 60px;
     height: 60px;
-    border-radius: 10px;
+    border-radius: 12px; /* Más redondeado */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -191,10 +177,11 @@ body {
 .stat-info h3 {
     font-size: 1.8rem;
     margin-bottom: 5px;
+    color: #ffffff; /* Texto blanco */
 }
 
 .stat-info p {
-    color: var(--gray);
+    color: rgba(255, 255, 255, 0.7); /* Texto gris claro */
     font-size: 0.9rem;
 }
 
@@ -204,10 +191,11 @@ body {
     border-left: 4px solid var(--danger);
     padding: 15px;
     margin-bottom: 30px;
-    border-radius: 5px;
+    border-radius: 8px; /* Más redondeado */
     display: flex;
     align-items: center;
     gap: 15px;
+    backdrop-filter: blur(10px); /* Efecto glass */
 }
 
 .alert-banner i {
@@ -215,13 +203,25 @@ body {
     font-size: 1.5rem;
 }
 
-/* Inventory Table */
+.alert-banner h3 {
+    color: #ffffff; /* Texto blanco */
+    margin-bottom: 5px;
+}
+
+.alert-banner p {
+    color: rgba(255, 255, 255, 0.8); /* Texto gris claro */
+    margin: 0;
+}
+
+/* Inventory Table - CAMBIOS EN FONDO */
 .inventory-table {
-    background: white;
-    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05); /* Fondo glass */
+    border-radius: 16px; /* Más redondeado */
     overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* Sombra más pronunciada */
     margin-bottom: 30px;
+    backdrop-filter: blur(10px); /* Efecto glass */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Borde sutil */
 }
 
 .table-header {
@@ -229,11 +229,11 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 20px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid rgba(255,255,255,0.1); /* Borde más suave */
 }
 
 .table-header h3 {
-    color: var(--primary);
+    color: #ffffff; /* Texto blanco */
 }
 
 .filters {
@@ -243,17 +243,23 @@ body {
 
 .filter-btn {
     padding: 8px 15px;
-    border: 1px solid #e0e0e0;
-    background: white;
-    border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.2); /* Borde más suave */
+    background: rgba(255, 255, 255, 0.05); /* Fondo glass */
+    border-radius: 8px; /* Más redondeado */
     cursor: pointer;
     transition: all 0.3s;
+    color: rgba(255, 255, 255, 0.7); /* Texto gris claro */
+}
+
+.filter-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
 }
 
 .filter-btn.active {
-    background: var(--secondary);
+    background: var(--primary); /* Azul del admin */
     color: white;
-    border-color: var(--secondary);
+    border-color: var(--primary);
 }
 
 table {
@@ -264,15 +270,16 @@ table {
 th, td {
     padding: 15px 20px;
     text-align: left;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid rgba(255,255,255,0.1); /* Bordes más suaves */
 }
 
 th {
-    background: #f8f9fa;
+    background: rgba(255, 255, 255, 0.08); /* Fondo header más suave */
     font-weight: 600;
-    color: var(--primary);
+    color: #ffffff; /* Texto blanco */
 }
 
+/* Estados de stock (mantenidos) */
 .stock-low {
     color: var(--danger);
     font-weight: 600;
@@ -298,22 +305,24 @@ th {
 }
 
 .order-btn {
-    background: var(--secondary);
+    background: var(--primary); /* Azul del admin */
     color: white;
 }
 
 .order-btn:hover {
-    background: #2980b9;
+    background: #2980b9; /* Azul más oscuro al hover */
 }
 
-/* Reorder Form */
+/* Reorder Form - CAMBIOS EN FONDO */
 .reorder-form {
-    background: white;
-    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05); /* Fondo glass */
+    border-radius: 16px; /* Más redondeado */
     padding: 20px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* Sombra más pronunciada */
     margin-bottom: 30px;
     display: none;
+    backdrop-filter: blur(10px); /* Efecto glass */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Borde sutil */
 }
 
 .form-header {
@@ -339,13 +348,21 @@ th {
     display: block;
     margin-bottom: 5px;
     font-weight: 500;
+    color: #ffffff; /* Texto blanco */
 }
 
 .form-group input, .form-group select {
     width: 100%;
     padding: 10px;
-    border: 1px solid #e0e0e0;
-    border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.2); /* Borde más suave */
+    border-radius: 8px; /* Más redondeado */
+    background: rgba(255, 255, 255, 0.1); /* Fondo glass */
+    color: #ffffff; /* Texto blanco */
+}
+
+.form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: var(--primary); /* Borde azul al focus */
 }
 
 .submit-btn {
@@ -353,7 +370,7 @@ th {
     color: white;
     border: none;
     padding: 10px 20px;
-    border-radius: 5px;
+    border-radius: 8px; /* Más redondeado */
     cursor: pointer;
     font-weight: 600;
     transition: all 0.3s;
@@ -363,7 +380,7 @@ th {
     background: #27ae60;
 }
 
-/* Responsive */
+/* Responsive (mantenido) */
 @media (max-width: 992px) {
     .container {
         flex-direction: column;
@@ -400,7 +417,6 @@ th {
         overflow-x: auto;
     }
 
-    /* Ajustes del logo para móviles */
     .logo-container {
         padding: 0 15px 15px;
     }
@@ -414,11 +430,12 @@ th {
         font-size: 1rem;
     }
 }
+
 .user-avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background-color: #4a5568;
+    background-color: var(--primary); /* Azul del admin */
     color: white;
     display: flex;
     align-items: center;
@@ -427,8 +444,7 @@ th {
     margin-right: 10px;
 }
 
-
-/* Colores para los estados de stock */
+/* Colores para los estados de stock (mantenidos) */
 .stock-bajo {
     color: var(--danger);
     font-weight: 600;
@@ -444,7 +460,6 @@ th {
     font-weight: 600;
 }
 
-/* También actualiza los íconos si es necesario */
 .stock-bajo i {
     color: var(--danger);
 }
