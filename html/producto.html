@@ -87,6 +87,36 @@
                 <h3>Descripción</h3>
                 <p id="product-description">Cargando descripción...</p>
             </div>
+
+            <!-- NUEVA SECCIÓN: RESEÑAS DEL PRODUCTO -->
+            <div class="product-reviews-section">
+                <div class="reviews-header">
+                    <h3><i class="fas fa-star"></i> Reseñas del Producto</h3>
+                    <button id="view-reviews-btn" class="cta-button secondary">
+                        <i class="fas fa-comments"></i> Ver Reseñas
+                    </button>
+                </div>
+                
+                <div id="reviews-container" style="display: none;">
+                    <div class="reviews-stats">
+                        <div class="average-rating">
+                            <span id="average-rating">0.0</span>
+                            <div class="stars" id="average-stars"></div>
+                            <span id="review-count">(0 reseñas)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="reviews-list" id="reviews-list">
+                        <!-- Las reseñas se cargarán aquí -->
+                    </div>
+                    
+                    <div id="no-reviews-message" class="no-reviews">
+                        <i class="fas fa-comment-slash"></i>
+                        <p>Este producto aún no tiene reseñas.</p>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
     </main>
