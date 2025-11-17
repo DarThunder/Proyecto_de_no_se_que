@@ -9,20 +9,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <!-- Header (mismo que review.html) -->
+    <audio autoplay preload loop id="Bg_music" src="../sources/audio/Bg_music.mp3"></audio>
+    
     <header class="header">
         <nav class="nav">
             <div class="logo">
                 <h1>SHADOW & STITCH</h1>
             </div>
 
-            <!-- USUARIO -->
-            <div class="header-user-info" id="headerUserInfo">
-                <i class="fas fa-user-circle"></i>
-                <span class="username" id="headerUsername">Usuario</span>
+             <!-- AGREGAR ESTO: Información del usuario en el header -->
+            <div class="user-header-info" id="user-header-info" style="display: none;">
+                <span>Bienvenido, </span>
+                <strong id="header-username">Cliente</strong>
             </div>
             
-            <!-- Menú Hamburguesa -->
             <div class="hamburger-menu">
                 <div class="hamburger-icon">
                     <span></span>
@@ -31,8 +31,6 @@
                 </div>
             </div>
 
-
-            <!-- Menú Lateral -->
             <div class="mobile-menu">
                 <div class="menu-header">
                     <h3>S&S</h3>
@@ -61,12 +59,11 @@
                             <i class="fas fa-chevron-down dropdown-arrow"></i>
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a href="/html/misreseñas.html" class="dropdown-link">Mis Reseñas</a></li>
+                            <li><a href="misreseñas.html" class="dropdown-link">Mis Reseñas</a></li>
                             <li><a href="reseñaUser.html" class="dropdown-link">Crear Reseña</a></li>
                         </ul>
                     </li>
                 </ul>
-                
                 <div class="menu-footer">
                     <div class="social-icons">
                         <a href="#"><i class="fab fa-instagram"></i></a>
@@ -78,24 +75,44 @@
         </nav>
     </header>
 
-    <main class="review-main">
-        <div class="review-container">
-            <div class="my-reviews-header">
-                <h1><i class="fas fa-star"></i> Mis Reseñas</h1>
-                <p>Gestiona y edita tus reseñas</p>
+    <main class="misr-main">
+        <div class="misr-container">
+            <div class="misr-header">
+                <h1><i class="fas fa-star"></i> MIS RESEÑAS</h1>
+                <p>Tu historial de reseñas en Shadow & Stitch.</p>
             </div>
 
-            <div class="reviews-list" id="reviewsList">
-                <!-- Las reseñas se cargarán dinámicamente aquí -->
-                <div class="loading-reviews">
+            <div id="reviews-content">
+                <div class="loading-message" id="loading-message">
                     <i class="fas fa-spinner fa-spin"></i>
                     <p>Cargando tus reseñas...</p>
+                </div>
+
+                <div class="login-required" id="login-required-message" style="display: none;">
+                    <div class="login-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h2>Debes iniciar sesión</h2>
+                    <p>Para ver y gestionar tus reseñas, por favor inicia sesión.</p>
+                    <a href="login.html" class="cta-button">Iniciar Sesión</a>
+                </div>
+
+                <div class="empty-state" id="empty-reviews-message" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <h2>No tienes reseñas</h2>
+                    <p>Aún no has reseñado ningún producto. ¡Comparte tu experiencia!</p>
+                    <a href="reseñaUser.html" class="cta-button">Crear Mi Primera Reseña</a>
+                </div>
+
+                <div class="reviews-list" id="reviews-list" style="display: none;">
+                    <!-- Las reseñas se cargarán aquí dinámicamente -->
                 </div>
             </div>
         </div>
     </main>
 
-     <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-section">
@@ -106,8 +123,8 @@
                 <h4>ENLACES RÁPIDOS</h4>
                 <ul>
                     <li><a href="../index.html">Inicio</a></li>
-                    <li><a href="main.html#categorias">Categorías</a></li>
-                    <li><a href="main.html#nuevo">Nuevo</a></li>
+                    <li><a href="../index.html#categorias">Categorías</a></li>
+                    <li><a href="../index.html#nuevo">Nuevo</a></li>
                 </ul>
             </div>
             <div class="footer-section">
@@ -121,29 +138,7 @@
         </div>
     </footer>
 
-    <!-- Script para cargar reseñas -->
-    <script>
-    // Solo mantener la función para cargar reseñas cuando se llame desde reseñas.js
-    function loadUserReviews() {
-        // Esta función será llamada desde reseñas.js
-        console.log("loadUserReviews llamado");
-    }
-
-    // Función auxiliar para compatibilidad
-    function generateStars(rating) {
-        let stars = '';
-        for (let i = 1; i <= 5; i++) {
-            if (i <= rating) {
-                stars += '<i class="fas fa-star"></i>';
-            } else {
-                stars += '<i class="far fa-star"></i>';
-            }
-        }
-        return stars;
-    }
-</script>
-
-    <script src="../js/reseñas.js"></script>
+    <script src="../js/misreseñas.js"></script>
     <script src="../js/scriptMain.js"></script>
 </body>
 </html>

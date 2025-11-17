@@ -1,14 +1,15 @@
-import mongoose from "mongoose";
+import mongoose, { model } from "mongoose";
+const { Schema } = mongoose;
 
-const reviewSchema = new mongoose.Schema(
+const reviewSchema = new Schema(
   {
     user: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
     product: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "Product",
       required: true,
     },
@@ -18,59 +19,62 @@ const reviewSchema = new mongoose.Schema(
       min: 1,
       max: 5,
     },
-    title: {
-      type: String,
-      required: true,
-      maxlength: 60,
-    },
     comment: {
       type: String,
       required: true,
+      trim: true,
       maxlength: 500,
     },
-    quality_rating: {
-      type: Number,
-      min: 1,
-      max: 5,
-    },
-    comfort_rating: {
-      type: Number,
-      min: 1,
-      max: 5,
-    },
-    value_rating: {
-      type: Number,
-      min: 1,
-      max: 5,
-    },
-    media: [
-      {
-        type: String,
-        required: false,
-      },
-    ],
-    reviewer_name: {
+    size: {
       type: String,
+      enum: ["XS", "S", "M", "L", "XL"],
       required: true,
     },
-    reviewer_location: {
-      type: String,
-      required: false,
-    },
-    verified_purchase: {
+    is_approved: {
       type: Boolean,
-      default: false,
-    },
-    purchase_date: {
-      type: Date,
-      required: false,
+      default: true, // Para administradores poder moderar
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-reviewSchema.index({ user: 1, product: 1 }, { unique: true });
+// En Review.js, COMENTA estas líneas que causan error:
+reviewSchema.statics.getAverageRating = async function(productId) {
+  const result = await this.aggregate([
+    {
+      $match: { 
+        product: productId,
+        is_approved: true 
+      }
+    },
+    {
+      $group: {
+        _id: '$product',
+        averageRating: { $avg: '$rating' },
+        reviewCount: { $sum: 1 }
+      }
+    }
+  ]);
 
-export default mongoose.model("Review", reviewSchema);
+  try {
+    // COMENTA ESTAS LÍNEAS TEMPORALMENTE:
+    // await model("Product").findByIdAndUpdate(productId, {
+    //   average_rating: result[0]?.averageRating || 0,
+    //   review_count: result[0]?.reviewCount || 0
+    // });
+  } catch (err) {
+    console.error("Error updating product rating:", err);
+  }
+};
+
+// Y COMENTA LOS MIDDLEWARE:
+// reviewSchema.post('save', function() {
+//   this.constructor.getAverageRating(this.product);
+// });
+
+// reviewSchema.post('findOneAndDelete', function(doc) {
+//   if (doc) {
+//     doc.constructor.getAverageRating(doc.product);
+//   }
+// });
+export default model("Review", reviewSchema);

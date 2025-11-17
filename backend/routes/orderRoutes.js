@@ -196,4 +196,71 @@ router.get("/my-orders", verifyToken, async (req, res) => {
 });
 // --- ========================================= ---
 
+
+// --- ===== RUTA: PRODUCTOS COMPRADOS PARA RESEÑAS ===== ---
+router.get("/user/purchased-products", verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    console.log("🔍 Buscando productos comprados para usuario:", userId);
+
+    // Buscar todas las ventas del usuario
+    const orders = await Sale.find({ user: userId })
+      .populate({
+        path: "items.variant",
+        populate: {
+          path: "product",
+          model: "Product",
+        },
+      });
+
+    console.log("📦 Órdenes encontradas:", orders?.length);
+
+    if (!orders || orders.length === 0) {
+      console.log("📭 No se encontraron órdenes");
+      return res.status(200).json([]);
+    }
+
+    // Extraer productos únicos comprados por el usuario
+    const purchasedProductsMap = new Map();
+    
+    orders.forEach(order => {
+      console.log("🛒 Procesando orden:", order._id);
+      order.items.forEach(item => {
+        if (item.variant && item.variant.product) {
+          const product = item.variant.product;
+          const productId = product._id.toString();
+          
+          if (!purchasedProductsMap.has(productId)) {
+            purchasedProductsMap.set(productId, {
+              id: productId,
+              name: product.name,
+              category: product.category,
+              price: product.base_price,
+              imageUrl: product.image_url,
+              purchaseDate: order.createdAt,
+              size: item.variant.size
+            });
+          }
+        } else {
+          console.log("❌ Item sin variante o producto:", item);
+        }
+      });
+    });
+
+    const purchasedProducts = Array.from(purchasedProductsMap.values());
+    console.log("✅ Productos para reseñar:", purchasedProducts.length);
+    
+    // Por ahora devolvemos todos los productos comprados
+    // El filtro de reseñas lo haremos después cuando Review.js funcione
+    res.status(200).json(purchasedProducts);
+
+  } catch (err) {
+    console.error("❌ Error en /user/purchased-products:", err);
+    res.status(500).json({ 
+      error: "Error al obtener productos comprados", 
+      details: err.message 
+    });
+  }
+});
+
 export default router;

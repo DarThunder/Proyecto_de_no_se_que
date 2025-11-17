@@ -3,25 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dejar Reseña - Shadow & Stitch</title>
+    <title>Crear Reseña - Shadow & Stitch</title>
     <link rel="stylesheet" href="../css/styleMain.css">
     <link rel="stylesheet" href="../css/reseñas.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <!-- Header con Menú Hamburguesa -->
+    <audio autoplay preload loop id="Bg_music" src="../sources/audio/Bg_music.mp3"></audio>
+    
     <header class="header">
         <nav class="nav">
             <div class="logo">
                 <h1>SHADOW & STITCH</h1>
             </div>
 
-            <!-- USUARIO -->
-            <div class="header-user-info" id="headerUserInfo">
-                <i class="fas fa-user-circle"></i>
-                <span class="username" id="headerUsername">Usuario</span>
+             <!-- AGREGAR ESTO: Información del usuario en el header -->
+            <div class="user-header-info" id="user-header-info" style="display: none;">
+                <span>Bienvenido, </span>
+                <strong id="header-username">Cliente</strong>
             </div>
-            <!-- Menú Hamburguesa -->
+            
             <div class="hamburger-menu">
                 <div class="hamburger-icon">
                     <span></span>
@@ -30,7 +31,6 @@
                 </div>
             </div>
 
-            <!-- Menú Lateral -->
             <div class="mobile-menu">
                 <div class="menu-header">
                     <h3>S&S</h3>
@@ -64,7 +64,6 @@
                         </ul>
                     </li>
                 </ul>
-                
                 <div class="menu-footer">
                     <div class="social-icons">
                         <a href="#"><i class="fab fa-instagram"></i></a>
@@ -76,206 +75,111 @@
         </nav>
     </header>
 
-    <!-- Contenido Principal -->
-    <main class="review-main">
-        <div class="review-container">
-            <!-- NUEVA SECCIÓN: Información de Sesión Activa -->
-            <div class="user-session-info" id="userSessionInfo" style="display: none;">
-                <!-- Se llenará dinámicamente con JavaScript -->
+   <main class="reviews-main">
+        <div class="reviews-container">
+            <div class="reviews-header">
+                <h1><i class="fas fa-edit"></i> CREAR RESEÑA</h1>
+                <p>Comparte tu experiencia con los productos que has comprado.</p>
             </div>
-
-            <!-- Sección de Selección de Producto -->
-            <div class="product-selection-section" id="productSelectionSection">
-                <h2><i class="fas fa-shopping-bag"></i> Selecciona un Producto para Reseñar</h2>
-                <p>Elige entre los productos que has comprado para dejar tu reseña</p>
-                
-                <div class="purchased-products-grid" id="purchasedProductsGrid">
-                    <!-- Los productos comprados se cargarán aquí dinámicamente -->
+            
+            <div id="review-content">
+                <div class="loading-message" id="loading-message">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Cargando productos...</p>
                 </div>
-                
-                <div class="no-purchases-message" id="noPurchasesMessage" style="display: none;">
-                    <div class="empty-state">
-                        <i class="fas fa-shopping-cart fa-3x"></i>
-                        <h3>No tienes productos para reseñar</h3>
-                        <p>Parece que aún no has realizado ninguna compra o ya has reseñado todos tus productos.</p>
-                        <a href="../index.html" class="btn-primary">Ir de Compras</a>
+
+                <div class="login-required" id="login-required-message" style="display: none;">
+                    <div class="login-icon">
+                        <i class="fas fa-lock"></i>
                     </div>
-                </div>
-            </div>
-
-            <!-- Sección del Formulario de Reseña (inicialmente oculta) -->
-            <div class="review-form-section" id="reviewFormSection" style="display: none;">
-                <!-- Botón para volver a seleccionar producto -->
-                <div class="back-to-selection">
-                    <button type="button" class="back-btn" onclick="showProductSelection()">
-                        <i class="fas fa-arrow-left"></i> Volver a Productos
-                    </button>
+                    <h2>Debes iniciar sesión</h2>
+                    <p>Para crear reseñas de tus productos, por favor inicia sesión.</p>
+                    <a href="login.html" class="cta-button">Iniciar Sesión</a>
                 </div>
 
-                <!-- Información del Producto Seleccionado -->
-                <div class="selected-product-info">
-                    <div class="product-image-review">
-                        <img src="" alt="Producto seleccionado" id="selectedProductImage">
+                <div class="empty-state" id="no-products-message" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="fas fa-shopping-bag"></i>
                     </div>
-                    <div class="product-details-review">
-                        <h1 id="selectedProductName">Nombre del Producto</h1>
-                        <p class="product-category" id="selectedProductCategory">Categoría • Colección</p>
-                        <p class="product-price" id="selectedProductPrice">$0.00 MXN</p>
-                        <p class="purchase-date" id="selectedPurchaseDate">Comprado el: <span id="selectedPurchaseDateValue">Fecha</span></p>
+                    <h2>No tienes productos para reseñar</h2>
+                    <p>Aún no has comprado productos o ya has reseñado todos tus productos.</p>
+                    <a href="../index.html" class="cta-button">Explorar Productos</a>
+                </div>
+
+                <!-- Paso 1: Seleccionar producto -->
+                <div id="product-selection-step" style="display: none;">
+                    <h3 style="color: white; margin-bottom: 2rem; text-align: center;">
+                        Selecciona un producto para reseñar
+                    </h3>
+                    <div class="products-grid" id="products-grid">
+                        <!-- Los productos se cargarán aquí -->
                     </div>
                 </div>
 
-                <!-- Campo oculto para el ID del producto -->
-                <input type="hidden" id="productId" value="">
-
-                <!-- Formulario de Reseña -->
-                <div class="review-form-container">
-                    <h2><i class="fas fa-edit"></i> Escribe tu Reseña</h2>
-                    <p>Comparte tu experiencia con otros clientes</p>
-
-                    <form id="reviewForm" class="review-form">
-                        <!-- Calificación con Estrellas -->
-                        <div class="rating-section">
-                            <label>Calificación General *</label>
-                            <div class="star-rating">
-                                <input type="radio" id="star5" name="rating" value="5">
-                                <label for="star5" class="star-label"><i class="fas fa-star"></i></label>
-                                <input type="radio" id="star4" name="rating" value="4">
-                                <label for="star4" class="star-label"><i class="fas fa-star"></i></label>
-                                <input type="radio" id="star3" name="rating" value="3">
-                                <label for="star3" class="star-label"><i class="fas fa-star"></i></label>
-                                <input type="radio" id="star2" name="rating" value="2">
-                                <label for="star2" class="star-label"><i class="fas fa-star"></i></label>
-                                <input type="radio" id="star1" name="rating" value="1">
-                                <label for="star1" class="star-label"><i class="fas fa-star"></i></label>
-                            </div>
-                            <span class="rating-text-selected">Selecciona una calificación</span>
-                        </div>
-
-                        <!-- Título de la Reseña -->
-                        <div class="form-group">
-                            <label for="reviewTitle">Título de la Reseña *</label>
-                            <input type="text" id="reviewTitle" name="reviewTitle" 
-                                   placeholder="Ej: 'Excelente calidad, muy cómodo'" required maxlength="60">
-                            <span class="char-count">0/60 caracteres</span>
-                        </div>
-
-                        <!-- Comentario -->
-                        <div class="form-group">
-                            <label for="reviewComment">Tu Reseña *</label>
-                            <textarea id="reviewComment" name="reviewComment" 
-                                      placeholder="¿Qué te gustó del producto? ¿Cómo es la calidad? ¿Recomendarías este producto a otros?" 
-                                      rows="6" required maxlength="500"></textarea>
-                            <span class="char-count">0/500 caracteres</span>
-                        </div>
-
-                        <!-- Calificaciones Específicas -->
-                        <div class="specific-ratings">
-                            <h3>Calificaciones Específicas (Opcional)</h3>
-                            
-                            <div class="specific-rating-item">
-                                <label>Calidad del Material</label>
-                                <div class="specific-stars">
-                                    <input type="radio" id="quality5" name="quality" value="5">
-                                    <label for="quality5"><i class="fas fa-star"></i></label>
-                                    <input type="radio" id="quality4" name="quality" value="4">
-                                    <label for="quality4"><i class="fas fa-star"></i></label>
-                                    <input type="radio" id="quality3" name="quality" value="3">
-                                    <label for="quality3"><i class="fas fa-star"></i></label>
-                                    <input type="radio" id="quality2" name="quality" value="2">
-                                    <label for="quality2"><i class="fas fa-star"></i></label>
-                                    <input type="radio" id="quality1" name="quality" value="1">
-                                    <label for="quality1"><i class="fas fa-star"></i></label>
-                                </div>
-                            </div>
-
-                            <div class="specific-rating-item">
-                                <label>Comodidad</label>
-                                <div class="specific-stars">
-                                    <input type="radio" id="comfort5" name="comfort" value="5">
-                                    <label for="comfort5"><i class="fas fa-star"></i></label>
-                                    <input type="radio" id="comfort4" name="comfort" value="4">
-                                    <label for="comfort4"><i class="fas fa-star"></i></label>
-                                    <input type="radio" id="comfort3" name="comfort" value="3">
-                                    <label for="comfort3"><i class="fas fa-star"></i></label>
-                                    <input type="radio" id="comfort2" name="comfort" value="2">
-                                    <label for="comfort2"><i class="fas fa-star"></i></label>
-                                    <input type="radio" id="comfort1" name="comfort" value="1">
-                                    <label for="comfort1"><i class="fas fa-star"></i></label>
-                                </div>
-                            </div>
-
-                            <div class="specific-rating-item">
-                                <label>Relación Calidad-Precio</label>
-                                <div class="specific-stars">
-                                    <input type="radio" id="value5" name="value" value="5">
-                                    <label for="value5"><i class="fas fa-star"></i></label>
-                                    <input type="radio" id="value4" name="value" value="4">
-                                    <label for="value4"><i class="fas fa-star"></i></label>
-                                    <input type="radio" id="value3" name="value" value="3">
-                                    <label for="value3"><i class="fas fa-star"></i></label>
-                                    <input type="radio" id="value2" name="value" value="2">
-                                    <label for="value2"><i class="fas fa-star"></i></label>
-                                    <input type="radio" id="value1" name="value" value="1">
-                                    <label for="value1"><i class="fas fa-star"></i></label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Subir Fotos/Videos -->
-                        <div class="media-upload">
-                            <h3>Compartir Fotos o Videos (Opcional)</h3>
-                            <p>Muestra cómo se ve el producto en la vida real</p>
-                            
-                            <div class="upload-area" id="uploadArea">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                                <p>Arrastra tus fotos aquí o haz clic para seleccionar</p>
-                                <input type="file" id="mediaUpload" multiple accept="image/*,video/*" class="file-input-hidden">
-                            </div>
-                            
-                            <div class="uploaded-media" id="uploadedMedia">
-                                <!-- Las imágenes/videos subidas aparecerán aquí -->
-                            </div>
-                        </div>
-
-                        <!-- Información del Revisor -->
-                        <div class="reviewer-info">
-                            <h3>Tu Información</h3>
+                <!-- Paso 2: Formulario de reseña -->
+                <div id="review-form-step" style="display: none;">
+                    <div class="review-form-container">
+                        <h3 style="color: white; margin-bottom: 2rem; text-align: center;">
+                            Crear Reseña para: <span id="selected-product-name"></span>
+                        </h3>
+                        
+                        <form id="review-form">
+                            <input type="hidden" id="selected-product-id">
                             
                             <div class="form-group">
-                                <label for="reviewerName">Nombre Público *</label>
-                                <input type="text" id="reviewerName" name="reviewerName" 
-                                       placeholder="Cómo quieres que aparezca tu nombre" required>
+                                <label>Calificación:</label>
+                                <div class="rating-selector" id="rating-selector">
+                                    <i class="fas fa-star rating-star" data-rating="1"></i>
+                                    <i class="fas fa-star rating-star" data-rating="2"></i>
+                                    <i class="fas fa-star rating-star" data-rating="3"></i>
+                                    <i class="fas fa-star rating-star" data-rating="4"></i>
+                                    <i class="fas fa-star rating-star" data-rating="5"></i>
+                                </div>
+                                <input type="hidden" id="rating-value" name="rating" required>
                             </div>
 
                             <div class="form-group">
-                                <label for="reviewerLocation">Ubicación (Opcional)</label>
-                                <input type="text" id="reviewerLocation" name="reviewerLocation" 
-                                       placeholder="Ciudad, País">
+                                <label for="size">Talla que compraste:</label>
+                                <div class="size-selector" id="size-selector">
+                                    <span class="size-option" data-size="XS">XS</span>
+                                    <span class="size-option" data-size="S">S</span>
+                                    <span class="size-option" data-size="M">M</span>
+                                    <span class="size-option" data-size="L">L</span>
+                                    <span class="size-option" data-size="XL">XL</span>
+                                </div>
+                                <input type="hidden" id="size-value" name="size" required>
                             </div>
 
-                            <div class="verification-badge">
-                                <i class="fas fa-check-circle"></i>
-                                <span>Reseña verificada - Compra confirmada</span>
+                            <div class="form-group">
+                                <label for="comment">Tu reseña:</label>
+                                <textarea 
+                                    id="comment" 
+                                    name="comment" 
+                                    class="form-textarea" 
+                                    placeholder="Comparte tu experiencia con este producto..."
+                                    maxlength="500"
+                                    required
+                                ></textarea>
+                                <small style="color: #ccc; display: block; text-align: right;">
+                                    <span id="char-count">0</span>/500 caracteres
+                                </small>
                             </div>
-                        </div>
 
-                        <!-- Botones de Envío -->
-                        <div class="form-actions">
-                            <button type="button" class="cancel-btn" onclick="cancelReview()">
-                                <i class="fas fa-times"></i> Cancelar
-                            </button>
-                            <button type="submit" class="submit-review-btn">
-                                <i class="fas fa-paper-plane"></i> Publicar Reseña
-                            </button>
-                        </div>
-                    </form>
+                            <div style="text-align: center;">
+                                <button type="button" class="cta-button" onclick="goBackToProducts()" style="margin-right: 1rem;">
+                                    <i class="fas fa-arrow-left"></i> Volver
+                                </button>
+                                <button type="submit" class="cta-button">
+                                    <i class="fas fa-paper-plane"></i> Publicar Reseña
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-section">
@@ -286,8 +190,8 @@
                 <h4>ENLACES RÁPIDOS</h4>
                 <ul>
                     <li><a href="../index.html">Inicio</a></li>
-                    <li><a href="main.html#categorias">Categorías</a></li>
-                    <li><a href="main.html#nuevo">Nuevo</a></li>
+                    <li><a href="../index.html#categorias">Categorías</a></li>
+                    <li><a href="../index.html#nuevo">Nuevo</a></li>
                 </ul>
             </div>
             <div class="footer-section">
@@ -301,7 +205,7 @@
         </div>
     </footer>
 
-    <script src="../js/reseñas.js"></script>
+    <script src="../js/reseñaUser.js"></script>
     <script src="../js/scriptMain.js"></script>
 </body>
 </html>
