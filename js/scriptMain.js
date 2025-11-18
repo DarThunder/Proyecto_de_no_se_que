@@ -98,16 +98,11 @@ cargarTerminosUsuario();
  * @param {object} user - El objeto de usuario devuelto por la API
  */
 function updateSidebarForLoggedInUser(user) {
-  
-  // ALERTA 3: Confirmar que la actualización de UI se va a ejecutar
-  alert(`¡Sesión válida! 👍\nUsuario: ${user.username}\nVoy a cambiar la barra lateral.`);
 
   // 1. Buscamos el ícono de "Cuenta" (fa-user) dentro del menú
   const cuentaDropdownIcon = document.querySelector('.mobile-nav-links .dropdown-toggle i.fa-user');
   
   if (cuentaDropdownIcon) {
-    // ALERTA 3.1: Confirmar que encontramos el ícono
-    alert("Encontré el ícono de 'Cuenta' (fa-user).");
     
     // 2. Subimos al <li> contenedor del dropdown
     const dropdownLi = cuentaDropdownIcon.closest('.dropdown');
@@ -117,8 +112,6 @@ function updateSidebarForLoggedInUser(user) {
       const dropdownMenu = dropdownLi.querySelector('.dropdown-menu');
 
       if (dropdownMenu) {
-        // ALERTA 3.2: Confirmar que encontramos el menú
-        alert("Menú 'Cuenta' encontrado. Reemplazando botones...");
         
         // 4. Reemplazamos el HTML de ese menú
         dropdownMenu.innerHTML = `
@@ -134,16 +127,10 @@ function updateSidebarForLoggedInUser(user) {
                   </li>
               `;
       } else {
-        // ALERTA DE ERROR
-        alert("Error 😢: Encontré el 'li.dropdown' de Cuenta, pero no su 'ul.dropdown-menu' interno.");
       }
     } else {
-        // ALERTA DE ERROR
-        alert("Error 😢: Encontré el ícono 'fa-user', pero no su 'li.dropdown' padre.");
     }
   } else {
-    // ALERTA DE ERROR
-    alert("Error 😢: No pude encontrar el ícono 'fa-user' de la barra lateral. No se puede cambiar el menú.");
   }
 }
 
@@ -151,9 +138,6 @@ function updateSidebarForLoggedInUser(user) {
  * Verifica si el usuario tiene una sesión activa (cookie)
  */
 const checkLoginStatus = async () => {
-
-  // ALERTA 1: Confirmar que la verificación se inicia
-  alert("Verificando estado de la sesión... 🔍\n(Llamando a /users/me)");
 
   try {
     // 1. Consultamos al endpoint 'me'
@@ -169,14 +153,9 @@ const checkLoginStatus = async () => {
       updateSidebarForLoggedInUser(user);
     } else {
       // 4. Si la respuesta no es OK (ej. 401), no está logueado.
-      
-      // ALERTA 2: Confirmar que no hay sesión
-      alert("No se detectó sesión (Usuario no logueado). 🕵️\nLa barra lateral se quedará como está.");
     }
   } catch (error) {
     // ALERTA DE ERROR
-    alert("Error de Red 🔌: No se pudo conectar con el servidor (backend/API) para verificar la sesión.");
-    console.error("Error al verificar la sesión:", error);
   }
 };
 
