@@ -58,38 +58,130 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
   });
-  
+
   if (document.querySelector("#productos-hombre-container")) {
-      loadProducts();
+    loadProducts();
+  }
+
+  // CARGAR CATEGORÍAS DINÁMICAS (NUEVA LÍNEA)
+  loadDynamicCategories();
+
+  setupScrollEffects();
+});
+
+// CARGAR TERMINOS Y CONDICIONES EN EL INDEX
+const cargarTerminosUsuario = async () => {
+  const container = document.getElementById('terminos-content-usuario');
+  if (!container) return; // Salir si el elemento no existe en esta página
+
+  try {
+    const res = await fetch('http://localhost:8080/content/terms'); // Llama a la ruta pública
+    const data = await res.json();
+
+    if (res.ok) {
+      container.innerHTML = data.htmlContent; // Inserta el HTML directamente
+    } else {
+      throw new Error(data.message);
     }
+  } catch (error) {
+    container.innerHTML = '<p>No se pudieron cargar los términos y condiciones en este momento.</p>';
+    console.error('Error fetching T&C:', error);
+  }
+};
 
-    // CARGAR CATEGORÍAS DINÁMICAS (NUEVA LÍNEA)
-    loadDynamicCategories();
+cargarTerminosUsuario();
+
+
+/**
+ * Actualiza la barra lateral para un usuario logueado.
+ * Cambia "Iniciar Sesión" / "Crear Cuenta" por "Ver Perfil" / "Cerrar Sesión".
+ * @param {object} user - El objeto de usuario devuelto por la API
+ */
+function updateSidebarForLoggedInUser(user) {
+  
+  // ALERTA 3: Confirmar que la actualización de UI se va a ejecutar
+  alert(`¡Sesión válida! 👍\nUsuario: ${user.username}\nVoy a cambiar la barra lateral.`);
+
+  // 1. Buscamos el ícono de "Cuenta" (fa-user) dentro del menú
+  const cuentaDropdownIcon = document.querySelector('.mobile-nav-links .dropdown-toggle i.fa-user');
+  
+  if (cuentaDropdownIcon) {
+    // ALERTA 3.1: Confirmar que encontramos el ícono
+    alert("Encontré el ícono de 'Cuenta' (fa-user).");
     
-    setupScrollEffects();
-  });
+    // 2. Subimos al <li> contenedor del dropdown
+    const dropdownLi = cuentaDropdownIcon.closest('.dropdown');
+    
+    if (dropdownLi) {
+      // 3. Encontramos el menú <ul> (el dropdown-menu) dentro de ese <li>
+      const dropdownMenu = dropdownLi.querySelector('.dropdown-menu');
 
-  // CARGAR TERMINOS Y CONDICIONES EN EL INDEX
-    const cargarTerminosUsuario = async () => {
-        const container = document.getElementById('terminos-content-usuario');
-        if (!container) return; // Salir si el elemento no existe en esta página
+      if (dropdownMenu) {
+        // ALERTA 3.2: Confirmar que encontramos el menú
+        alert("Menú 'Cuenta' encontrado. Reemplazando botones...");
+        
+        // 4. Reemplazamos el HTML de ese menú
+        dropdownMenu.innerHTML = `
+                  <li>
+                      <a href="html/orders.html" class="dropdown-link">
+                          <i class="fas fa-user-circle"></i> Ver Perfil (Mis Compras)
+                      </a>
+                  </li>
+                  <li>
+                      <a href="html/login.html" id="sidebar-logout-btn" class="dropdown-link">
+                          <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                      </a>
+                  </li>
+              `;
+      } else {
+        // ALERTA DE ERROR
+        alert("Error 😢: Encontré el 'li.dropdown' de Cuenta, pero no su 'ul.dropdown-menu' interno.");
+      }
+    } else {
+        // ALERTA DE ERROR
+        alert("Error 😢: Encontré el ícono 'fa-user', pero no su 'li.dropdown' padre.");
+    }
+  } else {
+    // ALERTA DE ERROR
+    alert("Error 😢: No pude encontrar el ícono 'fa-user' de la barra lateral. No se puede cambiar el menú.");
+  }
+}
 
-        try {
-            const res = await fetch('http://localhost:8080/content/terms'); // Llama a la ruta pública
-            const data = await res.json();
-            
-            if (res.ok) {
-                container.innerHTML = data.htmlContent; // Inserta el HTML directamente
-            } else {
-                throw new Error(data.message);
-            }
-        } catch (error) {
-            container.innerHTML = '<p>No se pudieron cargar los términos y condiciones en este momento.</p>';
-            console.error('Error fetching T&C:', error);
-        }
-    };
+/**
+ * Verifica si el usuario tiene una sesión activa (cookie)
+ */
+const checkLoginStatus = async () => {
 
-    cargarTerminosUsuario();
+  // ALERTA 1: Confirmar que la verificación se inicia
+  alert("Verificando estado de la sesión... 🔍\n(Llamando a /users/me)");
+
+  try {
+    // 1. Consultamos al endpoint 'me'
+    const response = await fetch("http://localhost:8080/users/me", {
+      method: "GET",
+      credentials: "include", 
+    });
+
+    // 2. Si la respuesta es OK (200), el usuario está logueado
+    if (response.ok) {
+      const user = await response.json();
+      // 3. Llamamos a la función que actualiza la barra lateral
+      updateSidebarForLoggedInUser(user);
+    } else {
+      // 4. Si la respuesta no es OK (ej. 401), no está logueado.
+      
+      // ALERTA 2: Confirmar que no hay sesión
+      alert("No se detectó sesión (Usuario no logueado). 🕵️\nLa barra lateral se quedará como está.");
+    }
+  } catch (error) {
+    // ALERTA DE ERROR
+    alert("Error de Red 🔌: No se pudo conectar con el servidor (backend/API) para verificar la sesión.");
+    console.error("Error al verificar la sesión:", error);
+  }
+};
+
+// 5. Ejecutamos la verificación en cuanto la página carga
+checkLoginStatus();
 
 
 async function loadProducts() {
@@ -169,30 +261,30 @@ async function loadProducts() {
 }
 
 async function loadDynamicCategories() {
-    const dynamicContainer = document.getElementById('dynamic-categories-container');
-    if (!dynamicContainer) return;
+  const dynamicContainer = document.getElementById('dynamic-categories-container');
+  if (!dynamicContainer) return;
 
-    try {
-        const response = await fetch('http://localhost:8080/categories');
-        if (!response.ok) {
-            throw new Error('Error al cargar categorías dinámicas');
-        }
+  try {
+    const response = await fetch('http://localhost:8080/categories');
+    if (!response.ok) {
+      throw new Error('Error al cargar categorías dinámicas');
+    }
 
-        const categories = await response.json();
-        
-        if (categories.length === 0) {
-            return; // No hay categorías dinámicas, no mostrar nada
-        }
+    const categories = await response.json();
 
-        let categoriesHTML = '';
-        categories.forEach(category => {
-            // Procesar URL de imagen
-            let imageUrl = category.image_url || 'sources/img/category_default.png';
-            if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
-                imageUrl = 'sources/img/' + imageUrl;
-            }
+    if (categories.length === 0) {
+      return; // No hay categorías dinámicas, no mostrar nada
+    }
 
-            categoriesHTML += `
+    let categoriesHTML = '';
+    categories.forEach(category => {
+      // Procesar URL de imagen
+      let imageUrl = category.image_url || 'sources/img/category_default.png';
+      if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+        imageUrl = 'sources/img/' + imageUrl;
+      }
+
+      categoriesHTML += `
                 <div class="category-card">
                     <div class="category-image">
                         <img src="${imageUrl}" alt="${category.name}" 
@@ -205,14 +297,14 @@ async function loadDynamicCategories() {
                     </a>
                 </div>
             `;
-        });
+    });
 
-        dynamicContainer.innerHTML = categoriesHTML;
-        
-    } catch (error) {
-        console.error('Error cargando categorías dinámicas:', error);
-        // No mostrar error para no afectar la experiencia del usuario
-    }
+    dynamicContainer.innerHTML = categoriesHTML;
+
+  } catch (error) {
+    console.error('Error cargando categorías dinámicas:', error);
+    // No mostrar error para no afectar la experiencia del usuario
+  }
 }
 
 function initializeProductButtons() {
@@ -279,7 +371,7 @@ function initializeWishlistButtons() {
         console.error("El producto no tiene un ID de variante (data-variant-id).");
         return;
       }
-      
+
       // Verificamos si el corazón está lleno ('fas') o vacío ('far')
       const icon = this.querySelector('i');
       const isWishlisted = icon.classList.contains('fas');
@@ -292,7 +384,7 @@ function initializeWishlistButtons() {
 
 async function toggleWishlistItem(variantId, button, isWishlisted) {
   const heartIcon = button.querySelector('i');
-  
+
   if (isWishlisted) {
     // --- LÓGICA PARA ELIMINAR (DELETE) ---
     try {
@@ -377,7 +469,7 @@ function initializeCarousels() {
       },
     }
   });
-  
+
   const swiperMujer = new Swiper('#swiper-mujer', {
     loop: true,
     slidesPerView: 1, // 1 slide en móvil
