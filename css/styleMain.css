@@ -709,3 +709,35 @@ body {
     display: flex !important;
     flex-direction: column !important;
 }
+
+/* Estilos para el usuario en el header */
+.user-header-info {
+    color: white;
+    font-size: 1rem;
+    margin-right: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.user-header-info strong {
+    color: #ff6b35;
+    font-weight: 600;
+}
+
+/* Para que se alinee bien en el header */
+.user-header-info {
+    margin-left: auto;
+    margin-right: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .user-header-info {
+        display: none; /* Ocultar en móvil */
+    }
+    
+    .nav {
+        padding: 1rem;
+    }
+}

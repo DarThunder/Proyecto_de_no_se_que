@@ -239,6 +239,42 @@ async function loadProducts() {
   }
 }
 
+// Función para cargar datos del usuario
+async function loadUserData() {
+    const userHeaderInfo = document.getElementById("user-header-info");
+    const headerUsername = document.getElementById("header-username");
+
+    try {
+        const userResponse = await fetch("http://localhost:8080/users/me", {
+            method: "GET",
+            credentials: "include",
+        });
+
+        if (userResponse.status === 401) {
+            // Usuario no logeado, mantener oculto
+            return;
+        }
+
+        if (!userResponse.ok) {
+            throw new Error("Error al obtener datos del usuario");
+        }
+
+        const userData = await userResponse.json();
+        
+        // MOSTRAR NOMBRE EN EL HEADER
+        userHeaderInfo.style.display = "flex";
+        headerUsername.textContent = userData.username || 'Cliente';
+
+    } catch (error) {
+        console.error("Error al cargar datos del usuario:", error);
+    }
+}
+
+// Llamar esta función cuando cargue la página
+document.addEventListener("DOMContentLoaded", () => {
+    loadUserData();
+});
+
 async function loadDynamicCategories() {
   const dynamicContainer = document.getElementById('dynamic-categories-container');
   if (!dynamicContainer) return;
