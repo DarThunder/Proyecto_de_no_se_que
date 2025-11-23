@@ -252,4 +252,58 @@ router.get("/user/purchased-products", verifyToken, async (req, res) => {
   }
 });
 
+
+// Agregar en orderRoutes.js - NUEVO ENDPOINT
+router.post("/pos-sale", verifyToken, hasPermission(2), async (req, res) => {
+  try {
+    const { user, cashier, items, payment_method = "CASH" } = req.body;
+
+    // Validaciones básicas
+    if (!user || !items || items.length === 0) {
+      return res.status(400).json({ error: "Faltan campos requeridos: user, items" });
+    }
+
+    let total = 0;
+    const itemsToUpdate = [];
+
+    // Procesar items y calcular total
+    for (const item of items) {
+      const variant = await ProductVariant.findById(item.variant);
+      if (!variant) {
+        return res.status(404).json({ error: `Variante con ID ${item.variant} no encontrada` });
+      }
+      if (variant.stock < item.quantity) {
+        return res.status(400).json({ error: `Stock insuficiente para ${variant.sku}` });
+      }
+
+      variant.stock -= item.quantity;
+      itemsToUpdate.push(variant.save());
+
+      total += item.quantity * item.unit_price * (1 - (item.discount_rate || 0));
+    }
+
+    // Crear la venta
+    const newSale = new Sale({
+      user,
+      cashier: cashier || req.user.id,
+      items,
+      total,
+      transaction_type: "POS",
+      payment_method,
+    });
+
+    await newSale.save();
+    await Promise.all(itemsToUpdate);
+
+    res.status(201).json({
+      message: "Venta POS registrada exitosamente",
+      saleId: newSale._id,
+    });
+
+  } catch (err) {
+    console.error("Error en venta POS:", err);
+    res.status(500).json({ error: "Error al registrar la venta POS", details: err.message });
+  }
+});
+
 export default router;

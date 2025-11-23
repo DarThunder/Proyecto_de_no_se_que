@@ -131,7 +131,7 @@ function setupProductSearch() {
   }
 }
 
-// Función para realizar la búsqueda de productos - CORREGIDA
+// Función para realizar la búsqueda de productos
 async function performProductSearch(searchTerm) {
   try {
     currentSearchTerm = searchTerm.toLowerCase();
@@ -162,7 +162,7 @@ async function performProductSearch(searchTerm) {
   }
 }
 
-// Función para filtrar productos localmente - MEJORADA
+// Función para filtrar productos localmente
 function filterProducts(products, searchTerm) {
   const searchLower = searchTerm.toLowerCase();
 
@@ -292,7 +292,7 @@ function getExampleProducts() {
   ];
 }
 
-// Función para mostrar los resultados de búsqueda - MEJORADA
+// Función para mostrar los resultados de búsqueda
 function displaySearchResults(products, searchTerm) {
   const searchResults = document.getElementById("searchResults");
   const productSearch = document.getElementById("productSearch");
@@ -446,7 +446,7 @@ function initializeCart() {
   if (totalAmount) totalAmount.textContent = "$0.00";
 
   window.getSelectedCustomer = null;
-  window.selectedCupon = null;
+  window.selectedCupon = null; // CORRECCIÓN: Limpiar cupón
   window.cartItems = [];
 
   hideCustomerInfo();
@@ -701,13 +701,26 @@ function displayCuponInfo(cupon) {
     cuponExpiracion.textContent = expiracionText;
 
     cuponInfo.style.display = "block";
-    window.getSelectedCupon = cupon;
+    
+    // CORRECCIÓN: Usar window.selectedCupon consistentemente
+    window.selectedCupon = {
+      id: cupon.id,
+      name: cupon.name,
+      discount: cupon.discount,
+      code: cupon.code,
+      expiration_date: cupon.expiration_date,
+      actual_uses: cupon.actual_uses,
+      maximum_uses: cupon.maximum_uses
+    };
 
-    console.log("Cupón seleccionado:", cupon);
+    console.log("Cupón seleccionado y guardado:", window.selectedCupon);
 
     alert(
       `Cupón "${cupon.name}" aplicado correctamente. Descuento: ${cupon.discount}%`
     );
+    
+    // Actualizar el resumen inmediatamente
+    updateCartSummary();
   }
 }
 
@@ -737,11 +750,18 @@ function clearCustomerSearch() {
 }
 
 function removeCupon() {
+  // CORRECCIÓN: Limpiar window.selectedCupon
+  window.selectedCupon = null;
+  
   hideCuponInfo();
   const searchInput = document.getElementById("searchCupon");
   if (searchInput) {
     searchInput.value = "";
   }
+  
+  // Actualizar el resumen para quitar el descuento
+  updateCartSummary();
+  
   alert("Cupón removido correctamente");
 }
 
@@ -828,11 +848,17 @@ function updateCartDisplay() {
     .join("");
 }
 
+// Función para actualizar el resumen del carrito - MODIFICADA
 function updateCartSummary() {
   if (!window.cartItems || window.cartItems.length === 0) {
     document.getElementById("subtotalAmount").textContent = "$0.00";
     document.getElementById("totalAmount").textContent = "$0.00";
     document.getElementById("descuentoRow").style.display = "none";
+    
+    // Limpiar variables globales
+    window.cartTotal = 0;
+    window.cartSubtotal = 0;
+    window.cartDescuento = 0;
     return;
   }
 
@@ -841,23 +867,35 @@ function updateCartSummary() {
     0
   );
 
-  document.getElementById("subtotalAmount").textContent = `$${subtotal.toFixed(
-    2
-  )}`;
+  document.getElementById("subtotalAmount").textContent = `$${subtotal.toFixed(2)}`;
 
   let descuento = 0;
-  if (window.selectedCupon) {
-    descuento = subtotal * (window.selectedCupon.discount / 100);
+  let descuentoPorcentaje = 0;
+  
+  // VERIFICAR QUE EL CUPÓN ESTÉ DISPONIBLE
+  if (window.selectedCupon && window.selectedCupon.discount) {
+    descuentoPorcentaje = window.selectedCupon.discount;
+    descuento = subtotal * (descuentoPorcentaje / 100);
     document.getElementById(
       "descuentoAmount"
-    ).textContent = `-$${descuento.toFixed(2)}`;
+    ).textContent = `-$${descuento.toFixed(2)} (${descuentoPorcentaje}%)`;
     document.getElementById("descuentoRow").style.display = "flex";
+    
+    console.log(`Descuento aplicado: ${descuentoPorcentaje}% = $${descuento.toFixed(2)}`);
   } else {
     document.getElementById("descuentoRow").style.display = "none";
+    console.log("No hay cupón aplicado");
   }
 
   const total = subtotal - descuento;
   document.getElementById("totalAmount").textContent = `$${total.toFixed(2)}`;
+  
+  // Guardar el total calculado para usar en el checkout
+  window.cartTotal = total;
+  window.cartSubtotal = subtotal;
+  window.cartDescuento = descuento;
+  
+  console.log(`Resumen - Subtotal: $${subtotal.toFixed(2)}, Descuento: $${descuento.toFixed(2)}, Total: $${total.toFixed(2)}`);
 }
 
 function removeProductFromCart(productId) {
@@ -902,47 +940,7 @@ function addAnotherProduct() {
   document.getElementById("productID").focus();
 }
 
-function processCheckout() {
-  console.log("Procesando pago...");
 
-  if (!window.getSelectedCustomer) {
-    alert("Por favor, seleccione un cliente antes de procesar el pago");
-    return;
-  }
-
-  if (!window.cartItems || window.cartItems.length === 0) {
-    alert(
-      "El carrito está vacío. Agregue productos antes de procesar el pago."
-    );
-    return;
-  }
-
-  const total = parseFloat(
-    document.getElementById("totalAmount").textContent.replace("$", "")
-  );
-
-  const checkoutInfo = {
-    cliente: window.getSelectedCustomer.username,
-    cupon: window.selectedCupon ? window.selectedCupon.nombre : "Ninguno",
-    descuento: window.selectedCupon
-      ? window.selectedCupon.discount + "%"
-      : "0%",
-    total: total,
-    items: window.cartItems.length,
-  };
-
-  alert(`Procesando pago para:\n
-Cliente: ${checkoutInfo.cliente}
-Cupón aplicado: ${checkoutInfo.cupon}
-Descuento: ${checkoutInfo.descuento}
-Total a cobrar: $${checkoutInfo.total.toFixed(2)}
-Items: ${checkoutInfo.items}
-
-Esta funcionalidad se conectará con la API de órdenes.`);
-
-  // Aquí se conectaría con la API para procesar la orden
-  // initializeCart(); // Limpiar carrito después del pago
-}
 
 function generateDailyReport() {
   console.log("Generando reporte diario...");
@@ -956,6 +954,26 @@ function closeRegister() {
   alert(
     "Cerrando caja...\n\nEsta funcionalidad realizará el cierre de caja del turno."
   );
+}
+
+// Función para actualizar estadísticas de caja (simulada)
+function updateRegisterStats(saleTotal) {
+  const dailySales = document.getElementById("dailySales");
+  const transactionsCount = document.getElementById("transactionsCount");
+  const averageTicket = document.getElementById("averageTicket");
+  
+  if (dailySales && transactionsCount && averageTicket) {
+    const currentSales = parseFloat(dailySales.textContent.replace('$', '')) || 0;
+    const currentTransactions = parseInt(transactionsCount.textContent) || 0;
+    
+    const newSales = currentSales + saleTotal;
+    const newTransactions = currentTransactions + 1;
+    const newAverage = newTransactions > 0 ? newSales / newTransactions : 0;
+    
+    dailySales.textContent = `$${newSales.toFixed(2)}`;
+    transactionsCount.textContent = newTransactions;
+    averageTicket.textContent = `$${newAverage.toFixed(2)}`;
+  }
 }
 
 async function logout() {
@@ -984,3 +1002,229 @@ function clearSelectedCustomer() {
   hideCustomerInfo();
   clearCustomerSearch();
 }
+
+// Función para procesar checkout - MODIFICADA
+async function processCheckout() {
+  console.log("Procesando pago...");
+  console.log("Cupón actual:", window.selectedCupon);
+
+  try {
+    // Verificar usuario y permisos
+    const currentUser = await getUserInfoMe();
+    if (!currentUser) {
+      alert("Error: No se pudo obtener la información del usuario");
+      return;
+    }
+
+    console.log("Usuario actual:", currentUser);
+
+    if (!window.getSelectedCustomer) {
+      alert("Por favor, seleccione un cliente antes de procesar el pago");
+      return;
+    }
+
+    if (!window.cartItems || window.cartItems.length === 0) {
+      alert("El carrito está vacío. Agregue productos antes de procesar el pago.");
+      return;
+    }
+
+    // CALCULAR TOTALES CON DESCUENTO
+    const subtotal = window.cartItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+    
+    let descuento = 0;
+    let discountRate = 0;
+    
+    // VERIFICAR CUPÓN Y APLICAR DESCUENTO
+    if (window.selectedCupon && window.selectedCupon.discount) {
+      descuento = subtotal * (window.selectedCupon.discount / 100);
+      discountRate = window.selectedCupon.discount / 100;
+      console.log(`Aplicando descuento del ${window.selectedCupon.discount}%: $${descuento.toFixed(2)}`);
+    }
+    
+    const total = subtotal - descuento;
+
+    // Preparar items con la tasa de descuento correcta
+    const saleItems = window.cartItems.map(item => ({
+      variant: item.variantId || item.id,
+      quantity: item.quantity,
+      unit_price: item.price,
+      discount_rate: discountRate // Usar la tasa de descuento calculada
+    }));
+
+    const saleData = {
+      user: window.getSelectedCustomer._id,
+      cashier: currentUser._id,
+      items: saleItems,
+      total: total, // Total YA incluye el descuento
+      payment_method: "CASH",
+      transaction_type: "POS",
+    };
+
+    console.log("=== DATOS DE VENTA ===");
+    console.log("Datos a enviar:", saleData);
+    console.log("Cupón aplicado:", window.selectedCupon);
+    console.log("Subtotal:", subtotal);
+    console.log("Descuento:", descuento);
+    console.log("Total final:", total);
+    console.log("Tasa de descuento por item:", discountRate);
+
+    // Mostrar confirmación con información del descuento
+    let confirmMessage = `¿Confirmar venta?\n\nCliente: ${window.getSelectedCustomer.username}\nItems: ${window.cartItems.length}\nSubtotal: $${subtotal.toFixed(2)}`;
+    
+    if (window.selectedCupon) {
+      confirmMessage += `\nCupón: ${window.selectedCupon.code} (${window.selectedCupon.discount}% OFF)`;
+      confirmMessage += `\nDescuento: -$${descuento.toFixed(2)}`;
+    }
+    
+    confirmMessage += `\nTotal: $${total.toFixed(2)}`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    // Procesar la venta
+    await processPOSSale(saleData);
+
+  } catch (error) {
+    console.error("Error procesando la venta:", error);
+    alert(`❌ Error al procesar la venta: ${error.message}`);
+  }
+}
+
+// Función específica para procesar ventas POS
+async function processPOSSale(saleData) {
+  try {
+    // USAR EL ENDPOINT pos-sale que acepta permission_ring 2
+    const response = await fetch("http://localhost:8080/orders/pos-sale", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(saleData),
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      // Si es error de permisos, mostrar mensaje específico
+      if (response.status === 403) {
+        throw new Error(`Permisos insuficientes. El usuario necesita permisos de cajero.`);
+      }
+      
+      // Si es error de stock u otro problema
+      throw new Error(responseData.error || responseData.message || `Error ${response.status}: ${response.statusText}`);
+    }
+
+    // Éxito - Mostrar mensaje con información del descuento
+    let successMessage = `✅ Venta registrada exitosamente\n\nID de Venta: ${responseData.saleId}\nTotal: $${saleData.total.toFixed(2)}`;
+    
+    if (window.selectedCupon) {
+      successMessage += `\nCupón aplicado: ${window.selectedCupon.code} (${window.selectedCupon.discount}% OFF)`;
+      // Incrementar el contador de usos del cupón
+      await incrementCouponUsage(window.selectedCupon.id);
+    }
+    
+    successMessage += `\n\nEl stock ha sido actualizado.`;
+    
+    alert(successMessage);
+    
+    initializeCart();
+    updateRegisterStats(saleData.total);
+
+  } catch (error) {
+    throw error;
+  }
+}
+
+// Función para incrementar el uso del cupón - CORREGIDA
+// En pos.js - CORREGIR PUERTO Y MEJORAR DEBUG
+async function incrementCouponUsage(couponId) {
+  try {
+    // VERIFICAR ID COMPLETO
+    console.log("🟡 Intentando incrementar cupón con ID:", couponId);
+    
+    if (!couponId || couponId.length < 10) {
+      console.warn("❌ ID de cupón inválido:", couponId);
+      return;
+    }
+    
+    // USAR PUERTO CORRECTO - 5500
+    const baseUrl = "http://localhost:5500";
+    const url = `${baseUrl}/coupons/${couponId}/increment`;
+    console.log("🔵 URL completa:", url);
+    
+    const response = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+    
+    console.log("🟢 Respuesta del servidor:", response.status, response.statusText);
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        console.warn("❌ Endpoint no encontrado - verificar ruta en server");
+        return;
+      }
+      if (response.status === 405) {
+        console.warn("❌ Método no permitido - verificar CORS y método en server");
+        return;
+      }
+      console.warn(`❌ Error HTTP: ${response.status} ${response.statusText}`);
+    } else {
+      const result = await response.json();
+      console.log("✅ Contador de cupón incrementado:", result);
+    }
+  } catch (error) {
+    console.error("❌ Error en incrementCouponUsage:", error);
+  }
+}
+
+function showSuccessMessage(result, total) {
+  alert(`✅ Venta registrada exitosamente\n\nID de Venta: ${result.saleId || result._id}\nTotal: $${total.toFixed(2)}\n\nEl stock ha sido actualizado.`);
+}
+
+// Función alternativa usando checkout web
+async function processWithCheckoutEndpoint(saleData) {
+  try {
+    // Adaptar datos para checkout web
+    const checkoutData = {
+      shipping_address: {
+        full_name: window.getSelectedCustomer.username || "Cliente POS",
+        address: "Tienda Física",
+        city: "Local",
+        state: "Local", 
+        zip_code: "00000",
+        country: "MX"
+      }
+    };
+
+    const response = await fetch("http://localhost:8080/orders/checkout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(checkoutData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `Error checkout: ${response.status}`);
+    }
+
+    const result = await response.json();
+    showSuccessMessage(result, saleData.total);
+    initializeCart();
+
+  } catch (error) {
+    throw new Error(`No se pudo procesar la venta: ${error.message}`);
+  }
+}
+
