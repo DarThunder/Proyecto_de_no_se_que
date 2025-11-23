@@ -16,7 +16,8 @@
     "jsonwebtoken": "^9.0.2",
     "cors": "^2.8.5",
     "cookie-parser": "^1.4.7",
-    "nodemailer": "^7.0.10"
+    "nodemailer": "^7.0.10",
+    "archiver": "^7.0.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

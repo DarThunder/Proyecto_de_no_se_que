@@ -121,6 +121,12 @@
         </li>
 
         <li>
+          <a href="#" id="backup-btn">
+            <i class="fas fa-database"></i> Generar Respaldo
+          </a>
+        </li>
+
+        <li>
           <a href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
         </li>
       </ul>
@@ -143,48 +149,48 @@
   </div>
 
   <div id="barcodes-modal" class="modal">
-        <div class="modal-content extra-wide-modal">
-            <div class="modal-header">
-                <h3>Generador de Códigos de Barras</h3>
+    <div class="modal-content extra-wide-modal">
+      <div class="modal-header">
+        <h3>Generador de Códigos de Barras</h3>
+      </div>
+      <div class="modal-body">
+        <div class="barcodes-container">
+          <div class="input-section">
+            <label for="productSelect">Seleccionar Producto:</label>
+            <select id="productSelect" class="product-select">
+              <option value="">-- Selecciona un producto --</option>
+            </select>
+            <div class="btn-group">
+              <button id="generateBtn" class="btn btn-primary">
+                <i class="fas fa-barcode"></i> Generar Código
+              </button>
+              <button id="printBtn" class="btn btn-success print-btn">
+                <i class="fas fa-print"></i> Imprimir
+              </button>
+              <button id="refreshBtn" class="btn btn-secondary">
+                <i class="fas fa-sync-alt"></i> Actualizar Lista
+              </button>
             </div>
-            <div class="modal-body">
-                <div class="barcodes-container">
-                    <div class="input-section">
-                        <label for="productSelect">Seleccionar Producto:</label>
-                        <select id="productSelect" class="product-select">
-                            <option value="">-- Selecciona un producto --</option>
-                        </select>
-                        <div class="btn-group">
-                            <button id="generateBtn" class="btn btn-primary">
-                                <i class="fas fa-barcode"></i> Generar Código
-                            </button>
-                            <button id="printBtn" class="btn btn-success print-btn">
-                                <i class="fas fa-print"></i> Imprimir
-                            </button>
-                            <button id="refreshBtn" class="btn btn-secondary">
-                                <i class="fas fa-sync-alt"></i> Actualizar Lista
-                            </button>
-                        </div>
-                    </div>
+          </div>
 
-                    <div id="barcodeResult" class="hidden">
-                        <div class="barcode-container">
-                            <div id="productDisplay" class="product-name"></div>
-                            <div id="productDetails" class="product-details"></div>
-                            <svg id="barcode" class="barcode-image"></svg>
-                            <div id="barcodeText" class="barcode-value"></div>
-                        </div>
-                    </div>
-
-                    <div class="loading-section hidden" id="loadingSection">
-                        <div class="loading-spinner">Cargando productos...</div>
-                    </div>
-                </div>
+          <div id="barcodeResult" class="hidden">
+            <div class="barcode-container">
+              <div id="productDisplay" class="product-name"></div>
+              <div id="productDetails" class="product-details"></div>
+              <svg id="barcode" class="barcode-image"></svg>
+              <div id="barcodeText" class="barcode-value"></div>
             </div>
+          </div>
+
+          <div class="loading-section hidden" id="loadingSection">
+            <div class="loading-spinner">Cargando productos...</div>
+          </div>
         </div>
+      </div>
+    </div>
 
-  <script src="../js/admin.js"></script>
-  <script src="../js/configuracionPagos.js"></script>
+    <script src="../js/admin.js"></script>
+    <script src="../js/configuracionPagos.js"></script>
 </body>
 
 </html>

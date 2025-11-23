@@ -389,3 +389,54 @@ document.addEventListener("DOMContentLoaded", () => {
   // Inicializar el modal de códigos de barras
   initializeBarcodesModal();
 });
+
+const backupBtn = document.getElementById("backup-btn");
+if (backupBtn) {
+  backupBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+
+    if (
+      !confirm(
+        "¿Deseas generar y descargar una copia de seguridad completa del sistema?"
+      )
+    ) {
+      return;
+    }
+
+    const originalText = backupBtn.innerHTML;
+    backupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generando...';
+    document.body.style.cursor = "wait";
+
+    try {
+      const response = await fetch("http://localhost:8080/backup/download", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Respaldo_RopaDB_${new Date()
+          .toISOString()
+          .slice(0, 10)}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } else {
+        const err = await response.json();
+        alert(
+          "Error: " + (err.message || "No tienes permisos o falló el servidor")
+        );
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error de conexión al intentar descargar el respaldo.");
+    } finally {
+      backupBtn.innerHTML = originalText;
+      document.body.style.cursor = "default";
+    }
+  });
+}

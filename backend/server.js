@@ -21,6 +21,7 @@ import contentRoutes from "./routes/contentRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";
 import paymentConfigRoutes from "./routes/paymentConfigRoutes.js";
 import roleRoutes from "./routes/roleRoutes.js";
+import backupRoutes from "./routes/backupRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -86,6 +87,7 @@ app.use("/categories", categoryRoutes);
 app.use("/messages", messageRoutes);
 app.use("/payment-config", paymentConfigRoutes);
 app.use("/roles", roleRoutes);
+app.use("/backup", backupRoutes);
 
 app.get("/inventario-stock-bajo", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "html", "InventarioStockB.html"));
