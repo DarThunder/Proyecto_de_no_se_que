@@ -15,7 +15,7 @@
                 <h1>S&S Admin</h1>
             </div>
             <ul>
-                <li >
+                <li class="active">
                     <a href="admin.html">
                         <i class="fas fa-tachometer-alt"></i> Dashboard
                     </a>
@@ -34,15 +34,27 @@
                 </li>
 
                 <li>
-                    <a href="reporte_vendedores.html"><i class="fas fa-users"></i> Reporte Vendedores</a>
+                    <a href="ReporteVendedores.html"><i class="fas fa-users"></i> Reporte Vendedores</a>
                 </li>
 
                 <li>
                     <a href="proveedores.html"><i class="fas fa-truck-field"></i> Proveedores</a>
                 </li>
 
-                <li class="active">
-                    <a href="gestion_usuarios.html"><i class="fas fa-user-shield"></i> Gestión Usuarios</a>
+                <li>
+                    <a href="GestionUsuarios.html"><i class="fas fa-user-shield"></i> Gestión Usuarios</a>
+                </li>
+
+                <li>
+                    <a href="GestionRoles.html">
+                        <i class="fas fa-user-tag"></i> Gestión de Roles
+                    </a>
+                </li>
+
+                <li>
+                    <a href="ConfiguracionPagos.html">
+                        <i class="fas fa-credit-card"></i> Métodos de Pago
+                    </a>
                 </li>
 
                 <li>
@@ -64,7 +76,7 @@
                 </li>
 
                 <li>
-                    <a href="#" id="barcodes-menu-btn">
+                    <a href="/html/codigos.html" id="barcodes-menu-btn">
                         <i class="fas fa-barcode"></i> Generar Códigos de Barras
                     </a>
                 </li>
@@ -139,7 +151,48 @@
             </form>
         </div>
     </div>
+
+    <div id="barcodes-modal" class="modal">
+        <div class="modal-content extra-wide-modal">
+            <div class="modal-header">
+                <h3>Generador de Códigos de Barras</h3>
+            </div>
+            <div class="modal-body">
+                <div class="barcodes-container">
+                    <div class="input-section">
+                        <label for="productSelect">Seleccionar Producto:</label>
+                        <select id="productSelect" class="product-select">
+                            <option value="">-- Selecciona un producto --</option>
+                        </select>
+                        <div class="btn-group">
+                            <button id="generateBtn" class="btn btn-primary">
+                                <i class="fas fa-barcode"></i> Generar Código
+                            </button>
+                            <button id="printBtn" class="btn btn-success print-btn">
+                                <i class="fas fa-print"></i> Imprimir
+                            </button>
+                            <button id="refreshBtn" class="btn btn-secondary">
+                                <i class="fas fa-sync-alt"></i> Actualizar Lista
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="barcodeResult" class="hidden">
+                        <div class="barcode-container">
+                            <div id="productDisplay" class="product-name"></div>
+                            <div id="productDetails" class="product-details"></div>
+                            <svg id="barcode" class="barcode-image"></svg>
+                            <div id="barcodeText" class="barcode-value"></div>
+                        </div>
+                    </div>
+
+                    <div class="loading-section hidden" id="loadingSection">
+                        <div class="loading-spinner">Cargando productos...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     
-    <script src="../js/gestion_usuarios.js"></script>
+    <script src="../js/gestionUsuarios.js"></script>
 </body>
 </html>

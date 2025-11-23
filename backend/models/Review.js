@@ -32,49 +32,33 @@ const reviewSchema = new Schema(
     },
     is_approved: {
       type: Boolean,
-      default: true, // Para administradores poder moderar
+      default: true,
     },
   },
   { timestamps: true }
 );
 
-// En Review.js, COMENTA estas líneas que causan error:
-reviewSchema.statics.getAverageRating = async function(productId) {
+reviewSchema.statics.getAverageRating = async function (productId) {
   const result = await this.aggregate([
     {
-      $match: { 
+      $match: {
         product: productId,
-        is_approved: true 
-      }
+        is_approved: true,
+      },
     },
     {
       $group: {
-        _id: '$product',
-        averageRating: { $avg: '$rating' },
-        reviewCount: { $sum: 1 }
-      }
-    }
+        _id: "$product",
+        averageRating: { $avg: "$rating" },
+        reviewCount: { $sum: 1 },
+      },
+    },
   ]);
 
   try {
-    // COMENTA ESTAS LÍNEAS TEMPORALMENTE:
-    // await model("Product").findByIdAndUpdate(productId, {
-    //   average_rating: result[0]?.averageRating || 0,
-    //   review_count: result[0]?.reviewCount || 0
-    // });
   } catch (err) {
     console.error("Error updating product rating:", err);
   }
 };
 
-// Y COMENTA LOS MIDDLEWARE:
-// reviewSchema.post('save', function() {
-//   this.constructor.getAverageRating(this.product);
-// });
-
-// reviewSchema.post('findOneAndDelete', function(doc) {
-//   if (doc) {
-//     doc.constructor.getAverageRating(doc.product);
-//   }
-// });
 export default model("Review", reviewSchema);

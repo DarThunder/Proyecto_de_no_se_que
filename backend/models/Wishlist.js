@@ -18,7 +18,7 @@ const wishlistSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true, // Cada usuario solo tiene UNA lista de deseos
+      unique: true,
     },
     items: [wishlistItemSchema],
   },

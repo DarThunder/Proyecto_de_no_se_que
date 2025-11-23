@@ -48,7 +48,7 @@ const saleSchema = new Schema(
     cashier: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      default: null, // Será nulo para ventas en línea
+      default: null,
     },
     items: [saleItemSchema],
     total: {
@@ -57,15 +57,15 @@ const saleSchema = new Schema(
     },
     payment_method: {
       type: String,
-      enum: ["CASH", "CARD", "ONLINE"], // Añadimos ONLINE
+      enum: ["CASH", "CARD", "ONLINE"],
       required: true,
     },
     transaction_type: {
       type: String,
-      enum: ["POS", "WEB"], // Añadimos WEB
+      enum: ["POS", "WEB"],
       required: true,
     },
-    // --- NUEVOS CAMPOS ---
+
     shipping_address: {
       type: shippingAddressSchema,
       required: function () {
@@ -81,7 +81,6 @@ const saleSchema = new Schema(
       type: String,
       default: null,
     },
-    // --- FIN NUEVOS CAMPOS ---
   },
   { timestamps: true }
 );

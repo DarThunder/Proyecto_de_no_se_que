@@ -2,12 +2,10 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Administración</title>
-    <link rel="stylesheet" href="../css/admin.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <meta charset="UTF-8" />
+    <title>Gestión de Roles | S&S Admin</title>
+    <link rel="stylesheet" href="../css/admin.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
 
 <body>
@@ -99,64 +97,67 @@
 
         <main class="admin-content">
             <header class="admin-header">
-                <h2>Dashboard</h2>
+                <h2>Gestión de Roles y Permisos</h2>
                 <div class="user-info">
-                    Bienvenido, <span id="admin-username">cargando...</span>
+                    Admin: <span id="admin-username">...</span>
                 </div>
             </header>
 
             <section class="content-area">
-                <h3>Resumen de Ventas por Canal (HU 27)</h3>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h4>Ingresos (Online)</h4>
-                        <p id="stats-online-revenue">$0.00</p>
-                    </div>
-                    <div class="stat-card">
-                        <h4>Ventas (Online)</h4>
-                        <p id="stats-online-sales">0</p>
-                    </div>
-
-                    <div class="stat-card">
-                        <h4>Ingresos (POS)</h4>
-                        <p id="stats-pos-revenue">$0.00</p>
-                    </div>
-                    <div class="stat-card">
-                        <h4>Ventas (POS)</h4>
-                        <p id="stats-pos-sales">0</p>
-                    </div>
+                <div class="action-bar">
+                    <button class="btn btn-primary" id="btn-crear-rol">
+                        <i class="fas fa-plus"></i> Nuevo Rol
+                    </button>
                 </div>
 
-                <h3 style="margin-top: 2rem;">Analíticas (HU 34)</h3>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h4>Visitas Hoy</h4>
-                        <p>1,234</p>
-                    </div>
-                    <div class="stat-card">
-                        <h4>Tasa de Conversión</h4>
-                        <p>3.4%</p>
-                    </div>
+                <div class="table-container">
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Nivel (Ring)</th>
+                                <th>Descripción</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roles-tbody"></tbody>
+                    </table>
                 </div>
             </section>
-
-            <!-- MOSTRAR TERMINOS Y CONDICIONES -->
-            <div class="container">
-                <section id="terminos-editor" class="admin-section">
-                    <h2>Editor de Términos y Condiciones</h2>
-                    <p>Edita el contenido que verán los usuarios.</p>
-
-                    <textarea id="terminos-textarea" rows="20" style="width: 100%; font-family: monospace;"></textarea>
-
-                    <button id="guardar-terminos-btn" class="btn">Guardar Cambios</button>
-
-                    <div id="terminos-feedback" style="margin-top: 10px; font-weight: bold;"></div>
-                </section>
-            </div>
         </main>
     </div>
 
-    <!-- MOdal del códigos de barras -->
+    <div id="rol-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Crear/Editar Rol</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="rol-form">
+                    <input type="hidden" id="rol-id" />
+                    <div class="form-group">
+                        <label>Nombre del Rol</label>
+                        <input type="text" id="rol-nombre" required placeholder="Ej. Cajero" />
+                    </div>
+                    <div class="form-group">
+                        <label>Nivel de Permiso (Ring)</label>
+                        <input type="number" id="rol-ring" min="1" max="10" required
+                            placeholder="0=Admin Supremo, 10=Usuario" />
+                        <small>0 es acceso total. 10 es acceso mínimo.</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea id="rol-desc" rows="3"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div id="barcodes-modal" class="modal">
         <div class="modal-content extra-wide-modal">
             <div class="modal-header">
@@ -198,7 +199,8 @@
             </div>
         </div>
 
-        <script src="../js/admin.js"></script>
+    <script src="../js/admin.js"></script>
+    <script src="../js/gestionRoles.js"></script>
 </body>
 
 </html>

@@ -4,96 +4,106 @@ import { Types } from "mongoose";
 
 import Category from "../models/Category.js";
 
-console.log('✅ categoryRoutes.js cargado correctamente');
+console.log("✅ categoryRoutes.js cargado correctamente");
 
-// OBTENER TODAS LAS CATEGORÍAS (PÚBLICO - para filtros en tienda)
 router.get("/", async (_, res) => {
   try {
-    const categories = await Category.find({ isActive: true }).sort({ name: 1 });
+    const categories = await Category.find({ isActive: true }).sort({
+      name: 1,
+    });
     res.status(200).json(categories);
   } catch (err) {
-    res.status(500).json({ error: "Error al obtener categorías", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Error al obtener categorías", details: err.message });
   }
 });
 
-// OBTENER TODAS LAS CATEGORÍAS (ADMIN - incluye inactivas)
 router.get("/admin/all", async (_, res) => {
   try {
     const categories = await Category.find().sort({ name: 1 });
     res.status(200).json(categories);
   } catch (err) {
-    res.status(500).json({ error: "Error al obtener categorías", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Error al obtener categorías", details: err.message });
   }
 });
 
-// CREAR NUEVA CATEGORÍA
 router.post("/admin", async (req, res) => {
   const { name, description, image_url } = req.body;
 
-  console.log('📨 Creando categoría con datos:', req.body);
+  console.log("📨 Creando categoría con datos:", req.body);
 
   if (!name || name.trim() === "") {
-    return res.status(400).json({ error: "El nombre de la categoría es requerido" });
+    return res
+      .status(400)
+      .json({ error: "El nombre de la categoría es requerido" });
   }
 
   try {
-    // Verificar si ya existe una categoría con ese nombre
-    const existingCategory = await Category.findOne({ 
-      name: { $regex: new RegExp(`^${name.trim()}$`, 'i') } 
+    const existingCategory = await Category.findOne({
+      name: { $regex: new RegExp(`^${name.trim()}$`, "i") },
     });
 
     if (existingCategory) {
-      return res.status(400).json({ error: "Ya existe una categoría con ese nombre" });
+      return res
+        .status(400)
+        .json({ error: "Ya existe una categoría con ese nombre" });
     }
 
     const newCategory = new Category({
       name: name.trim(),
       description: description?.trim() || "",
-      image_url: image_url || "sources/img/category_default.png"
+      image_url: image_url || "sources/img/category_default.png",
     });
 
     await newCategory.save();
-    console.log('✅ Categoría creada exitosamente:', newCategory);
+    console.log("Categoría creada exitosamente:", newCategory);
     res.status(201).json(newCategory);
   } catch (err) {
-    console.error('❌ Error al crear categoría:', err);
-    res.status(500).json({ error: "Error al crear la categoría", details: err.message });
+    console.error("Error al crear categoría:", err);
+    res
+      .status(500)
+      .json({ error: "Error al crear la categoría", details: err.message });
   }
 });
 
-// ACTUALIZAR CATEGORÍA
 router.put("/admin/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { name, description, image_url, isActive } = req.body;
 
-    console.log('📨 Actualizando categoría:', id, req.body);
+    console.log("Actualizando categoría:", id, req.body);
 
     if (!Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: "ID de categoría no válido" });
     }
 
     if (!name || name.trim() === "") {
-      return res.status(400).json({ error: "El nombre de la categoría es requerido" });
+      return res
+        .status(400)
+        .json({ error: "El nombre de la categoría es requerido" });
     }
 
-    // Verificar si ya existe otra categoría con el mismo nombre
-    const existingCategory = await Category.findOne({ 
-      name: { $regex: new RegExp(`^${name.trim()}$`, 'i') },
-      _id: { $ne: id }
+    const existingCategory = await Category.findOne({
+      name: { $regex: new RegExp(`^${name.trim()}$`, "i") },
+      _id: { $ne: id },
     });
 
     if (existingCategory) {
-      return res.status(400).json({ error: "Ya existe otra categoría con ese nombre" });
+      return res
+        .status(400)
+        .json({ error: "Ya existe otra categoría con ese nombre" });
     }
 
     const updatedCategory = await Category.findByIdAndUpdate(
       id,
-      { 
-        name: name.trim(), 
+      {
+        name: name.trim(),
         description: description?.trim() || "",
         image_url: image_url || "sources/img/category_default.png",
-        isActive: isActive !== undefined ? isActive : true
+        isActive: isActive !== undefined ? isActive : true,
       },
       { new: true, runValidators: true }
     );
@@ -104,28 +114,32 @@ router.put("/admin/:id", async (req, res) => {
 
     res.status(200).json(updatedCategory);
   } catch (err) {
-    console.error('❌ Error al actualizar categoría:', err);
-    res.status(500).json({ error: "Error al actualizar la categoría", details: err.message });
+    console.error("Error al actualizar categoría:", err);
+    res
+      .status(500)
+      .json({
+        error: "Error al actualizar la categoría",
+        details: err.message,
+      });
   }
 });
 
-// ELIMINAR CATEGORÍA
 router.delete("/admin/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('🗑️ Eliminando categoría:', id);
+    console.log("Eliminando categoría:", id);
 
     if (!Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: "ID de categoría no válido" });
     }
 
-    // Verificar si hay productos usando esta categoría
     const Product = (await import("../models/Product.js")).default;
     const productsWithCategory = await Product.findOne({ category: id });
 
     if (productsWithCategory) {
-      return res.status(400).json({ 
-        error: "No se puede eliminar la categoría porque hay productos asociados a ella" 
+      return res.status(400).json({
+        error:
+          "No se puede eliminar la categoría porque hay productos asociados a ella",
       });
     }
 
@@ -137,16 +151,17 @@ router.delete("/admin/:id", async (req, res) => {
 
     res.status(200).json({ message: "Categoría eliminada correctamente" });
   } catch (err) {
-    console.error('❌ Error al eliminar categoría:', err);
-    res.status(500).json({ error: "Error al eliminar la categoría", details: err.message });
+    console.error("Error al eliminar categoría:", err);
+    res
+      .status(500)
+      .json({ error: "Error al eliminar la categoría", details: err.message });
   }
 });
 
-// DESACTIVAR/ACTIVAR CATEGORÍA
 router.patch("/admin/:id/toggle", async (req, res) => {
   try {
     const { id } = req.params;
-    console.log('🔄 Cambiando estado de categoría:', id);
+    console.log("Cambiando estado de categoría:", id);
 
     if (!Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: "ID de categoría no válido" });
@@ -160,13 +175,20 @@ router.patch("/admin/:id/toggle", async (req, res) => {
     category.isActive = !category.isActive;
     await category.save();
 
-    res.status(200).json({ 
-      message: `Categoría ${category.isActive ? 'activada' : 'desactivada'} correctamente`,
-      category 
+    res.status(200).json({
+      message: `Categoría ${
+        category.isActive ? "activada" : "desactivada"
+      } correctamente`,
+      category,
     });
   } catch (err) {
-    console.error('❌ Error al cambiar estado de categoría:', err);
-    res.status(500).json({ error: "Error al cambiar estado de la categoría", details: err.message });
+    console.error("Error al cambiar estado de categoría:", err);
+    res
+      .status(500)
+      .json({
+        error: "Error al cambiar estado de la categoría",
+        details: err.message,
+      });
   }
 });
 

@@ -12,8 +12,16 @@ const roleSchema = new Schema(
     permission_ring: {
       type: Number,
       required: true,
-      unique: true,
       min: 0,
+    },
+    allowed_modules: {
+      type: [String],
+      default: [],
+    },
+    description: {
+      type: String,
+      trim: true,
+      default: "",
     },
   },
   { timestamps: true }

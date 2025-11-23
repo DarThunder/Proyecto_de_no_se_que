@@ -1,6 +1,5 @@
 const db = db.getSiblingDB("ropadb");
 
-// --- Lógica de Cupones (Sin cambios) ---
 db.createCollection("coupons");
 let cuponBuenFin = {
   name: "Buen Fin 2024",
@@ -38,21 +37,20 @@ let cuponBienvenida = {
 db.coupons.insertMany([cuponBuenFin, cuponVerano, cuponBienvenida]);
 print("Cupones de prueba creados.");
 
-
-// --- Lógica de Productos (Sin cambios) ---
 print("Cargando datos de productos desde product-data.js...");
 
-// Especifica la ruta absoluta dentro del contenedor
-load('/docker-entrypoint-initdb.d/product-data.js'); 
+load("/docker-entrypoint-initdb.d/product-data.js");
 
-if (typeof productsToInsert === 'undefined') {
-  print("ERROR: No se pudo cargar la variable 'productsToInsert' desde product-data.js.");
+if (typeof productsToInsert === "undefined") {
+  print(
+    "ERROR: No se pudo cargar la variable 'productsToInsert' desde product-data.js."
+  );
 } else {
   print(`Encontrados ${productsToInsert.length} productos para insertar.`);
-  
-  productsToInsert.forEach(productData => {
+
+  productsToInsert.forEach((productData) => {
     const variantsData = productData.variants;
-    delete productData.variants; 
+    delete productData.variants;
 
     productData.createdAt = new Date();
     productData.updatedAt = new Date();
@@ -61,25 +59,24 @@ if (typeof productsToInsert === 'undefined') {
     const newProductId = insertResult.insertedId;
 
     if (newProductId) {
-      const variantsToInsert = variantsData.map(variant => {
+      const variantsToInsert = variantsData.map((variant) => {
         return {
           ...variant,
-          product: newProductId, 
+          product: newProductId,
           createdAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         };
       });
       db.productvariants.insertMany(variantsToInsert);
-      print(`Producto '${productData.name}' y sus ${variantsToInsert.length} variantes insertados.`);
+      print(
+        `Producto '${productData.name}' y sus ${variantsToInsert.length} variantes insertados.`
+      );
     } else {
       print(`ERROR: No se pudo insertar el producto '${productData.name}'.`);
     }
   });
   print("¡Todos los productos y variantes fueron insertados exitosamente!");
 }
-
-
-// --- ===== Lógica de Roles y Usuarios (MODIFICADA) ===== ---
 
 print("Borrando roles y usuarios antiguos para re-crear con 'Gerente'...");
 db.roles.deleteMany({});
@@ -89,25 +86,25 @@ print("Creando nueva estructura de Roles...");
 db.roles.insertMany([
   {
     name: "admin",
-    permission_ring: 0, // Máxima autoridad
+    permission_ring: 0,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
-    name: "gerente", // <-- NUEVO ROL
-    permission_ring: 1, // Autoridad alta (para HUs 25-34)
+    name: "gerente",
+    permission_ring: 1,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
     name: "cashier",
-    permission_ring: 2, // Autoridad media (antes 1)
+    permission_ring: 2,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   {
     name: "user",
-    permission_ring: 3, // Autoridad baja (antes 2)
+    permission_ring: 3,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -115,15 +112,13 @@ db.roles.insertMany([
 
 print("Roles 'admin', 'gerente', 'cashier', 'user' creados.");
 
-// Obtenemos los IDs de los nuevos roles
 const adminRole = db.roles.findOne({ name: "admin" });
-const gerenteRole = db.roles.findOne({ name: "gerente" }); // <-- NUEVO
+const gerenteRole = db.roles.findOne({ name: "gerente" });
 const cashierRole = db.roles.findOne({ name: "cashier" });
 const userRole = db.roles.findOne({ name: "user" });
 
-// Hash de: password123 (la misma que usabas)
 const samplePasswordHash =
-  "$2b$10$zNZEVbIXGs84eNZS3VmVyO/IPeoglQ9Jc90muzjRms/SwWQPBjHay"; 
+  "$2b$10$zNZEVbIXGs84eNZS3VmVyO/IPeoglQ9Jc90muzjRms/SwWQPBjHay";
 
 if (adminRole && gerenteRole && cashierRole && userRole) {
   print("Insertando usuarios por defecto...");
@@ -137,8 +132,8 @@ if (adminRole && gerenteRole && cashierRole && userRole) {
       updatedAt: new Date(),
     },
     {
-      username: "gerente01", // <-- NUEVO USUARIO
-      password_hash: samplePasswordHash, 
+      username: "gerente01",
+      password_hash: samplePasswordHash,
       email: "gerente01@ropadb.com",
       role: gerenteRole._id,
       createdAt: new Date(),
@@ -161,7 +156,9 @@ if (adminRole && gerenteRole && cashierRole && userRole) {
       updatedAt: new Date(),
     },
   ]);
-  print("Usuarios por defecto (admin, gerente01, cajero01, cliente01) creados.");
+  print(
+    "Usuarios por defecto (admin, gerente01, cajero01, cliente01) creados."
+  );
 } else {
   print("ERROR: No se pudieron encontrar todos los roles para crear usuarios.");
 }

@@ -89,52 +89,50 @@ router.post("/", verifyToken, hasPermission(1), async (req, res) => {
   }
 });
 
-// Ruta para obtener productos con sus variantes (PARA EL INVENTARIO)
 router.get("/inventory", async (_, res) => {
   try {
     const variants = await ProductVariant.find().populate("product");
-    
-    // Transformar los datos para el frontend de inventario
-    const inventoryData = variants.map(variant => ({
+
+    const inventoryData = variants.map((variant) => ({
       _id: variant._id,
       product: variant.product,
       size: variant.size,
       sku: variant.sku,
       stock: variant.stock,
       createdAt: variant.createdAt,
-      updatedAt: variant.updatedAt
+      updatedAt: variant.updatedAt,
     }));
-    
+
     res.status(200).json(inventoryData);
   } catch (err) {
-    res.status(500).json({ error: "Error al obtener inventario", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Error al obtener inventario", details: err.message });
   }
 });
 
-// --- NUEVAS RUTAS PARA GESTIÓN DE PRODUCTOS ---
-
-// OBTENER TODOS LOS PRODUCTOS CON SUS VARIANTES (PARA GESTIÓN)
 router.get("/admin/all", verifyToken, hasPermission(0), async (_, res) => {
   try {
     const products = await Product.find();
-    
+
     const productsWithVariants = await Promise.all(
       products.map(async (product) => {
         const variants = await ProductVariant.find({ product: product._id });
         return {
           ...product.toObject(),
-          variants: variants
+          variants: variants,
         };
       })
     );
-    
+
     res.status(200).json(productsWithVariants);
   } catch (err) {
-    res.status(500).json({ error: "Error al obtener productos", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Error al obtener productos", details: err.message });
   }
 });
 
-// CREAR PRODUCTO CON VARIANTES (SOLO ADMIN) - RUTA NUEVA
 router.post("/admin", verifyToken, hasPermission(0), async (req, res) => {
   const {
     name,
@@ -143,50 +141,51 @@ router.post("/admin", verifyToken, hasPermission(0), async (req, res) => {
     image_url,
     category,
     productType,
-    variants
+    variants,
   } = req.body;
 
   if (!name || !base_price || !category || !productType) {
     return res.status(400).json({
-      error: "Faltan campos requeridos: name, base_price, category, productType"
+      error:
+        "Faltan campos requeridos: name, base_price, category, productType",
     });
   }
 
   try {
-    // Crear el producto
     const newProduct = new Product({
       name,
       base_price,
       description,
       image_url: image_url || "sources/img/logo_negro.png",
       category,
-      productType
+      productType,
     });
     await newProduct.save();
 
-    // Crear las variantes si se proporcionan
     if (variants && variants.length > 0) {
-      const variantsToInsert = variants.map(variant => ({
+      const variantsToInsert = variants.map((variant) => ({
         ...variant,
-        product: newProduct._id
+        product: newProduct._id,
       }));
       await ProductVariant.insertMany(variantsToInsert);
     }
 
-    // Obtener el producto creado con sus variantes
-    const createdVariants = await ProductVariant.find({ product: newProduct._id });
+    const createdVariants = await ProductVariant.find({
+      product: newProduct._id,
+    });
     const productWithVariants = {
       ...newProduct.toObject(),
-      variants: createdVariants
+      variants: createdVariants,
     };
 
     res.status(201).json(productWithVariants);
   } catch (err) {
-    res.status(500).json({ error: "Error al crear el producto", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Error al crear el producto", details: err.message });
   }
 });
 
-// OBTENER VARIANTES DE UN PRODUCTO ESPECÍFICO
 router.get("/:id/variants", verifyToken, hasPermission(0), async (req, res) => {
   try {
     const { id } = req.params;
@@ -198,21 +197,29 @@ router.get("/:id/variants", verifyToken, hasPermission(0), async (req, res) => {
     const variants = await ProductVariant.find({ product: id });
     res.status(200).json(variants);
   } catch (err) {
-    res.status(500).json({ error: "Error al obtener variantes", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Error al obtener variantes", details: err.message });
   }
 });
 
-// ACTUALIZAR PRODUCTO CON VARIANTES (SOLO ADMIN) - RUTA ACTUALIZADA
 router.put("/admin/:id", verifyToken, hasPermission(0), async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, base_price, description, image_url, category, productType, variants } = req.body;
+    const {
+      name,
+      base_price,
+      description,
+      image_url,
+      category,
+      productType,
+      variants,
+    } = req.body;
 
     if (!Types.ObjectId.isValid(id)) {
       return res.status(400).json({ error: "ID de producto no válido" });
     }
 
-    // Actualizar el producto
     const updatedProduct = await Product.findByIdAndUpdate(
       id,
       { name, base_price, description, image_url, category, productType },
@@ -223,33 +230,30 @@ router.put("/admin/:id", verifyToken, hasPermission(0), async (req, res) => {
       return res.status(404).json({ error: "Producto no encontrado" });
     }
 
-    // Si se proporcionan variantes, actualizarlas
     if (variants && variants.length > 0) {
-      // Eliminar variantes existentes y crear nuevas
       await ProductVariant.deleteMany({ product: id });
-      
-      const variantsToInsert = variants.map(variant => ({
+
+      const variantsToInsert = variants.map((variant) => ({
         ...variant,
-        product: id
+        product: id,
       }));
       await ProductVariant.insertMany(variantsToInsert);
     }
 
-    // Obtener el producto actualizado con sus variantes
     const updatedVariants = await ProductVariant.find({ product: id });
     const productWithVariants = {
       ...updatedProduct.toObject(),
-      variants: updatedVariants
+      variants: updatedVariants,
     };
 
     res.status(200).json(productWithVariants);
   } catch (err) {
-    res.status(500).json({ error: "Error al actualizar el producto", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Error al actualizar el producto", details: err.message });
   }
 });
 
-
-// ELIMINAR PRODUCTO (SOLO ADMIN)
 router.delete("/admin/:id", verifyToken, hasPermission(0), async (req, res) => {
   try {
     const { id } = req.params;
@@ -267,44 +271,52 @@ router.delete("/admin/:id", verifyToken, hasPermission(0), async (req, res) => {
 
     res.status(200).json({ message: "Producto eliminado correctamente" });
   } catch (err) {
-    res.status(500).json({ error: "Error al eliminar el producto", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Error al eliminar el producto", details: err.message });
   }
 });
 
-// ACTUALIZAR STOCK DE UNA VARIANTE ESPECÍFICA
-router.put("/variants/:variantId/stock", verifyToken, hasPermission(0), async (req, res) => {
+router.put(
+  "/variants/:variantId/stock",
+  verifyToken,
+  hasPermission(0),
+  async (req, res) => {
     try {
-        const { variantId } = req.params;
-        const { stock } = req.body;
+      const { variantId } = req.params;
+      const { stock } = req.body;
 
-        if (!Types.ObjectId.isValid(variantId)) {
-            return res.status(400).json({ error: "ID de variante no válido" });
-        }
+      if (!Types.ObjectId.isValid(variantId)) {
+        return res.status(400).json({ error: "ID de variante no válido" });
+      }
 
-        if (stock === undefined || stock < 0) {
-            return res.status(400).json({ error: "Stock debe ser un número mayor o igual a 0" });
-        }
+      if (stock === undefined || stock < 0) {
+        return res
+          .status(400)
+          .json({ error: "Stock debe ser un número mayor o igual a 0" });
+      }
 
-        const updatedVariant = await ProductVariant.findByIdAndUpdate(
-            variantId,
-            { stock: parseInt(stock) },
-            { new: true, runValidators: true }
-        );
+      const updatedVariant = await ProductVariant.findByIdAndUpdate(
+        variantId,
+        { stock: parseInt(stock) },
+        { new: true, runValidators: true }
+      );
 
-        if (!updatedVariant) {
-            return res.status(404).json({ error: "Variante no encontrada" });
-        }
+      if (!updatedVariant) {
+        return res.status(404).json({ error: "Variante no encontrada" });
+      }
 
-        res.status(200).json({
-            message: "Stock actualizado correctamente",
-            variant: updatedVariant
-        });
+      res.status(200).json({
+        message: "Stock actualizado correctamente",
+        variant: updatedVariant,
+      });
     } catch (err) {
-        res.status(500).json({ 
-            error: "Error al actualizar el stock", 
-            details: err.message 
-        });
+      res.status(500).json({
+        error: "Error al actualizar el stock",
+        details: err.message,
+      });
     }
-});
+  }
+);
 
 export default router;

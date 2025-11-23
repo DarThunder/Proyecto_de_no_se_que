@@ -7,7 +7,6 @@ import ProductVariant from "../models/ProductVariant.js";
 import verifyToken from "../middleware/verifyToken.js";
 import hasPermission from "../middleware/hasPermission.js";
 
-// --- RUTA POS (CAJERO) ---
 router.post("/", verifyToken, hasPermission(1), async (req, res) => {
   const { user, cashier, items, transaction_type, payment_method } = req.body;
 
@@ -44,7 +43,7 @@ router.post("/", verifyToken, hasPermission(1), async (req, res) => {
     });
 
     await newSale.save();
-    await Promise.all(itemsToUpdate); // Actualiza el stock en la BD
+    await Promise.all(itemsToUpdate);
 
     res.status(201).json({
       message: "Venta registrada exitosamente",
@@ -57,10 +56,9 @@ router.post("/", verifyToken, hasPermission(1), async (req, res) => {
   }
 });
 
-// --- RUTA CHECKOUT (WEB) ---
 router.post("/checkout", verifyToken, async (req, res) => {
   try {
-    const userId = req.user.id; 
+    const userId = req.user.id;
     const { shipping_address } = req.body;
 
     if (!shipping_address) {
@@ -84,7 +82,9 @@ router.post("/checkout", verifyToken, async (req, res) => {
       const variant = cartItem.variant;
 
       if (!variant || !variant.product) {
-        return res.status(404).json({ error: "Un producto en tu carrito ya no existe."});
+        return res
+          .status(404)
+          .json({ error: "Un producto en tu carrito ya no existe." });
       }
 
       if (variant.stock < cartItem.quantity) {
@@ -101,7 +101,7 @@ router.post("/checkout", verifyToken, async (req, res) => {
         variant: variant._id,
         quantity: cartItem.quantity,
         unit_price: unit_price,
-        discount_rate: 0, 
+        discount_rate: 0,
       });
 
       total += cartItem.quantity * unit_price;
@@ -113,7 +113,7 @@ router.post("/checkout", verifyToken, async (req, res) => {
       user: userId,
       items: saleItems,
       total: total,
-      payment_method: "ONLINE", 
+      payment_method: "ONLINE",
       transaction_type: "WEB",
       shipping_address: shipping_address,
       shipping_status: "Processing",
@@ -121,7 +121,7 @@ router.post("/checkout", verifyToken, async (req, res) => {
     });
 
     await newSale.save();
-    await Promise.all(stockUpdates); 
+    await Promise.all(stockUpdates);
 
     cart.items = [];
     await cart.save();
@@ -139,72 +139,38 @@ router.post("/checkout", verifyToken, async (req, res) => {
   }
 });
 
-
-// --- RUTA DE SEGUIMIENTO ---
 router.get("/track/:trackingNumber", async (req, res) => {
   try {
     const { trackingNumber } = req.params;
 
-    const sale = await Sale.findOne({ tracking_number: trackingNumber })
-      .populate({
-        path: "items.variant", 
-        populate: {
-          path: "product", 
-        },
-      });
+    const sale = await Sale.findOne({
+      tracking_number: trackingNumber,
+    }).populate({
+      path: "items.variant",
+      populate: {
+        path: "product",
+      },
+    });
 
     if (!sale) {
       return res.status(404).json({ error: "Pedido no encontrado." });
     }
-    
-    res.status(200).json(sale);
 
+    res.status(200).json(sale);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Error al buscar el pedido", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Error al buscar el pedido", details: err.message });
   }
 });
 
-// --- ===== NUEVA RUTA: OBTENER MIS COMPRAS ===== ---
 router.get("/my-orders", verifyToken, async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Busca todas las ventas (Sale) que coincidan con el ID del usuario
     const orders = await Sale.find({ user: userId })
-      .sort({ createdAt: -1 }) // Ordena por más reciente primero
-      .populate({
-        path: "items.variant", // Puebla la variante dentro de los items
-        populate: {
-          path: "product", // Y puebla el producto dentro de la variante
-          model: "Product", // Asegúrate de que el modelo se llama 'Product'
-        },
-      });
-
-    if (!orders) {
-      return res.status(200).json([]); // Devuelve array vacío, no un error
-    }
-
-    res.status(200).json(orders);
-
-  } catch (err) {
-    console.error("Error en /my-orders:", err);
-    res
-      .status(500)
-      .json({ error: "Error al obtener el historial de pedidos", details: err.message });
-  }
-});
-// --- ========================================= ---
-
-
-// --- ===== RUTA: PRODUCTOS COMPRADOS PARA RESEÑAS ===== ---
-router.get("/user/purchased-products", verifyToken, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    console.log("🔍 Buscando productos comprados para usuario:", userId);
-
-    // Buscar todas las ventas del usuario
-    const orders = await Sale.find({ user: userId })
+      .sort({ createdAt: -1 })
       .populate({
         path: "items.variant",
         populate: {
@@ -213,23 +179,49 @@ router.get("/user/purchased-products", verifyToken, async (req, res) => {
         },
       });
 
-    console.log("📦 Órdenes encontradas:", orders?.length);
-
-    if (!orders || orders.length === 0) {
-      console.log("📭 No se encontraron órdenes");
+    if (!orders) {
       return res.status(200).json([]);
     }
 
-    // Extraer productos únicos comprados por el usuario
+    res.status(200).json(orders);
+  } catch (err) {
+    console.error("Error en /my-orders:", err);
+    res.status(500).json({
+      error: "Error al obtener el historial de pedidos",
+      details: err.message,
+    });
+  }
+});
+
+router.get("/user/purchased-products", verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    console.log("Buscando productos comprados para usuario:", userId);
+
+    const orders = await Sale.find({ user: userId }).populate({
+      path: "items.variant",
+      populate: {
+        path: "product",
+        model: "Product",
+      },
+    });
+
+    console.log("Órdenes encontradas:", orders?.length);
+
+    if (!orders || orders.length === 0) {
+      console.log("No se encontraron órdenes");
+      return res.status(200).json([]);
+    }
+
     const purchasedProductsMap = new Map();
-    
-    orders.forEach(order => {
-      console.log("🛒 Procesando orden:", order._id);
-      order.items.forEach(item => {
+
+    orders.forEach((order) => {
+      console.log("Procesando orden:", order._id);
+      order.items.forEach((item) => {
         if (item.variant && item.variant.product) {
           const product = item.variant.product;
           const productId = product._id.toString();
-          
+
           if (!purchasedProductsMap.has(productId)) {
             purchasedProductsMap.set(productId, {
               id: productId,
@@ -238,27 +230,24 @@ router.get("/user/purchased-products", verifyToken, async (req, res) => {
               price: product.base_price,
               imageUrl: product.image_url,
               purchaseDate: order.createdAt,
-              size: item.variant.size
+              size: item.variant.size,
             });
           }
         } else {
-          console.log("❌ Item sin variante o producto:", item);
+          console.log("Item sin variante o producto:", item);
         }
       });
     });
 
     const purchasedProducts = Array.from(purchasedProductsMap.values());
-    console.log("✅ Productos para reseñar:", purchasedProducts.length);
-    
-    // Por ahora devolvemos todos los productos comprados
-    // El filtro de reseñas lo haremos después cuando Review.js funcione
-    res.status(200).json(purchasedProducts);
+    console.log("Productos para reseñar:", purchasedProducts.length);
 
+    res.status(200).json(purchasedProducts);
   } catch (err) {
-    console.error("❌ Error en /user/purchased-products:", err);
-    res.status(500).json({ 
-      error: "Error al obtener productos comprados", 
-      details: err.message 
+    console.error("Error en /user/purchased-products:", err);
+    res.status(500).json({
+      error: "Error al obtener productos comprados",
+      details: err.message,
     });
   }
 });

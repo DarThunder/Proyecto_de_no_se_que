@@ -6,71 +6,70 @@ const messageSchema = new Schema(
     type: {
       type: String,
       required: true,
-      enum: ['reorder']
+      enum: ["reorder"],
     },
     productName: {
       type: String,
-      required: true
+      required: true,
     },
     variantId: {
       type: String,
-      required: true
+      required: true,
     },
     supplier: {
       type: String,
-      required: true
+      required: true,
     },
     supplierName: {
       type: String,
-      required: true
+      required: true,
     },
     quantity: {
       type: Number,
-      required: true
+      required: true,
     },
     urgency: {
       type: String,
       required: true,
-      enum: ['normal', 'urgent', 'critical']
+      enum: ["normal", "urgent", "critical"],
     },
     orderId: {
       type: String,
-      default: 'N/A'
+      default: "N/A",
     },
     requestedBy: {
       type: String,
-      required: true
+      required: true,
     },
     notes: {
       type: String,
-      default: ''
+      default: "",
     },
     status: {
       type: String,
       required: true,
-      enum: ['pending', 'approved', 'rejected'],
-      default: 'pending'
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
     },
     read: {
       type: Boolean,
-      default: false
+      default: false,
     },
     rejectionReason: {
-      type: String
+      type: String,
     },
     approvedAt: {
-      type: Date
+      type: Date,
     },
     rejectedAt: {
-      type: Date
-    }
+      type: Date,
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
   }
 );
 
-// Índices para mejor performance
 messageSchema.index({ type: 1, createdAt: -1 });
 messageSchema.index({ status: 1 });
 messageSchema.index({ read: 1 });

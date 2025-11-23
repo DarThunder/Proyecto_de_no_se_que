@@ -17,20 +17,19 @@ const productSchema = new Schema(
       type: String,
       trim: true,
     },
-    // --- CAMPOS NUEVOS ---
+
     image_url: {
       type: String,
       trim: true,
-      default: "sources/img/logo_negro.png", // Una imagen por defecto
+      default: "sources/img/logo_negro.png",
     },
     category: {
       type: String,
       required: true,
       trim: true,
-      enum: ["hombre", "mujer", "unisex"], // Limita las categorías
+      enum: ["hombre", "mujer", "unisex"],
     },
-    productType: { type: String, required: true, lowercase: true }
-    // --- FIN CAMPOS NUEVOS ---
+    productType: { type: String, required: true, lowercase: true },
   },
   { timestamps: true }
 );

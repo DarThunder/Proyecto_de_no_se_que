@@ -1,4 +1,3 @@
-// backend/models/Provider.js
 import mongoose from "mongoose";
 
 const providerSchema = new mongoose.Schema(
@@ -7,7 +6,7 @@ const providerSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      unique: true, // Evita proveedores duplicados
+      unique: true,
     },
     contactName: {
       type: String,
@@ -29,11 +28,11 @@ const providerSchema = new mongoose.Schema(
     },
     active: {
       type: Boolean,
-      default: true, // Para "borrado lógico" si lo prefieres, o solo informativo
+      default: true,
     },
   },
   {
-    timestamps: true, // Crea automáticamente createdAt y updatedAt
+    timestamps: true,
   }
 );
 

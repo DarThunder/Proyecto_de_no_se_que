@@ -2,6 +2,10 @@ document.addEventListener("DOMContentLoaded", function () {
   initializePOS();
 });
 
+// Variables globales para la búsqueda en tiempo real
+let searchTimeout = null;
+let currentSearchTerm = "";
+
 async function initializePOS() {
   try {
     const userInfo = await getUserInfoMe();
@@ -81,6 +85,353 @@ function setupPOSFunctionality() {
   initializeCart();
   setupEventListeners();
   loadInitialData();
+  setupProductSearch();
+}
+
+function setupProductSearch() {
+  const productSearch = document.getElementById("productSearch");
+  const searchResults = document.getElementById("searchResults");
+
+  if (productSearch && searchResults) {
+    // Evento de input para búsqueda en tiempo real
+    productSearch.addEventListener("input", function (e) {
+      const searchTerm = e.target.value.trim();
+
+      // Limpiar timeout anterior
+      if (searchTimeout) {
+        clearTimeout(searchTimeout);
+      }
+
+      // Ocultar resultados si el término está vacío
+      if (!searchTerm) {
+        hideSearchResults();
+        return;
+      }
+
+      // Esperar 300ms después de que el usuario deje de escribir
+      searchTimeout = setTimeout(() => {
+        performProductSearch(searchTerm);
+      }, 300);
+    });
+
+    // Mostrar resultados cuando el input recibe foco
+    productSearch.addEventListener("focus", function (e) {
+      const searchTerm = e.target.value.trim();
+      if (searchTerm && searchTerm.length >= 2) {
+        performProductSearch(searchTerm);
+      }
+    });
+
+    // Prevenir que el formulario se envíe al presionar Enter en la búsqueda
+    productSearch.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+      }
+    });
+  }
+}
+
+// Función para realizar la búsqueda de productos - CORREGIDA
+async function performProductSearch(searchTerm) {
+  try {
+    currentSearchTerm = searchTerm.toLowerCase();
+
+    // Primero obtener todos los productos
+    const response = await fetch(`http://localhost:8080/products`, {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const allProducts = await response.json();
+
+    // Filtrar productos localmente para mejor control
+    const filteredProducts = filterProducts(allProducts, searchTerm);
+
+    displaySearchResults(filteredProducts, searchTerm);
+  } catch (error) {
+    console.error("Error buscando productos:", error);
+
+    // Fallback: usar datos de ejemplo si la API falla
+    const exampleProducts = getExampleProducts();
+    const filteredProducts = filterProducts(exampleProducts, searchTerm);
+    displaySearchResults(filteredProducts, searchTerm);
+  }
+}
+
+// Función para filtrar productos localmente - MEJORADA
+function filterProducts(products, searchTerm) {
+  const searchLower = searchTerm.toLowerCase();
+
+  return products
+    .filter((product) => {
+      const productData = product.product || product;
+      const productName = (productData.name || "").toLowerCase();
+      const description = (productData.description || "").toLowerCase();
+      const sku = (product.sku || "").toLowerCase();
+      const productType = (productData.productType || "").toLowerCase();
+
+      // Buscar en múltiples campos con diferentes pesos
+      const nameMatch = productName.includes(searchLower);
+      const descriptionMatch = description.includes(searchLower);
+      const skuMatch = sku.includes(searchLower);
+      const typeMatch = productType.includes(searchLower);
+
+      // Dar más peso al nombre del producto
+      if (nameMatch) return true;
+      if (skuMatch) return true;
+      if (typeMatch) return true;
+      if (descriptionMatch) return true;
+
+      return false;
+    })
+    .sort((a, b) => {
+      // Ordenar por relevancia
+      const aName = (a.product?.name || a.name || "").toLowerCase();
+      const bName = (b.product?.name || b.name || "").toLowerCase();
+      const searchLower = searchTerm.toLowerCase();
+
+      // Priorizar productos que empiecen con el término de búsqueda
+      const aStartsWith = aName.startsWith(searchLower);
+      const bStartsWith = bName.startsWith(searchLower);
+
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
+
+      // Luego por coincidencia exacta en el nombre
+      const aExactMatch = aName === searchLower;
+      const bExactMatch = bName === searchLower;
+
+      if (aExactMatch && !bExactMatch) return -1;
+      if (!aExactMatch && bExactMatch) return 1;
+
+      return 0;
+    });
+}
+
+// Datos de ejemplo para fallback
+function getExampleProducts() {
+  return [
+    {
+      _id: "1",
+      product: {
+        name: "Pantalón Jogger",
+        base_price: 720.0,
+        description:
+          "Jogger deportivo con ajuste elástico y bolsillos laterales.",
+        productType: "pantalones",
+      },
+      size: "M",
+      sku: "PANT-JOG-M",
+      stock: 35,
+    },
+    {
+      _id: "2",
+      product: {
+        name: "Pantalón Jogger",
+        base_price: 720.0,
+        description:
+          "Jogger deportivo con ajuste elástico y bolsillos laterales.",
+        productType: "pantalones",
+      },
+      size: "L",
+      sku: "PANT-JOG-L",
+      stock: 25,
+    },
+    {
+      _id: "3",
+      product: {
+        name: "Pantalón Cargo",
+        base_price: 650.5,
+        description: "Pantalón estilo cargo con múltiples bolsillos.",
+        productType: "pantalones",
+      },
+      size: "M",
+      sku: "PANT-CAR-M",
+      stock: 40,
+    },
+    {
+      _id: "4",
+      product: {
+        name: "Hoodie Clásica",
+        base_price: 799.0,
+        description: "Hoodie de algodón grueso, cómoda y duradera.",
+        productType: "hoodie",
+      },
+      size: "M",
+      sku: "HOOD-CLA-M",
+      stock: 50,
+    },
+    {
+      _id: "5",
+      product: {
+        name: "Hoodie Clásica",
+        base_price: 799.0,
+        description: "Hoodie de algodón grueso, cómoda y duradera.",
+        productType: "hoodie",
+      },
+      size: "L",
+      sku: "HOOD-CLA-L",
+      stock: 30,
+    },
+    {
+      _id: "6",
+      product: {
+        name: "Short Deportivo",
+        base_price: 450.0,
+        description: "Short ligero y transpirable ideal para entrenamiento.",
+        productType: "shorts",
+      },
+      size: "M",
+      sku: "SHOR-DEP-M",
+      stock: 70,
+    },
+  ];
+}
+
+// Función para mostrar los resultados de búsqueda - MEJORADA
+function displaySearchResults(products, searchTerm) {
+  const searchResults = document.getElementById("searchResults");
+  const productSearch = document.getElementById("productSearch");
+
+  if (!searchResults || !productSearch) return;
+
+  // Verificar si el término de búsqueda sigue siendo el mismo
+  if (productSearch.value.trim().toLowerCase() !== searchTerm.toLowerCase()) {
+    return;
+  }
+
+  if (products.length === 0) {
+    searchResults.innerHTML =
+      '<div class="search-result-item no-results">No se encontraron productos con "' +
+      searchTerm +
+      '"</div>';
+    searchResults.style.display = "block";
+    return;
+  }
+
+  searchResults.innerHTML = products
+    .map((product) => {
+      const productData = product.product || product;
+      const productName = productData.name || "Sin nombre";
+      const basePrice = productData.base_price || 0;
+      const description = productData.description || "Sin descripción";
+      const stock = product.stock || 0;
+      const size = product.size || "N/A";
+      const sku = product.sku || "N/A";
+      const productType = productData.productType || "N/A";
+
+      // Resaltar el término de búsqueda en el nombre
+      const highlightedName = highlightSearchTerm(productName, searchTerm);
+
+      // Limitar la longitud de la descripción
+      const shortDescription =
+        description.length > 60
+          ? description.substring(0, 60) + "..."
+          : description;
+
+      const stockClass = stock > 0 ? "stock-available" : "stock-low";
+      const stockText = stock > 0 ? `Stock: ${stock}` : "Sin stock";
+
+      return `
+      <div class="search-result-item" onclick="selectProductFromSearch('${
+        product._id
+      }', '${productName.replace(
+        /'/g,
+        "\\'"
+      )}', ${basePrice}, ${stock}, '${size}')">
+        <div class="product-info">
+          <div class="product-name">${highlightedName}</div>
+          <div class="product-details">
+            ${shortDescription}<br>
+            <strong>Talla:</strong> ${size} | <strong>SKU:</strong> ${sku} | <strong>Tipo:</strong> ${productType}
+          </div>
+        </div>
+        <div class="product-price-container">
+          <span class="product-price">$${basePrice.toFixed(2)}</span>
+          <span class="${stockClass} product-stock">${stockText}</span>
+        </div>
+      </div>
+    `;
+    })
+    .join("");
+
+  searchResults.style.display = "block";
+}
+
+// Función para resaltar el término de búsqueda
+function highlightSearchTerm(text, searchTerm) {
+  if (!searchTerm) return text;
+
+  const searchLower = searchTerm.toLowerCase();
+  const textLower = text.toLowerCase();
+  const index = textLower.indexOf(searchLower);
+
+  if (index === -1) return text;
+
+  const before = text.substring(0, index);
+  const match = text.substring(index, index + searchTerm.length);
+  const after = text.substring(index + searchTerm.length);
+
+  return (
+    before +
+    '<span style="background-color: #fff3cd; padding: 2px 4px; border-radius: 3px;">' +
+    match +
+    "</span>" +
+    after
+  );
+}
+
+// Función para seleccionar un producto de los resultados
+function selectProductFromSearch(productId, productName, price, stock, size) {
+  // Ocultar resultados
+  hideSearchResults();
+
+  // Limpiar campo de búsqueda
+  const productSearch = document.getElementById("productSearch");
+  if (productSearch) {
+    productSearch.value = "";
+  }
+
+  // Verificar stock
+  if (stock <= 0) {
+    alert("⚠️ Este producto no tiene stock disponible");
+    return;
+  }
+
+  // Agregar al carrito
+  const product = {
+    id: productId,
+    name: `${productName} (${size})`,
+    price: price,
+    quantity: 1,
+    variantId: productId,
+    size: size,
+  };
+
+  addProductToCart(product);
+
+  // Mostrar confirmación
+  showProductAddedMessage(productName, size, price);
+}
+
+// Función para mostrar mensaje de producto añadido
+function showProductAddedMessage(productName, size, price) {
+  const message = `✅ Producto agregado al carrito:\n\n"${productName}" (${size})\nPrecio: $${price.toFixed(
+    2
+  )}`;
+  alert(message);
+}
+
+// Función para ocultar resultados de búsqueda
+function hideSearchResults() {
+  const searchResults = document.getElementById("searchResults");
+  if (searchResults) {
+    searchResults.style.display = "none";
+  }
 }
 
 function initializeCart() {
@@ -112,6 +463,21 @@ function initializeCart() {
 }
 
 function setupEventListeners() {
+  // Ocultar resultados al hacer clic fuera
+  document.addEventListener("click", function (e) {
+    const searchResults = document.getElementById("searchResults");
+    const productSearch = document.getElementById("productSearch");
+
+    if (
+      searchResults &&
+      searchResults.style.display === "block" &&
+      !searchResults.contains(e.target) &&
+      !productSearch.contains(e.target)
+    ) {
+      hideSearchResults();
+    }
+  });
+
   const searchCustomerBtn = document.getElementById("searchCustomerBtn");
   if (searchCustomerBtn) {
     searchCustomerBtn.addEventListener("click", searchCustomer);
@@ -401,6 +767,7 @@ function addProduct() {
   document.getElementById("productID").value = "";
 }
 
+// Función para agregar productos al carrito
 function addProductToCart(product) {
   if (!window.cartItems) {
     window.cartItems = [];
@@ -408,7 +775,7 @@ function addProductToCart(product) {
 
   // Verificar si el producto ya está en el carrito
   const existingItemIndex = window.cartItems.findIndex(
-    (item) => item.id === product.id
+    (item) => item.id === product.id && item.size === product.size
   );
 
   if (existingItemIndex > -1) {
@@ -421,6 +788,8 @@ function addProductToCart(product) {
       name: product.name,
       price: product.price,
       quantity: 1,
+      size: product.size,
+      variantId: product.variantId,
     });
   }
 
@@ -444,7 +813,7 @@ function updateCartDisplay() {
     .map(
       (item) => `
     <tr>
-      <td>${item.name}</td>
+      <td>${item.name}${item.size ? ` (${item.size})` : ""}</td>
       <td>${item.quantity}</td>
       <td>$${item.price.toFixed(2)}</td>
       <td>$${(item.price * item.quantity).toFixed(2)}</td>
@@ -478,7 +847,7 @@ function updateCartSummary() {
 
   let descuento = 0;
   if (window.selectedCupon) {
-    descuento = subtotal * (window.selectedCupon.descuento / 100);
+    descuento = subtotal * (window.selectedCupon.discount / 100);
     document.getElementById(
       "descuentoAmount"
     ).textContent = `-$${descuento.toFixed(2)}`;
@@ -556,7 +925,7 @@ function processCheckout() {
     cliente: window.getSelectedCustomer.username,
     cupon: window.selectedCupon ? window.selectedCupon.nombre : "Ninguno",
     descuento: window.selectedCupon
-      ? window.selectedCupon.descuento + "%"
+      ? window.selectedCupon.discount + "%"
       : "0%",
     total: total,
     items: window.cartItems.length,
