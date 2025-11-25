@@ -110,3 +110,6 @@ app._router.stack.forEach((middleware) => {
 app.use((_, res) => {
   res.status(404).json({ error: "Recurso no encontrado" });
 });
+
+console.log(process.env.EMAIL_HOST_USER);
+console.log(process.env.EMAIL_HOST_PASSWORD);

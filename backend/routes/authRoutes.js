@@ -126,7 +126,7 @@ router.post("/forgot-password", async (req, res) => {
       { expiresIn: "15m" }
     );
 
-    const resetLink = `http://localhost:8080/auth/reset-password/${resetToken}`;
+    const resetLink = `http://localhost:8080/html/restablecerContraseña.html?token=${resetToken}`;
 
     await sendPasswordResetEmail(user.email, resetLink);
 

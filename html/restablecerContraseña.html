@@ -1,11 +1,60 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    
-</body>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Restablecer Contraseña | Shadow & Stitch</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/styleCC.css" />
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="login-form">
+        <form id="form-reset-password">
+          <img
+            src="../sources/img/logo_negro.png"
+            alt="Logo SS"
+            class="form-logo"
+          />
+          <p class="subtitle">Crear Nueva Contraseña</p>
+
+          <div class="input-group">
+            <label for="newPassword">Nueva Contraseña</label>
+            <input
+              type="password"
+              id="newPassword"
+              name="newPassword"
+              placeholder="Mínimo 6 caracteres"
+              required
+            />
+          </div>
+
+          <div class="input-group">
+            <label for="confirmPassword">Confirmar Contraseña</label>
+            <input
+              type="password"
+              id="confirmPassword"
+              name="confirmPassword"
+              placeholder="Repite la contraseña"
+              required
+            />
+          </div>
+
+          <button type="submit" class="btn-login">Cambiar Contraseña</button>
+        </form>
+      </div>
+    </div>
+
+    <script src="../js/restorePassword.js"></script>
+  </body>
 </html>
