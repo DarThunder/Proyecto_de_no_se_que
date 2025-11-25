@@ -94,24 +94,39 @@
 
                 <!-- Paso 2: Formulario de Pago (Simulado) -->
                 <div class="step-content" id="step-payment">
-                    <h2>Información de Pago</h2>
-                    <form id="payment-form" class="checkout-form">
-                        <div class="form-group">
-                            <label for="card_number">Número de Tarjeta</label>
-                            <input type="text" id="card_number" name="card_number" placeholder="**** **** **** 1234" required>
-                        </div>
-                        <div class="form-group-row">
+                    <h2>Método de Pago</h2>
+                    
+                    <div id="payment-methods-container" class="payment-options-grid">
+                        <p>Cargando opciones de pago...</p>
+                    </div>
+
+                    <div id="card-form-container" style="display: none; margin-top: 20px;">
+                        <h3>Ingresa los datos de tu tarjeta</h3>
+                        <form id="payment-form" class="checkout-form">
                             <div class="form-group">
-                                <label for="card_expiry">Expiración (MM/AA)</label>
-                                <input type="text" id="card_expiry" name="card_expiry" placeholder="MM/AA" required>
+                                <label for="card_number">Número de Tarjeta</label>
+                                <input type="text" id="card_number" name="card_number" placeholder="**** **** **** 1234">
                             </div>
-                            <div class="form-group">
-                                <label for="card_cvc">CVC</label>
-                                <input type="text" id="card_cvc" name="card_cvc" placeholder="123" required>
+                            <div class="form-group-row">
+                                <div class="form-group">
+                                    <label for="card_expiry">Expiración (MM/AA)</label>
+                                    <input type="text" id="card_expiry" name="card_expiry" placeholder="MM/AA">
+                                </div>
+                                <div class="form-group">
+                                    <label for="card_cvc">CVC</label>
+                                    <input type="text" id="card_cvc" name="card_cvc" placeholder="123">
+                                </div>
                             </div>
-                        </div>
-                        <button type="submit" class="cta-button" id="place-order-btn">Finalizar Pedido</button>
-                    </form>
+                            <button type="submit" class="cta-button" id="pay-card-btn">Pagar con Tarjeta</button>
+                        </form>
+                    </div>
+
+                    <div id="paypal-button-container" style="display: none; margin-top: 20px; text-align: center;">
+                        <p style="margin-bottom: 10px;">Serás redirigido a PayPal para completar tu compra.</p>
+                        <button id="pay-paypal-btn" class="cta-button" style="background-color: #0070ba;">
+                            <i class="fab fa-paypal"></i> Pagar con PayPal
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Paso 3: Confirmación -->

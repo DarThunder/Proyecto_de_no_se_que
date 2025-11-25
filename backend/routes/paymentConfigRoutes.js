@@ -4,6 +4,25 @@ import PaymentConfig from "../models/PaymentConfig.js";
 import verifyToken from "../middleware/verifyToken.js";
 import hasPermission from "../middleware/hasPermission.js";
 
+router.get("/active", verifyToken, async (req, res) => {
+  try {
+    // Buscamos solo los activos
+    const configs = await PaymentConfig.find({ isActive: true });
+    
+    // Filtramos para NO enviar el clientSecret al frontend por seguridad
+    const safeConfigs = configs.map(config => ({
+      providerName: config.providerName,
+      isActive: config.isActive,
+      mode: config.credentials.mode,
+      publicKey: config.credentials.clientId || config.credentials.apiKey // Enviamos solo la llave pública
+    }));
+
+    res.json(safeConfigs);
+  } catch (error) {
+    res.status(500).json({ message: "Error al obtener métodos de pago" });
+  }
+});
+
 router.use(verifyToken, hasPermission(0));
 
 router.get("/", async (req, res) => {
