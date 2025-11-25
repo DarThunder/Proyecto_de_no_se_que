@@ -440,3 +440,37 @@ if (backupBtn) {
     }
   });
 }
+
+/**
+ * Muestra una notificación flotante (Toast)
+ */
+function showNotification(message, type = 'info') {
+    // Si ya existe una notificación, la eliminamos para no amontonar
+    const existing = document.querySelector('.notification');
+    if (existing) existing.remove();
+
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    
+    // Iconos simples según tipo
+    let icon = 'info-circle';
+    if (type === 'success') icon = 'check-circle';
+    if (type === 'error') icon = 'exclamation-circle';
+    if (type === 'warning') icon = 'exclamation-triangle';
+
+    notification.innerHTML = `
+        <i class="fas fa-${icon}"></i>
+        <span>${message}</span>
+        <button class="notification-close" onclick="this.parentElement.remove()">&times;</button>
+    `;
+
+    document.body.appendChild(notification);
+
+    // Auto-eliminar a los 4 segundos
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 500);
+        }
+    }, 4000);
+}

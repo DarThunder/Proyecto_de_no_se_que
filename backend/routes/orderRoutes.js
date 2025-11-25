@@ -306,4 +306,65 @@ router.post("/pos-sale", verifyToken, hasPermission(2), async (req, res) => {
   }
 });
 
+// 1. OBTENER PEDIDOS WEB (Solo Admin/Gerente)
+router.get("/web-orders/all", verifyToken, hasPermission(1), async (req, res) => {
+  try {
+    // Buscamos solo ventas tipo WEB ordenadas por fecha
+    const orders = await Sale.find({ transaction_type: "WEB" })
+      .populate("user", "username email") // Datos del cliente
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(orders);
+  } catch (error) {
+    console.error("Error obteniendo pedidos web:", error);
+    res.status(500).json({ message: "Error al obtener pedidos" });
+  }
+});
+
+// 2. ACTUALIZAR ESTADO DE ENVÍO (Con automatización)
+router.put("/:id/shipping-status", verifyToken, hasPermission(1), async (req, res) => {
+  const { id } = req.params;
+  const { status, tracking_number } = req.body;
+
+  try {
+    const updateData = { shipping_status: status };
+    if (tracking_number) updateData.tracking_number = tracking_number;
+
+    const updatedOrder = await Sale.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      return res.status(404).json({ message: "Pedido no encontrado" });
+    }
+
+    // --- LÓGICA DE AUTOMATIZACIÓN (1 MINUTO) ---
+    if (status === "Shipped") {
+      console.log(`Pedido ${id} marcado como Enviado. Se entregará automáticamente en 1 min...`);
+      
+      // Esperar 60 segundos (60000 ms) y cambiar a Delivered
+      setTimeout(async () => {
+        try {
+          await Sale.findByIdAndUpdate(id, { 
+            shipping_status: "Delivered",
+            // Opcional: Añadir fecha de entrega real si tu modelo lo soporta
+          });
+          console.log(`AUTOMÁTICO: Pedido ${id} actualizado a Entregado.`);
+        } catch (err) {
+          console.error(`Error en actualización automática del pedido ${id}:`, err);
+        }
+      }, 60000); 
+    }
+    // --------------------------------------------
+
+    res.status(200).json({ message: "Estado actualizado", order: updatedOrder });
+
+  } catch (error) {
+    console.error("Error actualizando estado:", error);
+    res.status(500).json({ message: "Error del servidor" });
+  }
+});
+
 export default router;

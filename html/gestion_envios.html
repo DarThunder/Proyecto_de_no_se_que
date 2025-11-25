@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Envíos - Admin</title>
+    <link rel="stylesheet" href="../css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .badge { padding: 5px 10px; border-radius: 15px; color: white; font-size: 0.85em; font-weight: bold; }
+        .bg-processing { background-color: #f39c12; } /* Naranja */
+        .bg-shipped { background-color: #3498db; }    /* Azul */
+        .bg-delivered { background-color: #2ecc71; }  /* Verde */
+        .bg-cancelled { background-color: #e74c3c; }  /* Rojo */
+        .tracking-link { color: #3498db; text-decoration: underline; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <nav class="admin-nav">
+            <div class="admin-logo">
+                <h1>S&S Admin</h1>
+            </div>
+            <ul>
+                <li><a href="admin.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li class="active"><a href="gestion_envios.html"><i class="fas fa-shipping-fast"></i> Gestión Envíos</a></li>
+                
+                <li><a href="cupones.html"><i class="fas fa-tags"></i> Gestión de Cupones</a></li>
+                <li><a href="reporte_productos.html"><i class="fas fa-star"></i> Prod. Más Vendidos</a></li>
+                <li><a href="reporte_vendedores.html"><i class="fas fa-users"></i> Reporte Vendedores</a></li>
+                <li><a href="proveedores.html"><i class="fas fa-truck-field"></i> Proveedores</a></li>
+                <li><a href="gestion_usuarios.html"><i class="fas fa-user-shield"></i> Gestión Usuarios</a></li>
+                <li><a href="GestionProduc.html"><i class="fas fa-box"></i> Gestión Productos</a></li>
+                <li><a href="InventarioStockB.html"><i class="fas fa-boxes"></i> Inventario Stock Bajo</a></li>
+                <li><a href="GestionCategorias.html"><i class="fas fa-tags"></i> Gestión Categorias</a></li>
+                <li><a href="codigos.html"><i class="fas fa-barcode"></i> Códigos de Barras</a></li>
+                <li><a href="Mensajes.html"><i class="fas fa-envelope"></i> Mensajes</a></li>
+                <li><a href="../index.html"><i class="fas fa-store"></i> Ver Tienda</a></li>
+                <li><a href="#" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a></li>
+            </ul>
+        </nav>
+
+        <main class="admin-content">
+            <header class="admin-header">
+                <h2>Gestión de Envíos Online</h2>
+                <div class="user-info">
+                    Bienvenido, <span id="admin-username">Cargando...</span>
+                </div>
+            </header>
+
+            <section class="content-area">
+                <div class="table-container">
+                    <div class="action-bar" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Pedidos Pendientes y Enviados</h3>
+                        <button class="btn btn-secondary" onclick="loadWebOrders()">
+                            <i class="fas fa-sync-alt"></i> Actualizar Tabla
+                        </button>
+                    </div>
+
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>ID Pedido</th>
+                                <th>Cliente</th>
+                                <th>Dirección de Envío</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th>Guía</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-table-body">
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="shipping-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Actualizar Estado del Envío</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="shipping-form">
+                    <input type="hidden" id="order-id">
+                    
+                    <div class="form-group">
+                        <label for="shipping-status">Estado:</label>
+                        <select id="shipping-status" required>
+                            <option value="Processing">Procesando</option>
+                            <option value="Shipped">Enviado</option>
+                            <option value="Delivered">Entregado</option>
+                            <option value="Cancelled">Cancelado</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="tracking-group" style="display: none;">
+                        <label for="tracking-number">Número de Guía (Tracking):</label>
+                        <input type="text" id="tracking-number" placeholder="Ej: MX-99887766">
+                        <small style="color: var(--gray);">* Requerido para marcar como Enviado</small>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" id="cancel-modal-btn">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="barcodes-modal" class="modal">
+        <div class="modal-content extra-wide-modal">
+            <div class="modal-header">
+                <h3>Generador de Códigos de Barras</h3>
+            </div>
+            <div class="modal-body">
+                <div class="barcodes-container">
+                    <div class="input-section">
+                        <label for="productSelect">Seleccionar Producto:</label>
+                        <select id="productSelect" class="product-select">
+                            <option value="">-- Selecciona un producto --</option>
+                        </select>
+                        <div class="btn-group">
+                            <button id="generateBtn" class="btn btn-primary">
+                                <i class="fas fa-barcode"></i> Generar Código
+                            </button>
+                            <button id="printBtn" class="btn btn-success print-btn">
+                                <i class="fas fa-print"></i> Imprimir
+                            </button>
+                            <button id="refreshBtn" class="btn btn-secondary">
+                                <i class="fas fa-sync-alt"></i> Actualizar Lista
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="barcodeResult" class="hidden">
+                        <div class="barcode-container">
+                            <div id="productDisplay" class="product-name"></div>
+                            <div id="productDetails" class="product-details"></div>
+                            <svg id="barcode" class="barcode-image"></svg>
+                            <div id="barcodeText" class="barcode-value"></div>
+                        </div>
+                    </div>
+
+                    <div class="loading-section hidden" id="loadingSection">
+                        <div class="loading-spinner">Cargando productos...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.0/dist/JsBarcode.all.min.js"></script>
+    <script src="../js/admin.js"></script> <script src="../js/gestion_envios.js"></script> </body>
+</html>
