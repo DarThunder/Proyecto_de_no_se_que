@@ -62,7 +62,7 @@ const saleSchema = new Schema(
     },
     transaction_type: {
       type: String,
-      enum: ["POS", "WEB"],
+      enum: ["POS", "WEB", "RETURN"],
       required: true,
     },
 

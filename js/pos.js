@@ -1230,3 +1230,153 @@ async function processWithCheckoutEndpoint(saleData) {
   }
 }
 
+// ==========================================
+// LÓGICA DE DEVOLUCIONES (H.U. 17)
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Inicializar modal de devoluciones
+    const returnBtn = document.getElementById('returnBtn');
+    const returnModal = document.getElementById('return-modal');
+    const closeBtn = returnModal ? returnModal.querySelector('.close') : null;
+    const searchSaleBtn = document.getElementById('searchSaleBtn');
+    const confirmReturnBtn = document.getElementById('confirmReturnBtn');
+
+    if (returnBtn && returnModal) {
+        returnBtn.addEventListener('click', () => {
+            returnModal.style.display = 'block';
+            document.getElementById('return-step-1').style.display = 'block';
+            document.getElementById('return-step-2').style.display = 'none';
+            document.getElementById('returnSaleId').value = '';
+            document.getElementById('returnItemsTable').innerHTML = '';
+        });
+
+        closeBtn.addEventListener('click', () => returnModal.style.display = 'none');
+        window.addEventListener('click', (e) => {
+            if (e.target === returnModal) returnModal.style.display = 'none';
+        });
+
+        searchSaleBtn.addEventListener('click', searchSaleForReturn);
+        confirmReturnBtn.addEventListener('click', processReturn);
+    }
+});
+
+// Variable global temporal para la devolución actual
+let currentReturnSale = null;
+
+async function searchSaleForReturn() {
+    const saleId = document.getElementById('returnSaleId').value.trim();
+    if (!saleId) return alert("Ingrese un ID de venta");
+
+    try {
+        // Solicitamos los detalles de la venta al backend
+        // Usamos el endpoint específico para buscar por ID
+        const response = await fetch(`http://localhost:8080/orders/detail/${saleId}`, {
+            method: "GET",
+            credentials: "include" // IMPORTANTE: Envía la cookie de sesión para el permiso
+        });
+
+        if (!response.ok) {
+            throw new Error("Venta no encontrada");
+        }
+        
+        const sale = await response.json();
+        currentReturnSale = sale; // Guardamos la venta en la variable global
+        
+        renderReturnItems(sale); // Mostramos los items en la tabla
+
+    } catch (error) {
+        console.error(error);
+        alert("No se encontró la venta o no tienes permiso.");
+    }
+}
+
+function renderReturnItems(sale) {
+    const tbody = document.getElementById('returnItemsTable');
+    tbody.innerHTML = '';
+    
+    document.getElementById('return-step-1').style.display = 'none';
+    document.getElementById('return-step-2').style.display = 'block';
+
+    sale.items.forEach((item, index) => {
+        const productName = item.variant?.product?.name || "Producto Eliminado";
+        const size = item.variant?.size || "-";
+        const maxQty = item.quantity;
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>
+                ${productName} (${size})<br>
+                <small>$${item.unit_price.toFixed(2)} c/u</small>
+            </td>
+            <td>${maxQty}</td>
+            <td>
+                <input type="number" class="return-qty" 
+                    data-index="${index}" 
+                    data-price="${item.unit_price}"
+                    data-variant="${item.variant._id}"
+                    min="0" max="${maxQty}" value="0" 
+                    style="width: 60px; padding: 5px;">
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Listener para calcular total dinámicamente
+    const inputs = tbody.querySelectorAll('.return-qty');
+    inputs.forEach(input => {
+        input.addEventListener('change', updateRefundTotal);
+        input.addEventListener('keyup', updateRefundTotal);
+    });
+}
+
+function updateRefundTotal() {
+    let total = 0;
+    document.querySelectorAll('.return-qty').forEach(input => {
+        const qty = parseInt(input.value) || 0;
+        const price = parseFloat(input.dataset.price);
+        total += qty * price;
+    });
+    document.getElementById('refundTotalDisplay').textContent = `$${total.toFixed(2)}`;
+}
+
+async function processReturn() {
+    const itemsToReturn = [];
+    
+    document.querySelectorAll('.return-qty').forEach(input => {
+        const qty = parseInt(input.value);
+        if (qty > 0) {
+            itemsToReturn.push({
+                variantId: input.dataset.variant,
+                quantity: qty
+            });
+        }
+    });
+
+    if (itemsToReturn.length === 0) return alert("Seleccione al menos un producto para devolver.");
+
+    try {
+        const response = await fetch("http://localhost:8080/orders/return", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+                originalSaleId: currentReturnSale._id,
+                itemsToReturn: itemsToReturn
+            })
+        });
+
+        if (!response.ok) throw new Error("Error en el servidor");
+
+        const result = await response.json();
+        alert(`✅ Devolución exitosa.\nReembolso: $${result.refundAmount.toFixed(2)}`);
+        document.getElementById('return-modal').style.display = 'none';
+        
+        // Actualizar estadísticas del día (restando venta)
+        updateRegisterStats(-result.refundAmount);
+
+    } catch (error) {
+        console.error(error);
+        alert("Error al procesar la devolución.");
+    }
+}

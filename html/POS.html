@@ -140,6 +140,9 @@
               <button class="btn btn-warning" id="dailyReportBtn">
                 Reporte Diario
               </button>
+              <button class="btn btn-secondary" id="returnBtn" style="background: #8e44ad; color: white;">
+                <i class="fas fa-undo"></i> Devolución
+              </button>
               <button class="btn btn-danger" id="closeRegisterBtn">
                 Cierre de Caja
               </button>
@@ -200,6 +203,45 @@
               </button>
               <button class="btn btn-success" id="checkoutBtn">Cobrar</button>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="return-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Procesar Devolución</h3>
+          <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+          <div id="return-step-1">
+            <div class="form-group">
+              <label>ID de Venta / Ticket:</label>
+              <div style="display: flex; gap: 10px;">
+                <input type="text" id="returnSaleId" placeholder="Ej: 654a..." style="flex:1;">
+                <button class="btn btn-primary" id="searchSaleBtn">Buscar</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="return-step-2" style="display: none; margin-top: 20px;">
+            <h4>Seleccione productos a devolver:</h4>
+            <table class="products-table" style="font-size: 0.9em;">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Cant. Orig.</th>
+                  <th>A Devolver</th>
+                </tr>
+              </thead>
+              <tbody id="returnItemsTable"></tbody>
+            </table>
+            <div style="margin-top: 20px; text-align: right;">
+              <h3>Total a Reembolsar: <span id="refundTotalDisplay">$0.00</span></h3>
+            </div>
+            <button class="btn btn-danger" id="confirmReturnBtn" style="width: 100%; margin-top: 15px;">
+              Confirmar Devolución
+            </button>
           </div>
         </div>
       </div>

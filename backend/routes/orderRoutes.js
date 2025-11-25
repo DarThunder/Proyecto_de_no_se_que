@@ -367,4 +367,92 @@ router.put("/:id/shipping-status", verifyToken, hasPermission(1), async (req, re
   }
 });
 
+router.post("/return", verifyToken, hasPermission(2), async (req, res) => {
+  try {
+    const { originalSaleId, itemsToReturn, cashier } = req.body;
+
+    // 1. Buscar la venta original
+    const originalSale = await Sale.findById(originalSaleId);
+    if (!originalSale) {
+      return res.status(404).json({ error: "Venta original no encontrada" });
+    }
+
+    let refundTotal = 0;
+    const returnItems = [];
+    const stockUpdates = [];
+
+    // 2. Procesar cada item devuelto
+    for (const item of itemsToReturn) {
+      // Verificar que el producto estaba en la venta original
+      const originalItem = originalSale.items.find(
+        (i) => i.variant.toString() === item.variantId
+      );
+
+      if (!originalItem) continue;
+
+      // Restaurar Stock
+      const variant = await ProductVariant.findById(item.variantId);
+      if (variant) {
+        variant.stock += parseInt(item.quantity);
+        stockUpdates.push(variant.save());
+      }
+
+      // Calcular reembolso (Precio original * cantidad)
+      // Nota: Usamos el precio al que se vendió originalmente
+      const itemTotal = originalItem.unit_price * parseInt(item.quantity);
+      refundTotal += itemTotal;
+
+      returnItems.push({
+        variant: item.variantId,
+        quantity: parseInt(item.quantity),
+        unit_price: originalItem.unit_price, // Precio original
+        discount_rate: originalItem.discount_rate || 0
+      });
+    }
+
+    // 3. Crear registro de Devolución (Venta Negativa)
+    const returnSale = new Sale({
+      user: originalSale.user,
+      cashier: cashier || req.user.id,
+      items: returnItems,
+      total: -refundTotal, // Total negativo para cuadrar caja
+      payment_method: "CASH", // O el método original
+      transaction_type: "RETURN",
+      shipping_status: "Delivered" // Las devoluciones se completan al instante
+    });
+
+    await returnSale.save();
+    await Promise.all(stockUpdates);
+
+    res.status(201).json({
+      message: "Devolución procesada exitosamente",
+      returnId: returnSale._id,
+      refundAmount: refundTotal
+    });
+
+  } catch (error) {
+    console.error("Error en devolución:", error);
+    res.status(500).json({ error: "Error al procesar la devolución" });
+  }
+});
+
+// --- BUSCAR VENTA POR ID (Para devoluciones POS) ---
+router.get("/detail/:id", verifyToken, hasPermission(2), async (req, res) => {
+  try {
+    const sale = await Sale.findById(req.params.id).populate({
+      path: "items.variant",
+      populate: { path: "product" }
+    });
+
+    if (!sale) {
+      return res.status(404).json({ error: "Venta no encontrada" });
+    }
+
+    res.json(sale);
+  } catch (err) {
+    console.error("Error buscando venta por ID:", err);
+    res.status(500).json({ error: "Error al buscar venta", details: err.message });
+  }
+});
+
 export default router;
