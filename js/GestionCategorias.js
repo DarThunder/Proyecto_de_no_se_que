@@ -472,16 +472,32 @@ class CategoryManager {
             image_url: document.getElementById('category-image').value,
         };
 
-        // Solo incluir isActive cuando se está editando
         if (this.currentCategoryId) {
             formData.isActive = document.getElementById('category-active').checked;
+        }
+        if (formData.image_url) {
+            // Si la imagen empieza con "sources/", asegurar que tenga "/" al inicio
+            if (formData.image_url.startsWith('sources/') && !formData.image_url.startsWith('/sources/')) {
+                formData.image_url = '/' + formData.image_url;
+            }
+            // Si es una ruta relativa sin "sources/", asumir que está en la carpeta sources/img/
+            else if (!formData.image_url.startsWith('http') && !formData.image_url.startsWith('/') && !formData.image_url.includes('sources/')) {
+                formData.image_url = '/sources/img/' + formData.image_url;
+            }
         }
 
         // Si hay un archivo de imagen seleccionado
         if (this.currentImageFile) {
-            formData.image_url = `uploaded_${Date.now()}_${this.currentImageFile.name}`;
+            // Para archivos subidos, usar ruta absoluta desde la raíz
+            formData.image_url = `/sources/img/uploaded_${Date.now()}_${this.currentImageFile.name}`;
         }
 
+        // Si no hay imagen, usar la predeterminada con ruta absoluta
+        if (!formData.image_url || formData.image_url.trim() === '') {
+            formData.image_url = '/sources/img/category_default.png';
+        }
+
+        console.log('URL de imagen a guardar:', formData.image_url); // DEBUG
         return formData;
     }
 
