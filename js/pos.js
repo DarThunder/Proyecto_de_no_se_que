@@ -86,6 +86,7 @@ function setupPOSFunctionality() {
   setupEventListeners();
   loadInitialData();
   setupProductSearch();
+  updateRegisterStats();
 }
 
 function setupProductSearch() {
@@ -1378,5 +1379,132 @@ async function processReturn() {
     } catch (error) {
         console.error(error);
         alert("Error al procesar la devolución.");
+    }
+}
+
+// ==========================================
+// LÓGICA DE GASTOS / MOVIMIENTOS DE CAJA (H.U. 18)
+// ==========================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    const cashBtn = document.getElementById('cashMovementBtn');
+    const cashModal = document.getElementById('cash-modal');
+    const cashForm = document.getElementById('cash-form');
+    
+    // Elementos de cierre
+    const closeSpans = cashModal ? cashModal.querySelectorAll('.close, .close-cash-modal') : [];
+
+    if (cashBtn && cashModal) {
+        // Abrir modal
+        cashBtn.addEventListener('click', () => {
+            cashForm.reset();
+            cashModal.style.display = 'block';
+            document.getElementById('cash-amount').focus();
+        });
+
+        // Cerrar modal (X y botón cancelar)
+        closeSpans.forEach(el => {
+            el.addEventListener('click', () => cashModal.style.display = 'none');
+        });
+
+        // Cerrar al hacer click fuera
+        window.addEventListener('click', (e) => {
+            if (e.target === cashModal) cashModal.style.display = 'none';
+        });
+
+        // Enviar formulario
+        cashForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const type = document.getElementById('cash-type').value;
+            const amount = parseFloat(document.getElementById('cash-amount').value);
+            const description = document.getElementById('cash-description').value;
+
+            if (amount <= 0) return alert("El monto debe ser mayor a 0");
+
+            const submitBtn = cashForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = "Guardando...";
+
+            try {
+                const response = await fetch("http://localhost:8080/cash-movements", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({ type, amount, description })
+                });
+
+                if (!response.ok) throw new Error("Error al registrar");
+
+                const data = await response.json();
+                
+                // Feedback visual
+                alert(`✅ Movimiento registrado correctamente.\n${type === 'OUT' ? 'Gasto' : 'Ingreso'}: $${amount.toFixed(2)}`);
+                
+                cashModal.style.display = 'none';
+                
+                // Opcional: Actualizar visualmente el total en caja si tienes esa variable visible
+                updateRegisterStats(type === 'IN' ? amount : -amount);
+
+            } catch (error) {
+                console.error(error);
+                alert("Error: No se pudo registrar el movimiento.");
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+    }
+});
+
+async function updateRegisterStats() {
+    // 1. Elementos del Contador Superior (Verde)
+    const cashDisplay = document.getElementById('cash-balance-display');
+    
+    // 2. Elementos del Panel "Cierre de Caja" (Abajo)
+    const dailySalesDisplay = document.getElementById('dailySales');
+    const transactionsDisplay = document.getElementById('transactionsCount');
+    const averageDisplay = document.getElementById('averageTicket');
+
+    try {
+        const response = await fetch("http://localhost:8080/cash-movements/balance", {
+            method: "GET",
+            credentials: "include"
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        
+        // Formateador de moneda
+        const formatMoney = (amount) => new Intl.NumberFormat('es-MX', {
+            style: 'currency',
+            currency: 'MXN'
+        }).format(amount || 0);
+
+        // --- A) Actualizar Contador Verde (En Caja) ---
+        if (cashDisplay) {
+            cashDisplay.textContent = formatMoney(data.balance);
+            cashDisplay.style.color = data.balance < 0 ? '#e74c3c' : 'white';
+        }
+
+        // --- B) Actualizar Panel de Cierre de Caja ---
+        if (dailySalesDisplay) {
+            dailySalesDisplay.textContent = formatMoney(data.dailySales);
+        }
+        
+        if (transactionsDisplay) {
+            transactionsDisplay.textContent = data.transactions;
+        }
+
+        if (averageDisplay) {
+            // Calcular ticket promedio: Total / #Transacciones
+            const avg = data.transactions > 0 ? (data.dailySales / data.transactions) : 0;
+            averageDisplay.textContent = formatMoney(avg);
+        }
+
+    } catch (error) {
+        console.error("Error actualizando estadísticas:", error);
     }
 }

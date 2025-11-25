@@ -12,9 +12,18 @@
       <header>
         <div class="header-content">
           <div class="logo">Sistema POS</div>
-          <div class="user-info">
+          
+          <div class="user-info" style="display: flex; align-items: center; gap: 15px;">
+            
             <div class="user-avatar" id="userAvatar"></div>
             <div id="userName">Cajero: No asignado</div>
+
+            <div class="cash-display" style="margin-left: 15px; background: rgba(46, 204, 113, 0.2); padding: 5px 15px; border-radius: 20px; border: 1px solid #2ecc71; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-cash-register" style="color: #2ecc71;"></i>
+                <span style="font-size: 0.9rem; color: #ccc;">En Caja:</span>
+                <span id="cash-balance-display" style="font-weight: bold; font-size: 1.1rem; color: white;">$0.00</span>
+            </div>
+
           </div>
         </div>
       </header>
@@ -143,6 +152,9 @@
               <button class="btn btn-secondary" id="returnBtn" style="background: #8e44ad; color: white;">
                 <i class="fas fa-undo"></i> Devolución
               </button>
+              <button class="btn btn-info" id="cashMovementBtn" style="background: #e67e22; color: white; margin-top: 10px;">
+                <i class="fas fa-exchange-alt"></i> Gastos / Entradas
+              </button>
               <button class="btn btn-danger" id="closeRegisterBtn">
                 Cierre de Caja
               </button>
@@ -246,6 +258,46 @@
         </div>
       </div>
     </div>
+
+<div id="cash-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Registrar Movimiento</h3>
+          <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="cash-form">
+            
+            <div class="form-group">
+              <label for="cash-type">Tipo de Movimiento:</label>
+              <select id="cash-type" required>
+                <option value="OUT" style="color: black;">🔴 Salida (Gasto / Retiro)</option>
+                <option value="IN" style="color: black;">🟢 Entrada (Ingreso Extra)</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="cash-amount">Monto:</label>
+              <div class="input-with-icon">
+                <i class="fas fa-dollar-sign input-icon"></i>
+                <input type="number" id="cash-amount" min="0.01" step="0.01" required placeholder="0.00">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="cash-description">Descripción:</label>
+              <textarea id="cash-description" rows="3" required placeholder="Ej: Compra de insumos de limpieza"></textarea>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary close-cash-modal">Cancelar</button>
+              <button type="submit" class="btn btn-primary">Registrar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <script src="../js/pos.js"></script>
   </body>
 </html>

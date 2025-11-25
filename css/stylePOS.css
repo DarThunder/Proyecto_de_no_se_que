@@ -752,3 +752,56 @@ tr:hover {
   padding: 6px 12px;
   font-size: 12px;
 }
+
+/* --- Estilos para el Modal de Caja --- */
+
+/* Contenedor para icono dentro del input */
+.input-with-icon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-with-icon .input-icon {
+    position: absolute;
+    left: 15px;
+    color: var(--success); /* Color verde para el dinero */
+    font-size: 1.1rem;
+    z-index: 1;
+}
+
+.input-with-icon input {
+    padding-left: 35px !important; /* Espacio para el icono */
+}
+
+/* Asegurar que los inputs del modal se vean como el resto */
+#cash-modal select,
+#cash-modal input,
+#cash-modal textarea {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.1); /* Fondo semi-transparente */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: white;
+    font-size: 1rem;
+}
+
+#cash-modal select option {
+    background: #2c3e50; /* Fondo oscuro para las opciones al desplegar */
+    color: white;
+}
+
+#cash-modal textarea {
+    resize: none;
+}
+
+/* Ajuste del footer del modal */
+#cash-modal .modal-footer {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
