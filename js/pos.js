@@ -951,9 +951,12 @@ function generateDailyReport() {
 
 function closeRegister() {
   console.log("Cerrando caja...");
-  alert(
-    "Cerrando caja...\n\nEsta funcionalidad realizará el cierre de caja del turno."
-  );
+  
+  // Mostrar confirmación antes de redirigir
+  if (confirm("¿Está seguro de que desea cerrar la caja y salir?")) {
+    // Redirigir a la página de login
+    window.location.href = "../html/login.html";
+  }
 }
 
 // Función para actualizar estadísticas de caja (simulada)
@@ -1125,7 +1128,6 @@ async function processPOSSale(saleData) {
     if (window.selectedCupon) {
       successMessage += `\nCupón aplicado: ${window.selectedCupon.code} (${window.selectedCupon.discount}% OFF)`;
       // Incrementar el contador de usos del cupón
-      await incrementCouponUsage(window.selectedCupon.id);
     }
     
     successMessage += `\n\nEl stock ha sido actualizado.`;
