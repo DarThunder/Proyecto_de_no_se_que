@@ -34,7 +34,7 @@ body {
 
 /* LO DEL CONTENEDOR PARA MOVERLE A LOS TERMINOS Y CONDICIONES */
 .admin-section {
-
+    padding: 10vh;
 }
 
 .content {
