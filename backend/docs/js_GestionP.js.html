@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: js/GestionP.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: js/GestionP.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file js/GestionP.js
+ * @description Módulo de administración de productos.
+ * Define la clase `ProductManager` que gestiona el ciclo de vida completo de los productos (CRUD),
+ * incluyendo la gestión de variantes (tallas/SKUs), control de stock y subida de imágenes.
+ */
+
+/**
+ * Clase principal para la gestión de productos.
+ * Encapsula la lógica de autenticación, renderizado de tabla, manejo de modales
+ * y comunicación con la API de productos.
+ */
+class ProductManager {
+  /**
+   * Crea una instancia del administrador de productos.
+   * Inicializa el estado y dispara el proceso de carga.
+   */
+  constructor() {
+    /** @type {Array&lt;Object>} Lista local de productos cargados. */
+    this.products = [];
+
+    /** @type {string|null} ID del producto en edición (null si es creación). */
+    this.currentProductId = null;
+
+    /** @type {File|null} Archivo de imagen seleccionado para subir. */
+    this.currentImageFile = null;
+
+    /** @type {Array&lt;Object>|null} Variantes del producto en edición de stock. */
+    this.currentProductVariants = null;
+
+    this.init();
+  }
+
+  /**
+   * Inicializa el componente.
+   * Verifica permisos, carga productos y configura los eventos del DOM.
+   * @async
+   */
+  async init() {
+    await this.checkAuthAndPermissions();
+    await this.loadProducts();
+    this.setupEventListeners();
+  }
+
+  /**
+   * Verifica que el usuario tenga sesión activa y permisos de Administrador (Ring 0).
+   * @async
+   * @throws {Error} Si la sesión no es válida o el rol no es adecuado.
+   */
+  async checkAuthAndPermissions() {
+    try {
+      const meResponse = await fetch("http://localhost:8080/users/me", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!meResponse.ok) {
+        throw new Error("No autorizado. Redirigiendo al login.");
+      }
+
+      const userInfo = await meResponse.json();
+
+      // SOLO ADMIN (permission_ring = 0)
+      if (userInfo.role &amp;&amp; userInfo.role.permission_ring === 0) {
+        const usernameEl = document.getElementById("admin-username");
+        if (usernameEl) usernameEl.textContent = userInfo.username || "Admin";
+      } else {
+        throw new Error(
+          "Acceso denegado. Solo los administradores pueden gestionar productos."
+        );
+      }
+    } catch (error) {
+      console.error(error.message);
+      const userConfirmed = confirm(
+        "Acceso denegado. Debes iniciar sesión como Administrador.\n\n¿Deseas ir al Login? (Cancelar para ir al Dashboard)"
+      );
+
+      if (userConfirmed) {
+        window.location.href = "login.html";
+      } else {
+        window.location.href = "admin.html";
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Carga la lista completa de productos desde la API de administración.
+   * @async
+   */
+  async loadProducts() {
+    try {
+      const response = await fetch("http://localhost:8080/products/admin/all", {
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        this.products = await response.json();
+        this.renderProducts();
+      } else {
+        throw new Error("Error al cargar productos: " + response.status);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      this.showNotification(
+        "Error al cargar productos: " + error.message,
+        "error"
+      );
+    }
+  }
+
+  /**
+   * Renderiza la tabla HTML con los productos cargados.
+   * Calcula el stock total sumando las variantes y formatea la información para su visualización.
+   */
+  renderProducts() {
+    const tbody = document.getElementById("products-table-body");
+    if (!tbody) {
+      console.error("No se encontró el elemento products-table-body");
+      return;
+    }
+
+    tbody.innerHTML = "";
+
+    if (this.products.length === 0) {
+      tbody.innerHTML = `
+                &lt;tr>
+                    &lt;td colspan="8" style="text-align: center; padding: 2rem;">
+                        No hay productos registrados
+                    &lt;/td>
+                &lt;/tr>
+            `;
+      return;
+    }
+
+    this.products.forEach((product) => {
+      const row = document.createElement("tr");
+
+      // Calcular stock total sumando variantes
+      const totalStock = product.variants
+        ? product.variants.reduce(
+            (sum, variant) => sum + (variant.stock || 0),
+            0
+          )
+        : 0;
+
+      // Generar resumen de texto de variantes (ej: "S: 10, M: 5")
+      const variantsInfo =
+        product.variants &amp;&amp; product.variants.length > 0
+          ? product.variants.map((v) => `${v.size}: ${v.stock}`).join(", ")
+          : "Sin variantes";
+
+      // Normalización de URL de imagen
+      let imageUrl = product.image_url || "/sources/img/logo_negro.png";
+      if (!imageUrl.startsWith("/")) imageUrl = "/" + imageUrl;
+      if (imageUrl.startsWith("/sources/")) imageUrl = ".." + imageUrl;
+
+      row.innerHTML = `
+                &lt;td>
+                    &lt;img src="${imageUrl}" 
+                         alt="${product.name}" 
+                         class="product-thumbnail"
+                         onerror="this.src='../sources/img/logo_negro.png'">
+                &lt;/td>
+                &lt;td>${this.escapeHtml(product.name)}&lt;/td>
+                &lt;td>$${(product.base_price || 0).toFixed(2)}&lt;/td>
+                &lt;td>${this.capitalizeFirstLetter(product.category)}&lt;/td>
+                &lt;td>${this.escapeHtml(product.productType)}&lt;/td>
+                &lt;td>${totalStock}&lt;/td>
+                &lt;td>
+                    &lt;small>${variantsInfo}&lt;/small>
+                    &lt;br>
+                    &lt;button class="btn btn-sm btn-info manage-stock-btn" data-id="${
+                      product._id
+                    }">
+                        &lt;i class="fas fa-warehouse">&lt;/i> Gestionar Stock
+                    &lt;/button>
+                &lt;/td>
+                &lt;td>
+                    &lt;button class="btn btn-sm btn-edit" data-id="${
+                      product._id
+                    }">
+                        &lt;i class="fas fa-edit">&lt;/i>
+                    &lt;/button>
+                    &lt;button class="btn btn-sm btn-danger" data-id="${
+                      product._id
+                    }">
+                        &lt;i class="fas fa-trash">&lt;/i>
+                    &lt;/button>
+                &lt;/td>
+            `;
+
+      tbody.appendChild(row);
+    });
+
+    this.addTableEventListeners();
+  }
+
+  /**
+   * Escapa caracteres HTML para prevenir XSS.
+   * @param {string} text
+   * @returns {string} Texto seguro.
+   */
+  escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  /**
+   * Capitaliza la primera letra de una cadena.
+   * @param {string} string
+   * @returns {string}
+   */
+  capitalizeFirstLetter(string) {
+    return string ? string.charAt(0).toUpperCase() + string.slice(1) : "";
+  }
+
+  /**
+   * Configura los listeners globales (botones principales, modales, imagen, logout).
+   */
+  setupEventListeners() {
+    // Botón agregar producto
+    const addBtn = document.getElementById("add-product-btn");
+    if (addBtn) addBtn.addEventListener("click", () => this.openProductModal());
+
+    // Gestión de imagen (selección de archivo y preview)
+    this.setupImageHandlers();
+
+    // Modal de producto (Crear/Editar)
+    this.setupModalHandlers();
+
+    // Envío del formulario principal
+    const productForm = document.getElementById("product-form");
+    if (productForm) {
+      productForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        this.saveProduct();
+      });
+    }
+
+    // Botón para añadir campos de variantes dinámicamente
+    const addVariantBtn = document.getElementById("add-variant-btn");
+    if (addVariantBtn) {
+      addVariantBtn.addEventListener("click", () => this.addVariantField());
+    }
+
+    // Modal de eliminación
+    this.setupDeleteModalHandlers();
+
+    // Modal de gestión de stock
+    this.setupStockModalHandlers();
+
+    // Logout
+    const logoutBtn = document.getElementById("logout-btn");
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        try {
+          await fetch("http://localhost:8080/auth/logout", {
+            method: "POST",
+            credentials: "include",
+          });
+        } catch (err) {
+          console.error(err);
+        } finally {
+          alert("Sesión cerrada.");
+          window.location.href = "login.html";
+        }
+      });
+    }
+  }
+
+  /**
+   * Configura la previsualización de imagen (input file y URL).
+   */
+  setupImageHandlers() {
+    const selectImageBtn = document.getElementById("select-image-btn");
+    const imageFileInput = document.getElementById("product-image-file");
+    const imageUrlInput = document.getElementById("product-image");
+    const imagePreview = document.getElementById("image-preview");
+    const previewImg = document.getElementById("preview-img");
+
+    if (selectImageBtn &amp;&amp; imageFileInput) {
+      selectImageBtn.addEventListener("click", () => imageFileInput.click());
+
+      imageFileInput.addEventListener("change", (e) => {
+        if (e.target.files &amp;&amp; e.target.files[0]) {
+          const file = e.target.files[0];
+          if (file.size > 5 * 1024 * 1024) {
+            this.showNotification(
+              "La imagen es muy grande. Máximo 5MB.",
+              "error"
+            );
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            previewImg.src = ev.target.result;
+            imagePreview.style.display = "block";
+            imageUrlInput.value = `Imagen seleccionada: ${file.name}`;
+            this.currentImageFile = file;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      imageUrlInput.addEventListener("input", (e) => {
+        const url = e.target.value.trim();
+        if (
+          url &amp;&amp;
+          (url.startsWith("http") ||
+            url.startsWith("/") ||
+            url.startsWith("../"))
+        ) {
+          previewImg.src = url;
+          imagePreview.style.display = "block";
+          this.currentImageFile = null;
+        } else if (!url) {
+          imagePreview.style.display = "none";
+        }
+      });
+    }
+  }
+
+  /**
+   * Configura el comportamiento de cierre del modal de producto.
+   */
+  setupModalHandlers() {
+    const modal = document.getElementById("product-modal");
+    if (modal) {
+      const closeBtn = modal.querySelector(".close");
+      const cancelBtn = document.getElementById("cancel-btn");
+      if (closeBtn)
+        closeBtn.addEventListener("click", () => this.closeProductModal());
+      if (cancelBtn)
+        cancelBtn.addEventListener("click", () => this.closeProductModal());
+      window.addEventListener("click", (e) => {
+        if (e.target === modal) this.closeProductModal();
+      });
+    }
+  }
+
+  /**
+   * Configura el comportamiento del modal de eliminación.
+   */
+  setupDeleteModalHandlers() {
+    const deleteModal = document.getElementById("delete-modal");
+    if (deleteModal) {
+      const closeEls = deleteModal.querySelectorAll(".close, #cancel-delete");
+      closeEls.forEach((el) =>
+        el.addEventListener("click", () => this.closeDeleteModal())
+      );
+
+      window.addEventListener("click", (e) => {
+        if (e.target === deleteModal) this.closeDeleteModal();
+      });
+
+      const confirmDeleteBtn = document.getElementById("confirm-delete");
+      if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener("click", () => this.deleteProduct());
+      }
+    }
+  }
+
+  /**
+   * Configura el comportamiento del modal de gestión de stock.
+   */
+  setupStockModalHandlers() {
+    const stockModal = document.getElementById("stock-modal");
+    if (stockModal) {
+      const closeEls = stockModal.querySelectorAll(".close, #cancel-stock-btn");
+      closeEls.forEach((el) =>
+        el.addEventListener("click", () => this.closeStockModal())
+      );
+
+      const saveStockBtn = document.getElementById("save-stock-btn");
+      if (saveStockBtn)
+        saveStockBtn.addEventListener("click", () => this.saveStockChanges());
+
+      window.addEventListener("click", (e) => {
+        if (e.target === stockModal) this.closeStockModal();
+      });
+    }
+  }
+
+  /**
+   * Añade listeners a los botones dinámicos de la tabla (Editar, Eliminar, Stock).
+   */
+  addTableEventListeners() {
+    document.querySelectorAll(".btn-edit").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const productId = e.currentTarget.getAttribute("data-id");
+        this.editProduct(productId);
+      });
+    });
+
+    document.querySelectorAll(".btn-danger").forEach((btn) => {
+      if (
+        !btn.closest(".modal-footer") &amp;&amp;
+        !btn.classList.contains("remove-variant")
+      ) {
+        btn.addEventListener("click", (e) => {
+          const productId = e.currentTarget.getAttribute("data-id");
+          this.openDeleteModal(productId);
+        });
+      }
+    });
+
+    document.querySelectorAll(".manage-stock-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const productId = e.currentTarget.getAttribute("data-id");
+        this.openStockModal(productId);
+      });
+    });
+  }
+
+  /**
+   * Abre el modal de producto para crear (sin argumentos) o editar (con producto).
+   * @param {Object|null} product - Objeto producto a editar.
+   */
+  openProductModal(product = null) {
+    const modal = document.getElementById("product-modal");
+    const title = document.getElementById("modal-title");
+    const form = document.getElementById("product-form");
+    const imagePreview = document.getElementById("image-preview");
+
+    if (!modal || !title || !form) return;
+
+    form.reset();
+    document.getElementById("variants-container").innerHTML = "";
+    if (imagePreview) imagePreview.style.display = "none";
+    this.currentImageFile = null;
+
+    if (product) {
+      title.textContent = "Editar Producto";
+      this.currentProductId = product._id;
+      this.fillProductForm(product);
+    } else {
+      title.textContent = "Agregar Producto";
+      this.currentProductId = null;
+      this.addVariantField(); // Añadir un campo de variante vacío por defecto
+    }
+
+    modal.style.display = "block";
+  }
+
+  /**
+   * Rellena el formulario con los datos de un producto existente.
+   * @param {Object} product
+   */
+  fillProductForm(product) {
+    document.getElementById("product-id").value = product._id;
+    document.getElementById("product-name").value = product.name;
+    document.getElementById("product-price").value = product.base_price;
+    document.getElementById("product-description").value =
+      product.description || "";
+    document.getElementById("product-image").value = product.image_url || "";
+    document.getElementById("product-category").value = product.category;
+    document.getElementById("product-type").value = product.productType;
+
+    const imageUrl = document.getElementById("product-image").value;
+    const imagePreview = document.getElementById("image-preview");
+    const previewImg = document.getElementById("preview-img");
+
+    if (imageUrl &amp;&amp; imagePreview &amp;&amp; previewImg) {
+      previewImg.src = imageUrl;
+      imagePreview.style.display = "block";
+    }
+
+    const variantsContainer = document.getElementById("variants-container");
+    variantsContainer.innerHTML = "";
+
+    if (product.variants &amp;&amp; product.variants.length > 0) {
+      product.variants.forEach((variant) => this.addVariantField(variant));
+    } else {
+      this.addVariantField();
+    }
+  }
+
+  /**
+   * Añade un nuevo bloque de campos para una variante (Talla, SKU, Stock) al formulario.
+   * @param {Object|null} variant - Datos de variante para pre-llenar (opcional).
+   */
+  addVariantField(variant = null) {
+    const container = document.getElementById("variants-container");
+    if (!container) return;
+
+    const variantId = Date.now() + Math.random();
+
+    const variantHtml = `
+            &lt;div class="variant-row" data-id="${variantId}">
+                &lt;div class="variant-fields">
+                    &lt;select class="variant-size" required>
+                        &lt;option value="">Talla&lt;/option>
+                        &lt;option value="XS" ${
+                          variant?.size === "XS" ? "selected" : ""
+                        }>XS&lt;/option>
+                        &lt;option value="S" ${
+                          variant?.size === "S" ? "selected" : ""
+                        }>S&lt;/option>
+                        &lt;option value="M" ${
+                          variant?.size === "M" ? "selected" : ""
+                        }>M&lt;/option>
+                        &lt;option value="L" ${
+                          variant?.size === "L" ? "selected" : ""
+                        }>L&lt;/option>
+                        &lt;option value="XL" ${
+                          variant?.size === "XL" ? "selected" : ""
+                        }>XL&lt;/option>
+                    &lt;/select>
+                    &lt;input type="text" class="variant-sku" placeholder="SKU" value="${
+                      variant?.sku || ""
+                    }" required>
+                    &lt;input type="number" class="variant-stock" placeholder="Stock" value="${
+                      variant?.stock || 0
+                    }" min="0" required>
+                    &lt;button type="button" class="btn btn-sm btn-danger remove-variant">
+                        &lt;i class="fas fa-times">&lt;/i>
+                    &lt;/button>
+                &lt;/div>
+            &lt;/div>
+        `;
+
+    container.insertAdjacentHTML("beforeend", variantHtml);
+
+    const newRow = container.querySelector(`[data-id="${variantId}"]`);
+    const removeBtn = newRow.querySelector(".remove-variant");
+    if (removeBtn) {
+      removeBtn.addEventListener("click", () => newRow.remove());
+    }
+  }
+
+  closeProductModal() {
+    const modal = document.getElementById("product-modal");
+    if (modal) modal.style.display = "none";
+  }
+
+  /**
+   * Guarda el producto (Creación o Edición).
+   * Recolecta datos, valida y envía la petición al backend.
+   * @async
+   */
+  async saveProduct() {
+    const formData = this.getFormData();
+
+    if (!this.validateForm(formData)) return;
+
+    try {
+      const url = this.currentProductId
+        ? `http://localhost:8080/products/admin/${this.currentProductId}`
+        : "http://localhost:8080/products/admin";
+
+      const method = this.currentProductId ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method: method,
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        this.showNotification(
+          `Producto ${
+            this.currentProductId ? "actualizado" : "creado"
+          } correctamente`,
+          "success"
+        );
+        this.closeProductModal();
+        await this.loadProducts();
+      } else {
+        const errorText = await response.text();
+        throw new Error(`Error ${response.status}: ${errorText}`);
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      this.showNotification(
+        "Error al guardar el producto: " + error.message,
+        "error"
+      );
+    }
+  }
+
+  /**
+   * Extrae los datos del formulario y construye el objeto producto.
+   * Maneja la lógica de nombres de archivo para imágenes subidas.
+   * @returns {Object} Objeto producto formateado.
+   */
+  getFormData() {
+    const variants = [];
+    document.querySelectorAll(".variant-row").forEach((row) => {
+      const size = row.querySelector(".variant-size").value;
+      const sku = row.querySelector(".variant-sku").value;
+      const stock = parseInt(row.querySelector(".variant-stock").value);
+
+      if (size &amp;&amp; sku) {
+        variants.push({ size, sku, stock: stock || 0 });
+      }
+    });
+
+    const formData = {
+      name: document.getElementById("product-name").value,
+      base_price: parseFloat(document.getElementById("product-price").value),
+      description: document.getElementById("product-description").value,
+      image_url: document.getElementById("product-image").value,
+      category: document.getElementById("product-category").value,
+      productType: document.getElementById("product-type").value,
+      variants: variants,
+    };
+
+    if (this.currentImageFile) {
+      formData.image_url = `uploaded_${Date.now()}_${
+        this.currentImageFile.name
+      }`;
+    }
+
+    return formData;
+  }
+
+  /**
+   * Valida la integridad de los datos del producto antes de enviar.
+   * @param {Object} formData
+   * @returns {boolean}
+   */
+  validateForm(formData) {
+    if (!formData.name.trim()) {
+      this.showNotification("El nombre del producto es requerido", "error");
+      return false;
+    }
+    if (!formData.base_price || formData.base_price &lt;= 0) {
+      this.showNotification("El precio debe ser mayor a 0", "error");
+      return false;
+    }
+    if (formData.variants.length === 0) {
+      this.showNotification("Debe agregar al menos una variante", "error");
+      return false;
+    }
+    const skus = formData.variants.map((v) => v.sku);
+    if (new Set(skus).size !== skus.length) {
+      this.showNotification("Los SKUs deben ser únicos", "error");
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Inicia la edición de un producto.
+   * Carga las variantes actualizadas desde el servidor antes de abrir el modal.
+   * @async
+   * @param {string} productId
+   */
+  async editProduct(productId) {
+    const product = this.products.find((p) => p._id === productId);
+    if (product) {
+      try {
+        const response = await fetch(
+          `http://localhost:8080/products/${productId}/variants`,
+          {
+            credentials: "include",
+          }
+        );
+        if (response.ok) {
+          product.variants = await response.json();
+        }
+      } catch (error) {
+        console.error("Error al cargar variantes:", error);
+      }
+
+      this.openProductModal(product);
+    }
+  }
+
+  // --- MÉTODOS DE GESTIÓN DE STOCK ---
+
+  /**
+   * Abre el modal específico para gestión rápida de stock.
+   * @async
+   * @param {string} productId
+   */
+  async openStockModal(productId) {
+    const product = this.products.find((p) => p._id === productId);
+    if (!product) return;
+
+    try {
+      // Asegurar tener las variantes más recientes
+      const response = await fetch(
+        `http://localhost:8080/products/${productId}/variants`,
+        { credentials: "include" }
+      );
+      if (response.ok) {
+        product.variants = await response.json();
+      }
+    } catch (error) {
+      this.showNotification(
+        "Error al cargar las variantes del producto",
+        "error"
+      );
+      return;
+    }
+
+    this.currentProductId = productId;
+    this.currentProductVariants = product.variants;
+    document.getElementById("stock-product-name").textContent = product.name;
+
+    this.renderStockForm(product);
+    document.getElementById("stock-modal").style.display = "block";
+  }
+
+  /**
+   * Genera el formulario de stock (lista de variantes con inputs de cantidad).
+   * @param {Object} product
+   */
+  renderStockForm(product) {
+    const container = document.getElementById("variants-stock-list");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!product.variants || product.variants.length === 0) {
+      container.innerHTML =
+        '&lt;p class="no-variants">No hay variantes para este producto.&lt;/p>';
+      return;
+    }
+
+    product.variants.forEach((variant) => {
+      const variantHtml = `
+                &lt;div class="variant-stock-item" data-variant-id="${variant._id}">
+                    &lt;div class="variant-info">
+                        &lt;div class="variant-header">
+                            &lt;strong>Talla: ${variant.size}&lt;/strong>
+                            &lt;span class="variant-sku">SKU: ${variant.sku}&lt;/span>
+                        &lt;/div>
+                        &lt;div class="stock-info">
+                            &lt;span>Stock actual: &lt;strong class="current-stock">${variant.stock}&lt;/strong>&lt;/span>
+                        &lt;/div>
+                    &lt;/div>
+                    &lt;div class="stock-controls">
+                        &lt;label for="stock-${variant._id}">Nuevo Stock:&lt;/label>
+                        &lt;input type="number" id="stock-${variant._id}" class="stock-input" 
+                               value="${variant.stock}" min="0" required
+                               onchange="this.style.borderColor = this.value != ${variant.stock} ? '#3498db' : '#34495e'">
+                    &lt;/div>
+                &lt;/div>
+            `;
+      container.insertAdjacentHTML("beforeend", variantHtml);
+    });
+  }
+
+  /**
+   * Guarda los cambios realizados en el modal de stock.
+   * Detecta qué variantes han cambiado y envía una actualización masiva.
+   * @async
+   */
+  async saveStockChanges() {
+    if (!this.currentProductId || !this.currentProductVariants) return;
+
+    const stockInputs = document.querySelectorAll(".stock-input");
+    const updatedVariants = [];
+    let hasChanges = false;
+
+    stockInputs.forEach((input) => {
+      const variantId = input
+        .closest(".variant-stock-item")
+        .getAttribute("data-variant-id");
+      const newStock = parseInt(input.value);
+      const originalVariant = this.currentProductVariants.find(
+        (v) => v._id === variantId
+      );
+
+      if (
+        originalVariant &amp;&amp;
+        !isNaN(newStock) &amp;&amp;
+        newStock >= 0 &amp;&amp;
+        newStock !== originalVariant.stock
+      ) {
+        updatedVariants.push({ ...originalVariant, stock: newStock });
+        hasChanges = true;
+      }
+    });
+
+    if (!hasChanges) {
+      this.showNotification("No hay cambios para guardar", "warning");
+      return;
+    }
+
+    try {
+      this.showNotification("Actualizando stock...", "info");
+      const response = await fetch(
+        `http://localhost:8080/products/admin/${this.currentProductId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ variants: updatedVariants }),
+        }
+      );
+
+      if (response.ok) {
+        this.showNotification("Stock actualizado correctamente", "success");
+        this.closeStockModal();
+        await this.loadProducts();
+      } else {
+        throw new Error(await response.text());
+      }
+    } catch (error) {
+      this.showNotification(
+        "Error al actualizar el stock: " + error.message,
+        "error"
+      );
+    }
+  }
+
+  closeStockModal() {
+    const modal = document.getElementById("stock-modal");
+    if (modal) modal.style.display = "none";
+    this.currentProductId = null;
+    this.currentProductVariants = null;
+  }
+
+  // --- MÉTODOS DE ELIMINACIÓN ---
+
+  openDeleteModal(productId) {
+    this.currentProductId = productId;
+    const modal = document.getElementById("delete-modal");
+    if (modal) modal.style.display = "block";
+  }
+
+  closeDeleteModal() {
+    const modal = document.getElementById("delete-modal");
+    if (modal) modal.style.display = "none";
+    this.currentProductId = null;
+  }
+
+  async deleteProduct() {
+    if (!this.currentProductId) return;
+
+    try {
+      const response = await fetch(
+        `http://localhost:8080/products/admin/${this.currentProductId}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        this.showNotification("Producto eliminado correctamente", "success");
+        this.closeDeleteModal();
+        await this.loadProducts();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Error al eliminar");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      this.showNotification("Error: " + error.message, "error");
+    }
+  }
+
+  /**
+   * Muestra una notificación flotante.
+   * @param {string} message
+   * @param {'info'|'success'|'error'|'warning'} type
+   */
+  showNotification(message, type = "info") {
+    const notification = document.createElement("div");
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `&lt;span>${message}&lt;/span>&lt;button class="notification-close">&amp;times;&lt;/button>`;
+
+    // Estilos inline básicos para funcionamiento inmediato
+    notification.style.cssText = `
+            position: fixed; top: 20px; right: 20px; padding: 15px 20px;
+            background: ${
+              type === "success"
+                ? "#2ecc71"
+                : type === "error"
+                ? "#e74c3c"
+                : type === "warning"
+                ? "#f39c12"
+                : "#3498db"
+            };
+            color: white; border-radius: 5px; z-index: 10000; display: flex; align-items: center;
+        `;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      if (notification.parentNode) notification.remove();
+    }, 5000);
+    notification
+      .querySelector(".notification-close")
+      .addEventListener("click", () => notification.remove());
+  }
+}
+
+// Inicializar
+document.addEventListener("DOMContentLoaded", () => {
+  new ProductManager();
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CategoryManager.html">CategoryManager</a></li><li><a href="ProductManager.html">ProductManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:submit">submit</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addBtn">addBtn</a></li><li><a href="global.html#addWishlistListeners">addWishlistListeners</a></li><li><a href="global.html#allCategoryProducts">allCategoryProducts</a></li><li><a href="global.html#allowedOrigins">allowedOrigins</a></li><li><a href="global.html#applyFilters">applyFilters</a></li><li><a href="global.html#approveOrder">approveOrder</a></li><li><a href="global.html#availableRoles">availableRoles</a></li><li><a href="global.html#cancelBtn">cancelBtn</a></li><li><a href="global.html#cargarTerminosUsuario">cargarTerminosUsuario</a></li><li><a href="global.html#checkIfEmpty">checkIfEmpty</a></li><li><a href="global.html#checkLoginStatus">checkLoginStatus</a></li><li><a href="global.html#closeCouponModal">closeCouponModal</a></li><li><a href="global.html#closeEditModal">closeEditModal</a></li><li><a href="global.html#closeProviderModal">closeProviderModal</a></li><li><a href="global.html#closeUserModal">closeUserModal</a></li><li><a href="global.html#couponForm">couponForm</a></li><li><a href="global.html#createEditModal">createEditModal</a></li><li><a href="global.html#createOrderCardHTML">createOrderCardHTML</a></li><li><a href="global.html#createProductHTML">createProductHTML</a></li><li><a href="global.html#createReviewHTML">createReviewHTML</a></li><li><a href="global.html#createStarsHTML">createStarsHTML</a></li><li><a href="global.html#currentEditingUserId">currentEditingUserId</a></li><li><a href="global.html#currentUserRing">currentUserRing</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#deleteCoupon">deleteCoupon</a></li><li><a href="global.html#deleteProvider">deleteProvider</a></li><li><a href="global.html#deleteReview">deleteReview</a></li><li><a href="global.html#displayProducts">displayProducts</a></li><li><a href="global.html#editReview">editReview</a></li><li><a href="global.html#editarRol">editarRol</a></li><li><a href="global.html#editingCouponId">editingCouponId</a></li><li><a href="global.html#editingProviderId">editingProviderId</a></li><li><a href="global.html#editingReviewId">editingReviewId</a></li><li><a href="global.html#eliminarRol">eliminarRol</a></li><li><a href="global.html#form">form</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#generateCouponCode">generateCouponCode</a></li><li><a href="global.html#getStatusLabel">getStatusLabel</a></li><li><a href="global.html#getUrgencyLabel">getUrgencyLabel</a></li><li><a href="global.html#goBackToProducts">goBackToProducts</a></li><li><a href="global.html#handleFormSubmit">handleFormSubmit</a></li><li><a href="global.html#hasPermission">hasPermission</a></li><li><a href="global.html#initializeBarcodesModal">initializeBarcodesModal</a></li><li><a href="global.html#initializeCarousels">initializeCarousels</a></li><li><a href="global.html#initializeCatProductButtons">initializeCatProductButtons</a></li><li><a href="global.html#initializeCatWishlistButtons">initializeCatWishlistButtons</a></li><li><a href="global.html#initializeMessagesSystem">initializeMessagesSystem</a></li><li><a href="global.html#initializeProductButtons">initializeProductButtons</a></li><li><a href="global.html#initializeWishlistButtons">initializeWishlistButtons</a></li><li><a href="global.html#isEditing">isEditing</a></li><li><a href="global.html#loadBestSellersReport">loadBestSellersReport</a></li><li><a href="global.html#loadCartItems">loadCartItems</a></li><li><a href="global.html#loadCategoryProducts">loadCategoryProducts</a></li><li><a href="global.html#loadCoupons">loadCoupons</a></li><li><a href="global.html#loadDashboardStats">loadDashboardStats</a></li><li><a href="global.html#loadDynamicCategories">loadDynamicCategories</a></li><li><a href="global.html#loadEmployeeSalesReport">loadEmployeeSalesReport</a></li><li><a href="global.html#loadMessagesFromBackend">loadMessagesFromBackend</a></li><li><a href="global.html#loadProducts">loadProducts</a></li><li><a href="global.html#loadProviders">loadProviders</a></li><li><a href="global.html#loadRoles">loadRoles</a></li><li><a href="global.html#loadUserData">loadUserData</a></li><li><a href="global.html#loadUserDataAndProducts">loadUserDataAndProducts</a></li><li><a href="global.html#loadUserOrders">loadUserOrders</a></li><li><a href="global.html#loadUserReviews">loadUserReviews</a></li><li><a href="global.html#loadUsers">loadUsers</a></li><li><a href="global.html#loadWebOrders">loadWebOrders</a></li><li><a href="global.html#loadWishlistItems">loadWishlistItems</a></li><li><a href="global.html#markAllAsRead">markAllAsRead</a></li><li><a href="global.html#markMessageAsRead">markMessageAsRead</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#modalTitle">modalTitle</a></li><li><a href="global.html#moveItemToCart">moveItemToCart</a></li><li><a href="global.html#openCreateModal">openCreateModal</a></li><li><a href="global.html#openEditModal">openEditModal</a></li><li><a href="global.html#productGrid">productGrid</a></li><li><a href="global.html#productsToInsert">productsToInsert</a></li><li><a href="global.html#providerForm">providerForm</a></li><li><a href="global.html#recalculateSummary">recalculateSummary</a></li><li><a href="global.html#recalculateTotal">recalculateTotal</a></li><li><a href="global.html#rejectOrder">rejectOrder</a></li><li><a href="global.html#removeFromWishlist">removeFromWishlist</a></li><li><a href="global.html#removeItemFromCart">removeItemFromCart</a></li><li><a href="global.html#renderProducts">renderProducts</a></li><li><a href="global.html#resetForm">resetForm</a></li><li><a href="global.html#selectProduct">selectProduct</a></li><li><a href="global.html#selectedProduct">selectedProduct</a></li><li><a href="global.html#selectedProvider">selectedProvider</a></li><li><a href="global.html#selectedRating">selectedRating</a></li><li><a href="global.html#selectedSize">selectedSize</a></li><li><a href="global.html#sendPasswordResetEmail">sendPasswordResetEmail</a></li><li><a href="global.html#setupCartEventListeners">setupCartEventListeners</a></li><li><a href="global.html#setupEditModalListeners">setupEditModalListeners</a></li><li><a href="global.html#setupEventListeners">setupEventListeners</a></li><li><a href="global.html#setupFilterListeners">setupFilterListeners</a></li><li><a href="global.html#setupModal">setupModal</a></li><li><a href="global.html#setupScrollEffects">setupScrollEffects</a></li><li><a href="global.html#shippingData">shippingData</a></li><li><a href="global.html#showMessageDetail">showMessageDetail</a></li><li><a href="global.html#showMessagesError">showMessagesError</a></li><li><a href="global.html#showNotification">showNotification</a></li><li><a href="global.html#startMessagesRealTimeUpdates">startMessagesRealTimeUpdates</a></li><li><a href="global.html#submitReview">submitReview</a></li><li><a href="global.html#tableBody">tableBody</a></li><li><a href="global.html#toggleWishlistItem">toggleWishlistItem</a></li><li><a href="global.html#toggleWishlistItemCat">toggleWishlistItemCat</a></li><li><a href="global.html#transporter">transporter</a></li><li><a href="global.html#updateCartItemQuantity">updateCartItemQuantity</a></li><li><a href="global.html#updateMessagesUI">updateMessagesUI</a></li><li><a href="global.html#updateRatingStars">updateRatingStars</a></li><li><a href="global.html#updateSidebarForLoggedInUser">updateSidebarForLoggedInUser</a></li><li><a href="global.html#updateSizeSelection">updateSizeSelection</a></li><li><a href="global.html#updateSummary">updateSummary</a></li><li><a href="global.html#updateWishlistSummary">updateWishlistSummary</a></li><li><a href="global.html#verifyToken">verifyToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 08:00:47 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

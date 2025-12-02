@@ -1,6 +1,17 @@
 import mongoose, { model } from "mongoose";
 const { Schema } = mongoose;
 
+/**
+ * @typedef {Object} CategoryDocument
+ * @property {Object} _id - ID de la categoría (ObjectId)
+ * @property {string} name - Nombre
+ * @property {string} [description] - Descripción
+ * @property {boolean} isActive - Estado
+ * @property {string} image_url - Imagen
+ * @property {Date} createdAt
+ * @property {Date} updatedAt
+ */
+
 const categorySchema = new Schema(
   {
     name: {
@@ -21,7 +32,7 @@ const categorySchema = new Schema(
       type: String,
       trim: true,
       default: "sources/img/category_default.png",
-    }
+    },
   },
   { timestamps: true }
 );

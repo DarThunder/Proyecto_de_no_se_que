@@ -1,8 +1,27 @@
+/**
+ * @file js/admin.js
+ * @description Script principal del Panel de Administración.
+ * Se encarga de la seguridad (verificar sesión y roles), renderizado condicional del menú,
+ * carga de estadísticas del dashboard y utilidades como generación de códigos de barras y backups.
+ */
+
+/**
+ * Inicializa la lógica global del panel de administración al cargar el DOM.
+ * 1. Verifica autenticación con el backend.
+ * 2. Restringe el acceso a páginas según el 'permission_ring' del usuario.
+ * 3. Carga elementos específicos de la página actual (stats, editores, etc.).
+ * 4. Configura el botón de cierre de sesión.
+ * @listens document#DOMContentLoaded
+ */
 document.addEventListener("DOMContentLoaded", async () => {
   // ------------------------------------------------------
   // 1. VERIFICACIÓN DE SEGURIDAD Y MENÚ (Se ejecuta en TODAS las páginas)
   // ------------------------------------------------------
   try {
+    /**
+     * Petición para obtener la sesión actual.
+     * @type {Response}
+     */
     const meResponse = await fetch("http://localhost:8080/users/me", {
       method: "GET",
       credentials: "include",
@@ -10,63 +29,57 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!meResponse.ok) throw new Error("No autorizado");
 
+    /** @type {Object} userInfo - Datos del usuario logueado (rol, username, etc.) */
     const userInfo = await meResponse.json();
 
     // A) Verificación básica de acceso (Admin o Gerente)
+    // Ring 0 = Admin, Ring 1 = Gerente. Otros (Ring > 1) no entran.
     if (!userInfo.role || userInfo.role.permission_ring > 1) {
       throw new Error("Acceso denegado");
     }
 
-    // B) Mostrar nombre de usuario (Existe en todas las páginas)
+    // B) Mostrar nombre de usuario en el header
     const usernameDisplay = document.getElementById("admin-username");
     if (usernameDisplay) {
       usernameDisplay.textContent = userInfo.username || "Usuario";
     }
 
-    // C) LÓGICA DE RESTRICCIÓN DE MENÚ (Aquí ocultamos las opciones)
-    // Si NO es Admin Supremo (Ring 0), ocultamos las opciones críticas
+    // C) LÓGICA DE RESTRICCIÓN DE MENÚ
+    // Si NO es Admin Supremo (Ring 0), ocultamos opciones críticas.
     if (userInfo.role.permission_ring !== 0) {
       const restrictedPages = [
         "GestionProduc.html", // Gestión Productos
         "GestionUsuarios.html", // Gestión Usuarios
         "GestionCategorias.html", // Gestión Categorías
-        "GestionRoles.html", // <-- NUEVO
+        "GestionRoles.html", // Gestión Roles
         "ConfiguracionPagos.html",
       ];
 
       restrictedPages.forEach((page) => {
-        // Busamos cualquier enlace que apunte a estas páginas
+        // Busca enlaces a páginas restringidas y oculta su contenedor <li>
         const linkElement = document.querySelector(`a[href="${page}"]`);
         if (linkElement) {
-          // Ocultamos el <li> completo que contiene el enlace
           linkElement.parentElement.style.display = "none";
         }
       });
 
-      // OPCIONAL: Si el usuario intenta entrar directamente por URL a una página prohibida, lo sacamos
-      // Obtenemos el nombre del archivo actual (ej: "GestionProduc.html")
+      // Protección adicional: Si intenta entrar por URL directa, lo redirige.
       const path = window.location.pathname;
       const currentPage = path.substring(path.lastIndexOf("/") + 1);
 
       if (restrictedPages.includes(currentPage)) {
         alert("No tienes permisos para acceder a esta sección.");
-        window.location.href = "admin.html"; // De vuelta al dashboard
+        window.location.href = "admin.html"; // Retorno al dashboard seguro
       }
     }
 
     // ------------------------------------------------------
-    // 2. CARGA DE ELEMENTOS ESPECÍFICOS (Solo si existen en la página)
+    // 2. CARGA DE ELEMENTOS ESPECÍFICOS
     // ------------------------------------------------------
 
-    // Solo cargamos estadísticas si estamos en el Dashboard (buscando un elemento único del dashboard)
+    // Cargar estadísticas solo si estamos en el Dashboard principal
     if (document.getElementById("stats-online-revenue")) {
       await loadDashboardStats();
-    }
-
-    // Solo cargamos lógica de Términos y Condiciones si existe el editor
-    if (document.getElementById("terminos-textarea")) {
-      // Aquí llamas a tu lógica de cargar términos (puedes encapsularla en una función si quieres)
-      // o dejar el código que ya tenías, pero asegurándote de que verifique `if (textarea)` como ya hacías.
     }
   } catch (error) {
     console.error("Error de autenticación:", error);
@@ -94,12 +107,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // Inicializar modal de códigos de barras (función ya existente al final de tu archivo)
+  // Inicializar modal de códigos de barras (funcionalidad global disponible en el menú)
   initializeBarcodesModal();
 });
 
 /**
- * Carga las estadísticas del dashboard (HU 27)
+ * Carga las estadísticas financieras y de ventas para el Dashboard.
+ * Consume el endpoint de reportes y actualiza el DOM.
+ * @async
  */
 async function loadDashboardStats() {
   try {
@@ -116,14 +131,18 @@ async function loadDashboardStats() {
 
     const stats = await response.json(); // { online: {...}, pos: {...} }
 
-    // Función para formatear a moneda
+    /**
+     * Formatea un número como moneda MXN.
+     * @param {number} amount
+     * @returns {string} Precio formateado (ej. "$1,200.00 MXN")
+     */
     const formatCurrency = (amount) =>
       new Intl.NumberFormat("es-MX", {
         style: "currency",
         currency: "MXN",
       }).format(amount || 0);
 
-    // Actualizar el HTML
+    // Actualizar el HTML del dashboard
     document.getElementById("stats-online-revenue").textContent =
       formatCurrency(stats.online.revenue);
     document.getElementById("stats-online-sales").textContent =
@@ -135,18 +154,19 @@ async function loadDashboardStats() {
       stats.pos.salesCount;
   } catch (error) {
     console.error(error.message);
-    // Si falla, los stats se quedan en 0, pero la app no se rompe.
   }
 }
 
-// Agregar esta función al final del admin.js existente
-
+/**
+ * Inicializa la lógica del modal generador de códigos de barras.
+ * Maneja la apertura del modal, carga de productos, generación visual (JsBarcode) e impresión.
+ */
 function initializeBarcodesModal() {
   const barcodesModal = document.getElementById("barcodes-modal");
   const barcodesMenuBtn = document.getElementById("barcodes-menu-btn");
-  const closeBtn = barcodesModal.querySelector(".close");
+  const closeBtn = barcodesModal ? barcodesModal.querySelector(".close") : null;
 
-  // Elementos del modal de códigos
+  // Referencias internas del modal
   const productSelect = document.getElementById("productSelect");
   const generateBtn = document.getElementById("generateBtn");
   const printBtn = document.getElementById("printBtn");
@@ -161,7 +181,7 @@ function initializeBarcodesModal() {
   let products = [];
   let selectedProduct = null;
 
-  // Abrir modal
+  // Listeners de apertura/cierre
   if (barcodesMenuBtn) {
     barcodesMenuBtn.addEventListener("click", (e) => {
       e.preventDefault();
@@ -170,21 +190,21 @@ function initializeBarcodesModal() {
     });
   }
 
-  // Cerrar modal
   if (closeBtn) {
     closeBtn.addEventListener("click", () => {
       barcodesModal.style.display = "none";
     });
   }
 
-  // Cerrar modal al hacer clic fuera
   window.addEventListener("click", (e) => {
     if (e.target === barcodesModal) {
       barcodesModal.style.display = "none";
     }
   });
 
-  // Cargar productos
+  /**
+   * Carga la lista de productos desde la API para llenar el selector.
+   */
   async function loadProducts() {
     showLoading(true);
     try {
@@ -196,6 +216,7 @@ function initializeBarcodesModal() {
 
       const variants = await response.json();
 
+      // Mapeamos a una estructura simple para el select
       products = variants.map((variant) => ({
         id: variant._id,
         name: variant.product?.name || "Producto sin nombre",
@@ -220,6 +241,9 @@ function initializeBarcodesModal() {
     }
   }
 
+  /**
+   * Renderiza las opciones en el elemento <select>.
+   */
   function updateProductSelect() {
     productSelect.innerHTML =
       '<option value="">-- Selecciona un producto --</option>';
@@ -234,26 +258,32 @@ function initializeBarcodesModal() {
     });
   }
 
+  /**
+   * Genera un número consistente basado en una cadena de texto (hash simple).
+   * Utilizado para asegurar que el mismo producto siempre genere el mismo código base.
+   * @param {string} str - Cadena de entrada (ej. Nombre + SKU).
+   * @returns {string} Cadena numérica de 12 dígitos.
+   */
   function stringToConsistentNumber(str) {
     str = str.toLowerCase();
-
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
       hash = (hash << 5) - hash + char;
       hash = hash & hash;
     }
-
     hash = Math.abs(hash);
-
     let numericString = hash.toString();
     while (numericString.length < 8) {
       numericString = "0" + numericString;
     }
-
     return numericString.substring(0, 12);
   }
 
+  /**
+   * Genera el código de barras visual usando la librería JsBarcode.
+   * @param {Object} product - El producto seleccionado.
+   */
   function generateBarcode(product) {
     if (!product) {
       showNotification("Por favor, selecciona un producto", "warning");
@@ -274,6 +304,7 @@ function initializeBarcodesModal() {
 
     barcodeSvg.innerHTML = "";
 
+    // Librería externa para SVG
     JsBarcode("#barcode", barcodeValue, {
       format: "CODE128",
       lineColor: "#000000",
@@ -291,13 +322,15 @@ function initializeBarcodesModal() {
   }
 
   function showLoading(show) {
-    if (show) {
-      loadingSection.classList.remove("hidden");
-    } else {
-      loadingSection.classList.add("hidden");
+    if (loadingSection) {
+      if (show) loadingSection.classList.remove("hidden");
+      else loadingSection.classList.add("hidden");
     }
   }
 
+  /**
+   * Aplica estilos inline al SVG para asegurar que se imprima correctamente (negro puro).
+   */
   function applyPrintStyles() {
     const paths = barcodeSvg.querySelectorAll("path");
     const rects = barcodeSvg.querySelectorAll("rect");
@@ -333,63 +366,63 @@ function initializeBarcodesModal() {
     barcodeSvg.style.padding = "";
   }
 
-  // Event listeners
-  generateBtn.addEventListener("click", function () {
-    if (productSelect.value) {
-      const product = products.find((p) => p.id === productSelect.value);
-      if (product) {
-        generateBarcode(product);
+  // Event listeners internos del modal
+  if (generateBtn) {
+    generateBtn.addEventListener("click", function () {
+      if (productSelect.value) {
+        const product = products.find((p) => p.id === productSelect.value);
+        if (product) {
+          generateBarcode(product);
+        }
+      } else {
+        showNotification(
+          "Por favor, selecciona un producto de la lista",
+          "warning"
+        );
       }
-    } else {
-      showNotification(
-        "Por favor, selecciona un producto de la lista",
-        "warning"
-      );
-    }
-  });
+    });
+  }
 
-  productSelect.addEventListener("change", function () {
-    if (this.value) {
-      const product = products.find((p) => p.id === this.value);
-      if (product) {
-        selectedProduct = product;
-        generateBarcode(product);
+  if (productSelect) {
+    productSelect.addEventListener("change", function () {
+      if (this.value) {
+        const product = products.find((p) => p.id === this.value);
+        if (product) {
+          selectedProduct = product;
+          generateBarcode(product);
+        }
+      } else {
+        selectedProduct = null;
+        barcodeResult.classList.add("hidden");
       }
-    } else {
-      selectedProduct = null;
-      barcodeResult.classList.add("hidden");
-    }
-  });
+    });
+  }
 
-  printBtn.addEventListener("click", function () {
-    if (!selectedProduct) {
-      showNotification(
-        "No hay ningún producto seleccionado para imprimir",
-        "warning"
-      );
-      return;
-    }
+  if (printBtn) {
+    printBtn.addEventListener("click", function () {
+      if (!selectedProduct) {
+        showNotification(
+          "No hay ningún producto seleccionado para imprimir",
+          "warning"
+        );
+        return;
+      }
+      applyPrintStyles();
+      setTimeout(() => {
+        window.print(); // Abre el diálogo de impresión del navegador
+        setTimeout(restoreNormalStyles, 500);
+      }, 100);
+    });
+  }
 
-    applyPrintStyles();
-    setTimeout(() => {
-      window.print();
-      setTimeout(restoreNormalStyles, 500);
-    }, 100);
-  });
-
-  refreshBtn.addEventListener("click", function () {
-    loadProducts();
-  });
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", function () {
+      loadProducts();
+    });
+  }
 }
 
-// Llamar la función de inicialización cuando el DOM esté listo
-document.addEventListener("DOMContentLoaded", () => {
-  // ... código existente del admin.js ...
-
-  // Inicializar el modal de códigos de barras
-  initializeBarcodesModal();
-});
-
+// Lógica de respaldo de base de datos
 const backupBtn = document.getElementById("backup-btn");
 if (backupBtn) {
   backupBtn.addEventListener("click", async (e) => {
@@ -408,6 +441,9 @@ if (backupBtn) {
     document.body.style.cursor = "wait";
 
     try {
+      /**
+       * Petición al endpoint de backup que devuelve un archivo ZIP (blob).
+       */
       const response = await fetch("http://localhost:8080/backup/download", {
         method: "GET",
         credentials: "include",
@@ -415,6 +451,7 @@ if (backupBtn) {
 
       if (response.ok) {
         const blob = await response.blob();
+        // Crear URL temporal para descarga forzada
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -442,35 +479,35 @@ if (backupBtn) {
 }
 
 /**
- * Muestra una notificación flotante (Toast)
+ * Muestra una notificación flotante (Toast) en la interfaz.
+ * @param {string} message - Texto a mostrar.
+ * @param {'info'|'success'|'error'|'warning'} [type='info'] - Tipo de notificación.
  */
-function showNotification(message, type = 'info') {
-    // Si ya existe una notificación, la eliminamos para no amontonar
-    const existing = document.querySelector('.notification');
-    if (existing) existing.remove();
+function showNotification(message, type = "info") {
+  const existing = document.querySelector(".notification");
+  if (existing) existing.remove();
 
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    
-    // Iconos simples según tipo
-    let icon = 'info-circle';
-    if (type === 'success') icon = 'check-circle';
-    if (type === 'error') icon = 'exclamation-circle';
-    if (type === 'warning') icon = 'exclamation-triangle';
+  const notification = document.createElement("div");
+  notification.className = `notification notification-${type}`;
 
-    notification.innerHTML = `
+  let icon = "info-circle";
+  if (type === "success") icon = "check-circle";
+  if (type === "error") icon = "exclamation-circle";
+  if (type === "warning") icon = "exclamation-triangle";
+
+  notification.innerHTML = `
         <i class="fas fa-${icon}"></i>
         <span>${message}</span>
         <button class="notification-close" onclick="this.parentElement.remove()">&times;</button>
     `;
 
-    document.body.appendChild(notification);
+  document.body.appendChild(notification);
 
-    // Auto-eliminar a los 4 segundos
-    setTimeout(() => {
-        if (notification.parentElement) {
-            notification.style.opacity = '0';
-            setTimeout(() => notification.remove(), 500);
-        }
-    }, 4000);
+  // Auto-eliminar a los 4 segundos
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.style.opacity = "0";
+      setTimeout(() => notification.remove(), 500);
+    }
+  }, 4000);
 }

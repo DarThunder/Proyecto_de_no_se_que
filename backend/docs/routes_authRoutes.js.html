@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: routes/authRoutes.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: routes/authRoutes.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { Router } from "express";
+const router = Router();
+import User from "../models/User.js";
+import Role from "../models/Role.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { sendPasswordResetEmail } from "../utils/emailService.js";
+
+/**
+ * @typedef {Object} RegisterBody
+ * @property {string} username - Nombre de usuario deseado
+ * @property {string} password - Contraseña en texto plano
+ * @property {string} [email] - Correo electrónico opcional
+ * @property {string} [role] - Nombre del rol (ej: 'user', 'admin'). Por defecto 'user'.
+ */
+
+/**
+ * Registra un nuevo usuario en el sistema.
+ * Asigna automáticamente el rol por defecto si no se especifica.
+ *
+ * @route POST /auth/register
+ * @param {Object} req - Request de Express con RegisterBody
+ * @param {Object} res - Response de Express
+ */
+router.post("/register", async (req, res) => {
+  // ... (código sin cambios)
+  const { username, password, email, role } = req.body;
+  let roleDocument;
+
+  if (role) {
+    roleDocument = await Role.findOne({ name: role });
+  }
+
+  if (!roleDocument) {
+    roleDocument = await Role.findOne({ name: "user" });
+  }
+
+  if (!roleDocument) {
+    return res.status(500).json({
+      error:
+        "Error de configuración de la DB: Rol por defecto 'user' no encontrado.",
+    });
+  }
+
+  const roleId = roleDocument._id;
+
+  try {
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res
+        .status(409)
+        .json({ error: "El nombre de usuario ya está en uso" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(password, salt);
+
+    const newUser = new User({
+      username,
+      password_hash,
+      email,
+      role: roleId,
+    });
+
+    await newUser.save();
+    const token = jwt.sign(
+      { id: newUser._id, role: newUser.role },
+      process.env.JWT_SECRET
+    );
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "None",
+      maxAge: 1000 * 60 * 60 * 24,
+    });
+
+    res.status(201).json({
+      message: "Cuenta creada exitosamente",
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Error al crear la cuenta",
+      details: err.message,
+    });
+  }
+});
+
+/**
+ * Inicia sesión y genera un token JWT en una cookie HttpOnly.
+ *
+ * @route POST /auth/login
+ * @param {Object} req - Request con {username, password}
+ * @param {Object} res - Response
+ */
+router.post("/login", async (req, res) => {
+  // ... (código sin cambios)
+  const { username, password } = req.body;
+
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res
+        .status(401)
+        .json({ error: "Usuario o contraseña incorrectos" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
+      return res
+        .status(401)
+        .json({ error: "Usuario o contraseña incorrectos" });
+    }
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET
+    );
+
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "None",
+      maxAge: 1000 * 60 * 60 * 24,
+    });
+
+    res.status(200).json({
+      message: "Inicio de sesión exitoso",
+    });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Error en el servidor", details: err.message });
+  }
+});
+
+/**
+ * Solicita un enlace de recuperación de contraseña por correo.
+ *
+ * @route POST /auth/forgot-password
+ * @param {Object} req - Request con {email}
+ * @param {Object} res - Response
+ */
+router.post("/forgot-password", async (req, res) => {
+  // ... (código sin cambios)
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(200).json({
+        message:
+          "Si la cuenta existe, se ha enviado un correo de recuperación.",
+      });
+    }
+
+    const resetToken = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET_RESET,
+      { expiresIn: "15m" }
+    );
+
+    const resetLink = `http://localhost:8080/html/restablecerContraseña.html?token=${resetToken}`;
+
+    await sendPasswordResetEmail(user.email, resetLink);
+
+    res.status(200).json({
+      message: "Si la cuenta existe, se ha enviado un correo de recuperación.",
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Error en el servidor al solicitar restablecimiento.",
+      details: err.message,
+    });
+  }
+});
+
+/**
+ * Restablece la contraseña usando un token válido.
+ *
+ * @route POST /auth/reset-password/:token
+ * @param {Object} req - Request con params.token y body.newPassword
+ * @param {Object} res - Response
+ */
+router.post("/reset-password/:token", async (req, res) => {
+  // ... (código sin cambios)
+  const { token } = req.params;
+  const { newPassword } = req.body;
+
+  if (!newPassword) {
+    return res
+      .status(400)
+      .json({ error: "La nueva contraseña es obligatoria." });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_RESET);
+    const userId = decoded.id;
+
+    const salt = await bcrypt.genSalt(10);
+    const password_hash = await bcrypt.hash(newPassword, salt);
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { password_hash },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: "Usuario no encontrado." });
+    }
+
+    res.status(200).json({
+      message:
+        "Contraseña restablecida exitosamente. Ahora puedes iniciar sesión.",
+    });
+  } catch (err) {
+    if (err.name === "TokenExpiredError") {
+      return res
+        .status(400)
+        .json({ error: "El token de recuperación ha expirado." });
+    }
+    if (err.name === "JsonWebTokenError") {
+      return res
+        .status(400)
+        .json({ error: "Token de recuperación no válido." });
+    }
+
+    res.status(500).json({
+      error: "Error del servidor al restablecer la contraseña.",
+      details: err.message,
+    });
+  }
+});
+
+export default router;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#allowedOrigins">allowedOrigins</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#generateCouponCode">generateCouponCode</a></li><li><a href="global.html#hasPermission">hasPermission</a></li><li><a href="global.html#productsToInsert">productsToInsert</a></li><li><a href="global.html#sendPasswordResetEmail">sendPasswordResetEmail</a></li><li><a href="global.html#transporter">transporter</a></li><li><a href="global.html#verifyToken">verifyToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 07:10:03 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

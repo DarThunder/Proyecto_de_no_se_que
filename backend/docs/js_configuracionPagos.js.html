@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: js/configuracionPagos.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: js/configuracionPagos.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file js/configuracionPagos.js
+ * @description Administra la configuración de las pasarelas de pago en el panel de administración.
+ * Permite listar los proveedores disponibles (PayPal, Stripe), activar/desactivar servicios,
+ * y guardar las credenciales (API Keys, Client Secrets) y el modo de operación (Sandbox/Live).
+ */
+
+/**
+ * Inicializa el gestor de configuración de pagos cuando el DOM está listo.
+ * Define la URL base de la API y carga las configuraciones iniciales.
+ * @listens document#DOMContentLoaded
+ */
+document.addEventListener("DOMContentLoaded", () => {
+  /**
+   * URL base del endpoint de configuración de pagos en el backend.
+   * @const {string}
+   */
+  const API_URL = "http://localhost:8080/payment-config";
+
+  /**
+   * Contenedor del DOM donde se renderizarán las tarjetas de configuración.
+   * @type {HTMLElement}
+   */
+  const container = document.getElementById("payment-configs");
+
+  // Cargar configuraciones al iniciar
+  loadConfigs();
+
+  /**
+   * Obtiene las configuraciones de pago desde el servidor y renderiza la interfaz.
+   * Si no existe configuración para un proveedor conocido, genera una estructura por defecto.
+   * @async
+   */
+  async function loadConfigs() {
+    try {
+      const res = await fetch(API_URL, { credentials: "include" });
+      const configs = await res.json();
+
+      container.innerHTML = "";
+
+      // Lista de proveedores soportados por el sistema
+      const providers = ["PAYPAL", "STRIPE"];
+
+      providers.forEach((providerName) => {
+        // Busca la config existente o crea una vacía por defecto
+        const config = configs.find((c) => c.providerName === providerName) || {
+          providerName,
+          isActive: false,
+          credentials: { clientId: "", clientSecret: "", mode: "sandbox" },
+        };
+
+        renderCard(config);
+      });
+    } catch (error) {
+      container.innerHTML = "&lt;p>Error al cargar configuraciones.&lt;/p>";
+      console.error(error);
+    }
+  }
+
+  /**
+   * Genera el HTML de la tarjeta de configuración para un proveedor específico.
+   * Crea el formulario dinámicamente con los valores actuales.
+   * @param {Object} config - Objeto de configuración del proveedor.
+   * @param {string} config.providerName - Nombre del proveedor (ej. 'PAYPAL').
+   * @param {boolean} config.isActive - Estado de activación.
+   * @param {Object} config.credentials - Credenciales y modo (clientId, clientSecret, mode).
+   */
+  function renderCard(config) {
+    const div = document.createElement("div");
+    div.className = "config-card";
+
+    const isLive = config.credentials?.mode === "live";
+
+    // Inyección de HTML con el formulario de configuración
+    div.innerHTML = `
+            &lt;div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                &lt;h3>&lt;i class="fab fa-${config.providerName.toLowerCase()}">&lt;/i> ${
+      config.providerName
+    }&lt;/h3>
+                &lt;span class="status-indicator ${
+                  config.isActive ? "status-active" : "status-inactive"
+                }">&lt;/span>
+            &lt;/div>
+            
+            &lt;form onsubmit="guardarConfig(event, '${config.providerName}')">
+                &lt;div class="form-group">
+                    &lt;label>Estado&lt;/label>
+                    &lt;select name="isActive" style="background: #2c3e50;">
+                        &lt;option value="true" ${
+                          config.isActive ? "selected" : ""
+                        }>Activado&lt;/option>
+                        &lt;option value="false" ${
+                          !config.isActive ? "selected" : ""
+                        }>Desactivado&lt;/option>
+                    &lt;/select>
+                &lt;/div>
+
+                &lt;div class="form-group">
+                    &lt;label>Client ID / API Key&lt;/label>
+                    &lt;input type="password" name="clientId" value="${
+                      config.credentials.clientId ||
+                      config.credentials.apiKey ||
+                      ""
+                    }" placeholder="Clave Pública">
+                &lt;/div>
+
+                &lt;div class="form-group">
+                    &lt;label>Client Secret&lt;/label>
+                    &lt;input type="password" name="clientSecret" value="${
+                      config.credentials.clientSecret || ""
+                    }" placeholder="Clave Privada">
+                &lt;/div>
+
+                &lt;div class="form-group">
+                    &lt;label>Modo&lt;/label>
+                    &lt;select name="mode" style="background: #2c3e50;">
+                        &lt;option value="sandbox" ${
+                          !isLive ? "selected" : ""
+                        }>Sandbox (Pruebas)&lt;/option>
+                        &lt;option value="live" ${
+                          isLive ? "selected" : ""
+                        }>Live (Producción)&lt;/option>
+                    &lt;/select>
+                &lt;/div>
+
+                &lt;button type="submit" class="btn btn-primary" style="width:100%">Guardar Cambios&lt;/button>
+            &lt;/form>
+        `;
+    container.appendChild(div);
+  }
+
+  /**
+   * Maneja el envío del formulario de configuración.
+   * Esta función se adjunta al objeto `window` para ser accesible desde el atributo `onsubmit` del HTML inyectado.
+   * Realiza una petición PUT para actualizar la configuración en el backend.
+   * * @global
+   * @async
+   * @param {Event} e - Evento del formulario.
+   * @param {string} providerName - Nombre del proveedor que se está editando.
+   */
+  window.guardarConfig = async (e, providerName) => {
+    e.preventDefault();
+    const form = e.target;
+
+    // Construcción del objeto de datos
+    const data = {
+      isActive: form.isActive.value === "true",
+      credentials: {
+        clientId: form.clientId.value,
+        clientSecret: form.clientSecret.value,
+        mode: form.mode.value,
+      },
+    };
+
+    // Ajuste específico para Stripe (usa 'apiKey' en lugar de 'clientId')
+    if (providerName === "STRIPE") {
+      data.credentials.apiKey = form.clientId.value;
+      delete data.credentials.clientId;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/${providerName}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        alert(`Configuración de ${providerName} guardada.`);
+        loadConfigs(); // Recargar para ver cambios visuales (ej. indicador de estado)
+      } else {
+        const err = await res.json();
+        alert("Error: " + err.message);
+      }
+    } catch (error) {
+      alert("Error de conexión");
+    }
+  };
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CategoryManager.html">CategoryManager</a></li><li><a href="ProductManager.html">ProductManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:submit">submit</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addBtn">addBtn</a></li><li><a href="global.html#addWishlistListeners">addWishlistListeners</a></li><li><a href="global.html#allCategoryProducts">allCategoryProducts</a></li><li><a href="global.html#allowedOrigins">allowedOrigins</a></li><li><a href="global.html#applyFilters">applyFilters</a></li><li><a href="global.html#approveOrder">approveOrder</a></li><li><a href="global.html#availableRoles">availableRoles</a></li><li><a href="global.html#cancelBtn">cancelBtn</a></li><li><a href="global.html#cargarTerminosUsuario">cargarTerminosUsuario</a></li><li><a href="global.html#checkIfEmpty">checkIfEmpty</a></li><li><a href="global.html#checkLoginStatus">checkLoginStatus</a></li><li><a href="global.html#closeCouponModal">closeCouponModal</a></li><li><a href="global.html#closeEditModal">closeEditModal</a></li><li><a href="global.html#closeProviderModal">closeProviderModal</a></li><li><a href="global.html#closeUserModal">closeUserModal</a></li><li><a href="global.html#couponForm">couponForm</a></li><li><a href="global.html#createEditModal">createEditModal</a></li><li><a href="global.html#createOrderCardHTML">createOrderCardHTML</a></li><li><a href="global.html#createProductHTML">createProductHTML</a></li><li><a href="global.html#createReviewHTML">createReviewHTML</a></li><li><a href="global.html#createStarsHTML">createStarsHTML</a></li><li><a href="global.html#currentEditingUserId">currentEditingUserId</a></li><li><a href="global.html#currentUserRing">currentUserRing</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#deleteCoupon">deleteCoupon</a></li><li><a href="global.html#deleteProvider">deleteProvider</a></li><li><a href="global.html#deleteReview">deleteReview</a></li><li><a href="global.html#displayProducts">displayProducts</a></li><li><a href="global.html#editReview">editReview</a></li><li><a href="global.html#editarRol">editarRol</a></li><li><a href="global.html#editingCouponId">editingCouponId</a></li><li><a href="global.html#editingProviderId">editingProviderId</a></li><li><a href="global.html#editingReviewId">editingReviewId</a></li><li><a href="global.html#eliminarRol">eliminarRol</a></li><li><a href="global.html#form">form</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#generateCouponCode">generateCouponCode</a></li><li><a href="global.html#getStatusLabel">getStatusLabel</a></li><li><a href="global.html#getUrgencyLabel">getUrgencyLabel</a></li><li><a href="global.html#goBackToProducts">goBackToProducts</a></li><li><a href="global.html#handleFormSubmit">handleFormSubmit</a></li><li><a href="global.html#hasPermission">hasPermission</a></li><li><a href="global.html#initializeBarcodesModal">initializeBarcodesModal</a></li><li><a href="global.html#initializeCarousels">initializeCarousels</a></li><li><a href="global.html#initializeCatProductButtons">initializeCatProductButtons</a></li><li><a href="global.html#initializeCatWishlistButtons">initializeCatWishlistButtons</a></li><li><a href="global.html#initializeMessagesSystem">initializeMessagesSystem</a></li><li><a href="global.html#initializeProductButtons">initializeProductButtons</a></li><li><a href="global.html#initializeWishlistButtons">initializeWishlistButtons</a></li><li><a href="global.html#isEditing">isEditing</a></li><li><a href="global.html#loadBestSellersReport">loadBestSellersReport</a></li><li><a href="global.html#loadCartItems">loadCartItems</a></li><li><a href="global.html#loadCategoryProducts">loadCategoryProducts</a></li><li><a href="global.html#loadCoupons">loadCoupons</a></li><li><a href="global.html#loadDashboardStats">loadDashboardStats</a></li><li><a href="global.html#loadDynamicCategories">loadDynamicCategories</a></li><li><a href="global.html#loadEmployeeSalesReport">loadEmployeeSalesReport</a></li><li><a href="global.html#loadMessagesFromBackend">loadMessagesFromBackend</a></li><li><a href="global.html#loadProducts">loadProducts</a></li><li><a href="global.html#loadProviders">loadProviders</a></li><li><a href="global.html#loadRoles">loadRoles</a></li><li><a href="global.html#loadUserData">loadUserData</a></li><li><a href="global.html#loadUserDataAndProducts">loadUserDataAndProducts</a></li><li><a href="global.html#loadUserOrders">loadUserOrders</a></li><li><a href="global.html#loadUserReviews">loadUserReviews</a></li><li><a href="global.html#loadUsers">loadUsers</a></li><li><a href="global.html#loadWebOrders">loadWebOrders</a></li><li><a href="global.html#loadWishlistItems">loadWishlistItems</a></li><li><a href="global.html#markAllAsRead">markAllAsRead</a></li><li><a href="global.html#markMessageAsRead">markMessageAsRead</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#modalTitle">modalTitle</a></li><li><a href="global.html#moveItemToCart">moveItemToCart</a></li><li><a href="global.html#openCreateModal">openCreateModal</a></li><li><a href="global.html#openEditModal">openEditModal</a></li><li><a href="global.html#productGrid">productGrid</a></li><li><a href="global.html#productsToInsert">productsToInsert</a></li><li><a href="global.html#providerForm">providerForm</a></li><li><a href="global.html#recalculateSummary">recalculateSummary</a></li><li><a href="global.html#recalculateTotal">recalculateTotal</a></li><li><a href="global.html#rejectOrder">rejectOrder</a></li><li><a href="global.html#removeFromWishlist">removeFromWishlist</a></li><li><a href="global.html#removeItemFromCart">removeItemFromCart</a></li><li><a href="global.html#renderProducts">renderProducts</a></li><li><a href="global.html#resetForm">resetForm</a></li><li><a href="global.html#selectProduct">selectProduct</a></li><li><a href="global.html#selectedProduct">selectedProduct</a></li><li><a href="global.html#selectedProvider">selectedProvider</a></li><li><a href="global.html#selectedRating">selectedRating</a></li><li><a href="global.html#selectedSize">selectedSize</a></li><li><a href="global.html#sendPasswordResetEmail">sendPasswordResetEmail</a></li><li><a href="global.html#setupCartEventListeners">setupCartEventListeners</a></li><li><a href="global.html#setupEditModalListeners">setupEditModalListeners</a></li><li><a href="global.html#setupEventListeners">setupEventListeners</a></li><li><a href="global.html#setupFilterListeners">setupFilterListeners</a></li><li><a href="global.html#setupModal">setupModal</a></li><li><a href="global.html#setupScrollEffects">setupScrollEffects</a></li><li><a href="global.html#shippingData">shippingData</a></li><li><a href="global.html#showMessageDetail">showMessageDetail</a></li><li><a href="global.html#showMessagesError">showMessagesError</a></li><li><a href="global.html#showNotification">showNotification</a></li><li><a href="global.html#startMessagesRealTimeUpdates">startMessagesRealTimeUpdates</a></li><li><a href="global.html#submitReview">submitReview</a></li><li><a href="global.html#tableBody">tableBody</a></li><li><a href="global.html#toggleWishlistItem">toggleWishlistItem</a></li><li><a href="global.html#toggleWishlistItemCat">toggleWishlistItemCat</a></li><li><a href="global.html#transporter">transporter</a></li><li><a href="global.html#updateCartItemQuantity">updateCartItemQuantity</a></li><li><a href="global.html#updateMessagesUI">updateMessagesUI</a></li><li><a href="global.html#updateRatingStars">updateRatingStars</a></li><li><a href="global.html#updateSidebarForLoggedInUser">updateSidebarForLoggedInUser</a></li><li><a href="global.html#updateSizeSelection">updateSizeSelection</a></li><li><a href="global.html#updateSummary">updateSummary</a></li><li><a href="global.html#updateWishlistSummary">updateWishlistSummary</a></li><li><a href="global.html#verifyToken">verifyToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 08:00:47 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

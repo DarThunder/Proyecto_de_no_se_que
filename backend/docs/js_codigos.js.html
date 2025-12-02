@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: js/codigos.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: js/codigos.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file js/codigos.js
+ * @description Gestiona la interfaz de generación de códigos de barras para productos.
+ * Permite seleccionar un producto, generar un código visual (usando JsBarcode) basado en su SKU/Nombre,
+ * y ofrece funcionalidad para imprimir la etiqueta.
+ */
+
+/**
+ * Inicializa el script cuando el DOM está listo.
+ * @listens document#DOMContentLoaded
+ */
+document.addEventListener("DOMContentLoaded", function () {
+  // Referencias a elementos del DOM
+  const productSelect = document.getElementById("productSelect");
+  const generateBtn = document.getElementById("generateBtn");
+  const printBtn = document.getElementById("printBtn");
+  const backBtn = document.getElementById("backBtn");
+  const refreshBtn = document.getElementById("refreshBtn");
+  const barcodeResult = document.getElementById("barcodeResult");
+  const productDisplay = document.getElementById("productDisplay");
+  const productDetails = document.getElementById("productDetails");
+  const barcodeText = document.getElementById("barcodeText");
+  const loadingSection = document.getElementById("loadingSection");
+  const barcodeSvg = document.getElementById("barcode");
+
+  /** * Almacena la lista de productos cargados desde la API.
+   * @type {Array&lt;Object>}
+   */
+  let products = [];
+
+  /** * Producto actualmente seleccionado para generar el código.
+   * @type {Object|null}
+   */
+  let selectedProduct = null;
+
+  // Cargar productos al iniciar
+  loadProducts();
+
+  /**
+   * Obtiene la lista de productos desde el backend.
+   * Transforma la respuesta de variantes complejas a una estructura simple para el selector.
+   * @async
+   */
+  async function loadProducts() {
+    showLoading(true);
+    try {
+      const response = await fetch("http://localhost:8080/products");
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const variants = await response.json();
+
+      // Procesar las variantes de productos para el uso local
+      products = variants.map((variant) => ({
+        id: variant._id,
+        name: variant.product?.name || "Producto sin nombre",
+        base_price: variant.product?.base_price || 0,
+        description: variant.product?.description || "",
+        category: variant.product?.category || "unisex",
+        size: variant.size,
+        sku: variant.sku,
+        stock: variant.stock,
+        image_url: variant.product?.image_url || "sources/img/logo_negro.png",
+      }));
+
+      updateProductSelect();
+    } catch (error) {
+      console.error("Error cargando productos:", error);
+      alert("Error al cargar los productos: " + error.message);
+    } finally {
+      showLoading(false);
+    }
+  }
+
+  /**
+   * Llena el elemento `&lt;select>` con las opciones de productos cargados.
+   */
+  function updateProductSelect() {
+    productSelect.innerHTML =
+      '&lt;option value="">-- Selecciona un producto --&lt;/option>';
+
+    products.forEach((product) => {
+      const option = document.createElement("option");
+      option.value = product.id;
+      // Muestra información relevante en la opción (Nombre, Talla, SKU, Precio)
+      option.textContent = `${product.name} - ${product.size} (SKU: ${
+        product.sku
+      }) - $${product.base_price.toFixed(2)}`;
+      productSelect.appendChild(option);
+    });
+  }
+
+  /**
+   * Maneja la selección lógica de un producto.
+   * @param {Object} product - El objeto producto seleccionado.
+   */
+  function selectProduct(product) {
+    selectedProduct = product;
+    productSelect.value = product.id;
+    generateBarcode(product);
+  }
+
+  /**
+   * Algoritmo de hash simple para generar un número consistente a partir de un texto.
+   * Se usa para crear un valor numérico único para el código de barras basado en el nombre y SKU.
+   * @param {string} str - Cadena de entrada (Nombre + SKU).
+   * @returns {string} Cadena numérica de 12 dígitos (rellenada con ceros si es necesario).
+   */
+  function stringToConsistentNumber(str) {
+    str = str.toLowerCase();
+
+    let hash = 0;
+    for (let i = 0; i &lt; str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = (hash &lt;&lt; 5) - hash + char;
+      hash = hash &amp; hash; // Convertir a entero de 32 bits
+    }
+
+    hash = Math.abs(hash);
+
+    let numericString = hash.toString();
+    // Asegurar longitud mínima
+    while (numericString.length &lt; 8) {
+      numericString = "0" + numericString;
+    }
+
+    // Limitar a 12 dígitos para compatibilidad estándar (ej. EAN-like)
+    return numericString.substring(0, 12);
+  }
+
+  /**
+   * Genera y renderiza el código de barras SVG utilizando la librería JsBarcode.
+   * @param {Object} product - El producto para el cual generar el código.
+   */
+  function generateBarcode(product) {
+    if (!product) {
+      alert("Por favor, selecciona un producto");
+      return;
+    }
+
+    // 1. Generar valor numérico único
+    const barcodeValue = stringToConsistentNumber(product.name + product.sku);
+
+    // 2. Actualizar la vista previa de información
+    productDisplay.textContent = product.name;
+    productDetails.innerHTML = `
+            &lt;div class="product-info-detail">
+                &lt;strong>SKU:&lt;/strong> ${product.sku} | 
+                &lt;strong>Talla:&lt;/strong> ${product.size} | 
+                &lt;strong>Precio:&lt;/strong> $${product.base_price.toFixed(2)} | 
+                &lt;strong>Stock:&lt;/strong> ${product.stock}
+            &lt;/div>
+        `;
+
+    // 3. Limpiar SVG anterior
+    barcodeSvg.innerHTML = "";
+
+    // 4. Renderizar con JsBarcode
+    JsBarcode("#barcode", barcodeValue, {
+      format: "CODE128",
+      lineColor: "#000000",
+      width: 2,
+      height: 100,
+      displayValue: true,
+      fontSize: 16,
+      margin: 10,
+      background: "#ffffff",
+    });
+
+    // Asegurar visibilidad
+    barcodeSvg.setAttribute("style", "display: block; background: white;");
+    barcodeText.textContent = `Código: ${barcodeValue}`;
+    barcodeResult.classList.remove("hidden");
+  }
+
+  /**
+   * Muestra u oculta el indicador de carga.
+   * @param {boolean} show - true para mostrar, false para ocultar.
+   */
+  function showLoading(show) {
+    if (show) {
+      loadingSection.classList.remove("hidden");
+    } else {
+      loadingSection.classList.add("hidden");
+    }
+  }
+
+  // --- Event Listeners ---
+
+  generateBtn.addEventListener("click", function () {
+    if (productSelect.value) {
+      const product = products.find((p) => p.id === productSelect.value);
+      if (product) {
+        generateBarcode(product);
+      }
+    } else {
+      alert("Por favor, selecciona un producto de la lista");
+    }
+  });
+
+  productSelect.addEventListener("change", function () {
+    if (this.value) {
+      const product = products.find((p) => p.id === this.value);
+      if (product) {
+        selectProduct(product);
+      }
+    } else {
+      selectedProduct = null;
+      barcodeResult.classList.add("hidden");
+    }
+  });
+
+  /**
+   * Maneja la impresión del código de barras.
+   * Aplica estilos de alto contraste temporalmente para asegurar una impresión limpia.
+   */
+  printBtn.addEventListener("click", function () {
+    if (!selectedProduct) {
+      alert("No hay ningún producto seleccionado para imprimir");
+      return;
+    }
+
+    applyPrintStyles();
+
+    // Retraso para permitir que los estilos se apliquen antes de abrir el diálogo de impresión
+    setTimeout(() => {
+      window.print();
+      // Restaurar estilos originales después de imprimir
+      setTimeout(restoreNormalStyles, 500);
+    }, 100);
+  });
+
+  /**
+   * Fuerza estilos de color negro puro y fondo blanco en el SVG para la impresión.
+   */
+  function applyPrintStyles() {
+    const barcodeSvg = document.getElementById("barcode");
+    const paths = barcodeSvg.querySelectorAll("path");
+    const rects = barcodeSvg.querySelectorAll("rect");
+    const texts = barcodeSvg.querySelectorAll("text");
+
+    barcodeSvg.style.background = "white";
+    barcodeSvg.style.border = "1px solid #ccc";
+    barcodeSvg.style.padding = "10px";
+
+    paths.forEach((path) => {
+      if (path.getAttribute("fill") !== "#ffffff") {
+        path.style.fill = "#000000";
+        path.style.stroke = "#000000";
+      }
+    });
+
+    rects.forEach((rect) => {
+      if (rect.getAttribute("fill") === "#ffffff") {
+        rect.style.fill = "#ffffff";
+        rect.style.stroke = "#ffffff";
+      }
+    });
+
+    texts.forEach((text) => {
+      text.style.fill = "#000000";
+      text.style.stroke = "none";
+    });
+  }
+
+  /**
+   * Elimina los estilos forzados de impresión.
+   */
+  function restoreNormalStyles() {
+    const barcodeSvg = document.getElementById("barcode");
+    barcodeSvg.style.background = "";
+    barcodeSvg.style.border = "";
+    barcodeSvg.style.padding = "";
+  }
+
+  backBtn.addEventListener("click", function () {
+    window.location.href = "admin.html";
+  });
+
+  refreshBtn.addEventListener("click", function () {
+    loadProducts();
+  });
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CategoryManager.html">CategoryManager</a></li><li><a href="ProductManager.html">ProductManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:submit">submit</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addBtn">addBtn</a></li><li><a href="global.html#addWishlistListeners">addWishlistListeners</a></li><li><a href="global.html#allCategoryProducts">allCategoryProducts</a></li><li><a href="global.html#allowedOrigins">allowedOrigins</a></li><li><a href="global.html#applyFilters">applyFilters</a></li><li><a href="global.html#approveOrder">approveOrder</a></li><li><a href="global.html#availableRoles">availableRoles</a></li><li><a href="global.html#cancelBtn">cancelBtn</a></li><li><a href="global.html#cargarTerminosUsuario">cargarTerminosUsuario</a></li><li><a href="global.html#checkIfEmpty">checkIfEmpty</a></li><li><a href="global.html#checkLoginStatus">checkLoginStatus</a></li><li><a href="global.html#closeCouponModal">closeCouponModal</a></li><li><a href="global.html#closeEditModal">closeEditModal</a></li><li><a href="global.html#closeProviderModal">closeProviderModal</a></li><li><a href="global.html#closeUserModal">closeUserModal</a></li><li><a href="global.html#couponForm">couponForm</a></li><li><a href="global.html#createEditModal">createEditModal</a></li><li><a href="global.html#createOrderCardHTML">createOrderCardHTML</a></li><li><a href="global.html#createProductHTML">createProductHTML</a></li><li><a href="global.html#createReviewHTML">createReviewHTML</a></li><li><a href="global.html#createStarsHTML">createStarsHTML</a></li><li><a href="global.html#currentEditingUserId">currentEditingUserId</a></li><li><a href="global.html#currentUserRing">currentUserRing</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#deleteCoupon">deleteCoupon</a></li><li><a href="global.html#deleteProvider">deleteProvider</a></li><li><a href="global.html#deleteReview">deleteReview</a></li><li><a href="global.html#displayProducts">displayProducts</a></li><li><a href="global.html#editReview">editReview</a></li><li><a href="global.html#editarRol">editarRol</a></li><li><a href="global.html#editingCouponId">editingCouponId</a></li><li><a href="global.html#editingProviderId">editingProviderId</a></li><li><a href="global.html#editingReviewId">editingReviewId</a></li><li><a href="global.html#eliminarRol">eliminarRol</a></li><li><a href="global.html#form">form</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#generateCouponCode">generateCouponCode</a></li><li><a href="global.html#getStatusLabel">getStatusLabel</a></li><li><a href="global.html#getUrgencyLabel">getUrgencyLabel</a></li><li><a href="global.html#goBackToProducts">goBackToProducts</a></li><li><a href="global.html#handleFormSubmit">handleFormSubmit</a></li><li><a href="global.html#hasPermission">hasPermission</a></li><li><a href="global.html#initializeBarcodesModal">initializeBarcodesModal</a></li><li><a href="global.html#initializeCarousels">initializeCarousels</a></li><li><a href="global.html#initializeCatProductButtons">initializeCatProductButtons</a></li><li><a href="global.html#initializeCatWishlistButtons">initializeCatWishlistButtons</a></li><li><a href="global.html#initializeMessagesSystem">initializeMessagesSystem</a></li><li><a href="global.html#initializeProductButtons">initializeProductButtons</a></li><li><a href="global.html#initializeWishlistButtons">initializeWishlistButtons</a></li><li><a href="global.html#isEditing">isEditing</a></li><li><a href="global.html#loadBestSellersReport">loadBestSellersReport</a></li><li><a href="global.html#loadCartItems">loadCartItems</a></li><li><a href="global.html#loadCategoryProducts">loadCategoryProducts</a></li><li><a href="global.html#loadCoupons">loadCoupons</a></li><li><a href="global.html#loadDashboardStats">loadDashboardStats</a></li><li><a href="global.html#loadDynamicCategories">loadDynamicCategories</a></li><li><a href="global.html#loadEmployeeSalesReport">loadEmployeeSalesReport</a></li><li><a href="global.html#loadMessagesFromBackend">loadMessagesFromBackend</a></li><li><a href="global.html#loadProducts">loadProducts</a></li><li><a href="global.html#loadProviders">loadProviders</a></li><li><a href="global.html#loadRoles">loadRoles</a></li><li><a href="global.html#loadUserData">loadUserData</a></li><li><a href="global.html#loadUserDataAndProducts">loadUserDataAndProducts</a></li><li><a href="global.html#loadUserOrders">loadUserOrders</a></li><li><a href="global.html#loadUserReviews">loadUserReviews</a></li><li><a href="global.html#loadUsers">loadUsers</a></li><li><a href="global.html#loadWebOrders">loadWebOrders</a></li><li><a href="global.html#loadWishlistItems">loadWishlistItems</a></li><li><a href="global.html#markAllAsRead">markAllAsRead</a></li><li><a href="global.html#markMessageAsRead">markMessageAsRead</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#modalTitle">modalTitle</a></li><li><a href="global.html#moveItemToCart">moveItemToCart</a></li><li><a href="global.html#openCreateModal">openCreateModal</a></li><li><a href="global.html#openEditModal">openEditModal</a></li><li><a href="global.html#productGrid">productGrid</a></li><li><a href="global.html#productsToInsert">productsToInsert</a></li><li><a href="global.html#providerForm">providerForm</a></li><li><a href="global.html#recalculateSummary">recalculateSummary</a></li><li><a href="global.html#recalculateTotal">recalculateTotal</a></li><li><a href="global.html#rejectOrder">rejectOrder</a></li><li><a href="global.html#removeFromWishlist">removeFromWishlist</a></li><li><a href="global.html#removeItemFromCart">removeItemFromCart</a></li><li><a href="global.html#renderProducts">renderProducts</a></li><li><a href="global.html#resetForm">resetForm</a></li><li><a href="global.html#selectProduct">selectProduct</a></li><li><a href="global.html#selectedProduct">selectedProduct</a></li><li><a href="global.html#selectedProvider">selectedProvider</a></li><li><a href="global.html#selectedRating">selectedRating</a></li><li><a href="global.html#selectedSize">selectedSize</a></li><li><a href="global.html#sendPasswordResetEmail">sendPasswordResetEmail</a></li><li><a href="global.html#setupCartEventListeners">setupCartEventListeners</a></li><li><a href="global.html#setupEditModalListeners">setupEditModalListeners</a></li><li><a href="global.html#setupEventListeners">setupEventListeners</a></li><li><a href="global.html#setupFilterListeners">setupFilterListeners</a></li><li><a href="global.html#setupModal">setupModal</a></li><li><a href="global.html#setupScrollEffects">setupScrollEffects</a></li><li><a href="global.html#shippingData">shippingData</a></li><li><a href="global.html#showMessageDetail">showMessageDetail</a></li><li><a href="global.html#showMessagesError">showMessagesError</a></li><li><a href="global.html#showNotification">showNotification</a></li><li><a href="global.html#startMessagesRealTimeUpdates">startMessagesRealTimeUpdates</a></li><li><a href="global.html#submitReview">submitReview</a></li><li><a href="global.html#tableBody">tableBody</a></li><li><a href="global.html#toggleWishlistItem">toggleWishlistItem</a></li><li><a href="global.html#toggleWishlistItemCat">toggleWishlistItemCat</a></li><li><a href="global.html#transporter">transporter</a></li><li><a href="global.html#updateCartItemQuantity">updateCartItemQuantity</a></li><li><a href="global.html#updateMessagesUI">updateMessagesUI</a></li><li><a href="global.html#updateRatingStars">updateRatingStars</a></li><li><a href="global.html#updateSidebarForLoggedInUser">updateSidebarForLoggedInUser</a></li><li><a href="global.html#updateSizeSelection">updateSizeSelection</a></li><li><a href="global.html#updateSummary">updateSummary</a></li><li><a href="global.html#updateWishlistSummary">updateWishlistSummary</a></li><li><a href="global.html#verifyToken">verifyToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 08:00:47 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

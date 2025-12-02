@@ -1,11 +1,14 @@
 import { Router } from "express";
 const router = Router();
 import { Types } from "mongoose";
-
 import Category from "../models/Category.js";
 
-console.log("✅ categoryRoutes.js cargado correctamente");
-
+/**
+ * Obtiene todas las categorías activas (para mostrar al cliente).
+ * Ordenadas alfabéticamente.
+ *
+ * @route GET /categories
+ */
 router.get("/", async (_, res) => {
   try {
     const categories = await Category.find({ isActive: true }).sort({
@@ -19,6 +22,12 @@ router.get("/", async (_, res) => {
   }
 });
 
+/**
+ * Obtiene TODAS las categorías (activas e inactivas).
+ * Uso interno para panel administrativo.
+ *
+ * @route GET /categories/admin/all
+ */
 router.get("/admin/all", async (_, res) => {
   try {
     const categories = await Category.find().sort({ name: 1 });
@@ -30,6 +39,15 @@ router.get("/admin/all", async (_, res) => {
   }
 });
 
+/**
+ * Crea una nueva categoría.
+ * Valida que el nombre no esté duplicado.
+ *
+ * @route POST /categories/admin
+ * @param {string} req.body.name - Nombre único
+ * @param {string} [req.body.description] - Descripción opcional
+ * @param {string} [req.body.image_url] - URL de imagen
+ */
 router.post("/admin", async (req, res) => {
   const { name, description, image_url } = req.body;
 
@@ -42,6 +60,7 @@ router.post("/admin", async (req, res) => {
   }
 
   try {
+    // Búsqueda insensible a mayúsculas/minúsculas
     const existingCategory = await Category.findOne({
       name: { $regex: new RegExp(`^${name.trim()}$`, "i") },
     });
@@ -69,6 +88,13 @@ router.post("/admin", async (req, res) => {
   }
 });
 
+/**
+ * Actualiza una categoría existente.
+ * Valida duplicidad de nombre excluyendo el ID actual.
+ *
+ * @route PUT /categories/admin/:id
+ * @param {string} req.params.id - ID de la categoría
+ */
 router.put("/admin/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -86,6 +112,7 @@ router.put("/admin/:id", async (req, res) => {
         .json({ error: "El nombre de la categoría es requerido" });
     }
 
+    // Verificar si el nuevo nombre ya existe en OTRA categoría
     const existingCategory = await Category.findOne({
       name: { $regex: new RegExp(`^${name.trim()}$`, "i") },
       _id: { $ne: id },
@@ -115,15 +142,19 @@ router.put("/admin/:id", async (req, res) => {
     res.status(200).json(updatedCategory);
   } catch (err) {
     console.error("Error al actualizar categoría:", err);
-    res
-      .status(500)
-      .json({
-        error: "Error al actualizar la categoría",
-        details: err.message,
-      });
+    res.status(500).json({
+      error: "Error al actualizar la categoría",
+      details: err.message,
+    });
   }
 });
 
+/**
+ * Elimina una categoría.
+ * PROTECCIÓN: Verifica si hay productos usando esta categoría antes de borrar.
+ *
+ * @route DELETE /categories/admin/:id
+ */
 router.delete("/admin/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -133,6 +164,7 @@ router.delete("/admin/:id", async (req, res) => {
       return res.status(400).json({ error: "ID de categoría no válido" });
     }
 
+    // Importación dinámica para evitar ciclos de dependencia si fuera necesario
     const Product = (await import("../models/Product.js")).default;
     const productsWithCategory = await Product.findOne({ category: id });
 
@@ -158,6 +190,11 @@ router.delete("/admin/:id", async (req, res) => {
   }
 });
 
+/**
+ * Alterna el estado de activo/inactivo de una categoría.
+ *
+ * @route PATCH /categories/admin/:id/toggle
+ */
 router.patch("/admin/:id/toggle", async (req, res) => {
   try {
     const { id } = req.params;
@@ -183,12 +220,10 @@ router.patch("/admin/:id/toggle", async (req, res) => {
     });
   } catch (err) {
     console.error("Error al cambiar estado de categoría:", err);
-    res
-      .status(500)
-      .json({
-        error: "Error al cambiar estado de la categoría",
-        details: err.message,
-      });
+    res.status(500).json({
+      error: "Error al cambiar estado de la categoría",
+      details: err.message,
+    });
   }
 });
 

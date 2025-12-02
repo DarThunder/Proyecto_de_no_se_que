@@ -1,6 +1,18 @@
 import mongoose, { model } from "mongoose";
 const { Schema } = mongoose;
 
+/**
+ * @typedef {Object} WishlistItem
+ * @property {Object} variant - ID variante (ObjectId)
+ */
+
+/**
+ * @typedef {Object} WishlistDocument
+ * @property {Object} _id - ID wishlist (ObjectId)
+ * @property {Object} user - ID usuario (ObjectId)
+ * @property {WishlistItem[]} items - Ítems
+ */
+
 const wishlistItemSchema = new Schema(
   {
     variant: {

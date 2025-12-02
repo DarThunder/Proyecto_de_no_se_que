@@ -5,6 +5,13 @@ import hasPermission from "../middleware/hasPermission.js";
 
 const router = Router();
 
+/**
+ * Obtiene la lista de todos los proveedores registrados.
+ * Ordenados por los más recientes primero.
+ *
+ * @route GET /providers
+ * @access Private (Ring 1 - Manager)
+ */
 router.get("/", verifyToken, hasPermission(1), async (req, res) => {
   try {
     const providers = await Provider.find().sort({ createdAt: -1 });
@@ -14,6 +21,12 @@ router.get("/", verifyToken, hasPermission(1), async (req, res) => {
   }
 });
 
+/**
+ * Obtiene los detalles de un proveedor específico.
+ *
+ * @route GET /providers/:id
+ * @access Private (Ring 1 - Manager)
+ */
 router.get("/:id", verifyToken, hasPermission(1), async (req, res) => {
   try {
     const provider = await Provider.findById(req.params.id);
@@ -26,6 +39,16 @@ router.get("/:id", verifyToken, hasPermission(1), async (req, res) => {
   }
 });
 
+/**
+ * Registra un nuevo proveedor en el sistema.
+ * Valida que no exista duplicidad de Nombre o Email.
+ *
+ * @route POST /providers
+ * @access Private (Ring 1 - Manager)
+ * @param {string} req.body.name - Nombre de la empresa
+ * @param {string} req.body.contactName - Persona de contacto
+ * @param {string} req.body.email - Email único
+ */
 router.post("/", verifyToken, hasPermission(1), async (req, res) => {
   try {
     const { name, contactName, email, phone, address, active } = req.body;
@@ -56,6 +79,12 @@ router.post("/", verifyToken, hasPermission(1), async (req, res) => {
   }
 });
 
+/**
+ * Actualiza la información de un proveedor existente.
+ *
+ * @route PUT /providers/:id
+ * @access Private (Ring 1 - Manager)
+ */
 router.put("/:id", verifyToken, hasPermission(1), async (req, res) => {
   try {
     const updatedProvider = await Provider.findByIdAndUpdate(
@@ -73,6 +102,12 @@ router.put("/:id", verifyToken, hasPermission(1), async (req, res) => {
   }
 });
 
+/**
+ * Elimina un proveedor del sistema.
+ *
+ * @route DELETE /providers/:id
+ * @access Private (Ring 1 - Manager)
+ */
 router.delete("/:id", verifyToken, hasPermission(1), async (req, res) => {
   try {
     const deletedProvider = await Provider.findByIdAndDelete(req.params.id);

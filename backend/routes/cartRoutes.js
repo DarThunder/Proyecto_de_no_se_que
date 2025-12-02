@@ -3,7 +3,14 @@ const router = Router();
 import Cart from "../models/Cart.js";
 import verifyToken from "../middleware/verifyToken.js";
 
+/**
+ * Obtiene el carrito de compras del usuario autenticado.
+ *
+ * @route GET /cart/items
+ * @returns {Object} Objeto carrito poblado con productos.
+ */
 router.get("/items", verifyToken, async (req, res) => {
+  // ... resto del código igual ...
   try {
     const cart = await Cart.findOne({ user: req.user.id }).populate({
       path: "items.variant",
@@ -22,7 +29,16 @@ router.get("/items", verifyToken, async (req, res) => {
   }
 });
 
+/**
+ * Agrega un ítem al carrito.
+ *
+ * @route POST /cart/items
+ * @param {Object} req.body
+ * @param {string} req.body.variantId
+ * @param {number} req.body.quantity
+ */
 router.post("/items", verifyToken, async (req, res) => {
+  // ... resto del código igual ...
   const { variantId, quantity } = req.body;
   const userId = req.user.id;
 
@@ -64,7 +80,14 @@ router.post("/items", verifyToken, async (req, res) => {
   }
 });
 
+/**
+ * Elimina item del carrito.
+ *
+ * @route DELETE /cart/items
+ * @param {Object} req.body
+ */
 router.delete("/items", verifyToken, async (req, res) => {
+  // ... resto del código igual ...
   try {
     const { variantId, quantity } = req.body;
     const userId = req.user.id;

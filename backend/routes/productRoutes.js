@@ -8,7 +8,14 @@ import ProductVariant from "../models/ProductVariant.js";
 import verifyToken from "../middleware/verifyToken.js";
 import hasPermission from "../middleware/hasPermission.js";
 
+/**
+ * Obtiene todas las variantes.
+ *
+ * @route GET /products
+ * @returns {Array<Object>} Lista de variantes pobladas.
+ */
 router.get("/", async (_, res) => {
+  // ... resto del código igual ...
   try {
     const variants = await ProductVariant.find().populate("product");
     res.status(200).json(variants);
@@ -19,6 +26,11 @@ router.get("/", async (_, res) => {
   }
 });
 
+// ... El resto del archivo productRoutes.js se mantiene igual,
+// pero asegúrate de NO tener @returns {Array<import...>} en ningún lado.
+// Si hay otro bloque similar, cámbialo a {Array<Object>}.
+
+// ... (Resto del código de productRoutes.js) ...
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;

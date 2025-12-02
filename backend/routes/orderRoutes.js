@@ -7,6 +7,13 @@ import ProductVariant from "../models/ProductVariant.js";
 import verifyToken from "../middleware/verifyToken.js";
 import hasPermission from "../middleware/hasPermission.js";
 
+/**
+ * Crea una venta genérica (Legacy/Admin).
+ * Valida stock y actualiza inventario.
+ *
+ * @route POST /orders
+ * @access Private (Ring 1)
+ */
 router.post("/", verifyToken, hasPermission(1), async (req, res) => {
   const { user, cashier, items, transaction_type, payment_method } = req.body;
 
@@ -56,6 +63,16 @@ router.post("/", verifyToken, hasPermission(1), async (req, res) => {
   }
 });
 
+/**
+ * Procesa el checkout desde el carrito de compras (WEB).
+ * 1. Valida stock de todos los items del carrito.
+ * 2. Descuenta stock.
+ * 3. Genera la orden con estado 'Processing'.
+ * 4. Vacía el carrito.
+ *
+ * @route POST /orders/checkout
+ * @access Private (User)
+ */
 router.post("/checkout", verifyToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -139,6 +156,12 @@ router.post("/checkout", verifyToken, async (req, res) => {
   }
 });
 
+/**
+ * Rastrea el estado de un pedido mediante su número de guía.
+ * Acceso público (o protegido si se requiere).
+ *
+ * @route GET /orders/track/:trackingNumber
+ */
 router.get("/track/:trackingNumber", async (req, res) => {
   try {
     const { trackingNumber } = req.params;
@@ -165,6 +188,12 @@ router.get("/track/:trackingNumber", async (req, res) => {
   }
 });
 
+/**
+ * Obtiene el historial de pedidos del usuario autenticado.
+ *
+ * @route GET /orders/my-orders
+ * @access Private (User)
+ */
 router.get("/my-orders", verifyToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -193,6 +222,12 @@ router.get("/my-orders", verifyToken, async (req, res) => {
   }
 });
 
+/**
+ * Obtiene una lista única de productos que el usuario ha comprado.
+ * Útil para validar si puede dejar una reseña ("Compra Verificada").
+ *
+ * @route GET /orders/user/purchased-products
+ */
 router.get("/user/purchased-products", verifyToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -206,17 +241,13 @@ router.get("/user/purchased-products", verifyToken, async (req, res) => {
       },
     });
 
-    console.log("Órdenes encontradas:", orders?.length);
-
     if (!orders || orders.length === 0) {
-      console.log("No se encontraron órdenes");
       return res.status(200).json([]);
     }
 
     const purchasedProductsMap = new Map();
 
     orders.forEach((order) => {
-      console.log("Procesando orden:", order._id);
       order.items.forEach((item) => {
         if (item.variant && item.variant.product) {
           const product = item.variant.product;
@@ -233,15 +264,11 @@ router.get("/user/purchased-products", verifyToken, async (req, res) => {
               size: item.variant.size,
             });
           }
-        } else {
-          console.log("Item sin variante o producto:", item);
         }
       });
     });
 
     const purchasedProducts = Array.from(purchasedProductsMap.values());
-    console.log("Productos para reseñar:", purchasedProducts.length);
-
     res.status(200).json(purchasedProducts);
   } catch (err) {
     console.error("Error en /user/purchased-products:", err);
@@ -252,37 +279,46 @@ router.get("/user/purchased-products", verifyToken, async (req, res) => {
   }
 });
 
-
-// Agregar en orderRoutes.js - NUEVO ENDPOINT
+/**
+ * Registra una venta en Punto de Venta (POS).
+ * Acceso para Cajeros.
+ *
+ * @route POST /orders/pos-sale
+ * @access Private (Ring 2 - Cashier)
+ */
 router.post("/pos-sale", verifyToken, hasPermission(2), async (req, res) => {
   try {
     const { user, cashier, items, payment_method = "CASH" } = req.body;
 
-    // Validaciones básicas
     if (!user || !items || items.length === 0) {
-      return res.status(400).json({ error: "Faltan campos requeridos: user, items" });
+      return res
+        .status(400)
+        .json({ error: "Faltan campos requeridos: user, items" });
     }
 
     let total = 0;
     const itemsToUpdate = [];
 
-    // Procesar items y calcular total
     for (const item of items) {
       const variant = await ProductVariant.findById(item.variant);
       if (!variant) {
-        return res.status(404).json({ error: `Variante con ID ${item.variant} no encontrada` });
+        return res
+          .status(404)
+          .json({ error: `Variante con ID ${item.variant} no encontrada` });
       }
       if (variant.stock < item.quantity) {
-        return res.status(400).json({ error: `Stock insuficiente para ${variant.sku}` });
+        return res
+          .status(400)
+          .json({ error: `Stock insuficiente para ${variant.sku}` });
       }
 
       variant.stock -= item.quantity;
       itemsToUpdate.push(variant.save());
 
-      total += item.quantity * item.unit_price * (1 - (item.discount_rate || 0));
+      total +=
+        item.quantity * item.unit_price * (1 - (item.discount_rate || 0));
     }
 
-    // Crear la venta
     const newSale = new Sale({
       user,
       cashier: cashier || req.user.id,
@@ -299,79 +335,109 @@ router.post("/pos-sale", verifyToken, hasPermission(2), async (req, res) => {
       message: "Venta POS registrada exitosamente",
       saleId: newSale._id,
     });
-
   } catch (err) {
     console.error("Error en venta POS:", err);
-    res.status(500).json({ error: "Error al registrar la venta POS", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Error al registrar la venta POS", details: err.message });
   }
 });
 
-// 1. OBTENER PEDIDOS WEB (Solo Admin/Gerente)
-router.get("/web-orders/all", verifyToken, hasPermission(1), async (req, res) => {
-  try {
-    // Buscamos solo ventas tipo WEB ordenadas por fecha
-    const orders = await Sale.find({ transaction_type: "WEB" })
-      .populate("user", "username email") // Datos del cliente
-      .sort({ createdAt: -1 });
+/**
+ * Obtiene todas las órdenes WEB para gestión de envíos.
+ *
+ * @route GET /orders/web-orders/all
+ * @access Private (Ring 1 - Manager)
+ */
+router.get(
+  "/web-orders/all",
+  verifyToken,
+  hasPermission(1),
+  async (req, res) => {
+    try {
+      const orders = await Sale.find({ transaction_type: "WEB" })
+        .populate("user", "username email")
+        .sort({ createdAt: -1 });
 
-    res.status(200).json(orders);
-  } catch (error) {
-    console.error("Error obteniendo pedidos web:", error);
-    res.status(500).json({ message: "Error al obtener pedidos" });
-  }
-});
-
-// 2. ACTUALIZAR ESTADO DE ENVÍO (Con automatización)
-router.put("/:id/shipping-status", verifyToken, hasPermission(1), async (req, res) => {
-  const { id } = req.params;
-  const { status, tracking_number } = req.body;
-
-  try {
-    const updateData = { shipping_status: status };
-    if (tracking_number) updateData.tracking_number = tracking_number;
-
-    const updatedOrder = await Sale.findByIdAndUpdate(
-      id,
-      { $set: updateData },
-      { new: true }
-    );
-
-    if (!updatedOrder) {
-      return res.status(404).json({ message: "Pedido no encontrado" });
+      res.status(200).json(orders);
+    } catch (error) {
+      console.error("Error obteniendo pedidos web:", error);
+      res.status(500).json({ message: "Error al obtener pedidos" });
     }
-
-    // --- LÓGICA DE AUTOMATIZACIÓN (1 MINUTO) ---
-    if (status === "Shipped") {
-      console.log(`Pedido ${id} marcado como Enviado. Se entregará automáticamente en 1 min...`);
-      
-      // Esperar 60 segundos (60000 ms) y cambiar a Delivered
-      setTimeout(async () => {
-        try {
-          await Sale.findByIdAndUpdate(id, { 
-            shipping_status: "Delivered",
-            // Opcional: Añadir fecha de entrega real si tu modelo lo soporta
-          });
-          console.log(`AUTOMÁTICO: Pedido ${id} actualizado a Entregado.`);
-        } catch (err) {
-          console.error(`Error en actualización automática del pedido ${id}:`, err);
-        }
-      }, 60000); 
-    }
-    // --------------------------------------------
-
-    res.status(200).json({ message: "Estado actualizado", order: updatedOrder });
-
-  } catch (error) {
-    console.error("Error actualizando estado:", error);
-    res.status(500).json({ message: "Error del servidor" });
   }
-});
+);
 
+/**
+ * Actualiza el estado de envío de un pedido.
+ * Incluye lógica de simulación: Si cambia a 'Shipped', espera 1 minuto y cambia a 'Delivered'.
+ *
+ * @route PUT /orders/:id/shipping-status
+ * @access Private (Ring 1 - Manager)
+ */
+router.put(
+  "/:id/shipping-status",
+  verifyToken,
+  hasPermission(1),
+  async (req, res) => {
+    const { id } = req.params;
+    const { status, tracking_number } = req.body;
+
+    try {
+      const updateData = { shipping_status: status };
+      if (tracking_number) updateData.tracking_number = tracking_number;
+
+      const updatedOrder = await Sale.findByIdAndUpdate(
+        id,
+        { $set: updateData },
+        { new: true }
+      );
+
+      if (!updatedOrder) {
+        return res.status(404).json({ message: "Pedido no encontrado" });
+      }
+
+      // --- SIMULACIÓN DE LOGÍSTICA ---
+      if (status === "Shipped") {
+        console.log(
+          `Pedido ${id} marcado como Enviado. Se entregará automáticamente en 1 min...`
+        );
+        setTimeout(async () => {
+          try {
+            await Sale.findByIdAndUpdate(id, {
+              shipping_status: "Delivered",
+            });
+            console.log(`AUTOMÁTICO: Pedido ${id} actualizado a Entregado.`);
+          } catch (err) {
+            console.error(
+              `Error en actualización automática del pedido ${id}:`,
+              err
+            );
+          }
+        }, 60000);
+      }
+
+      res
+        .status(200)
+        .json({ message: "Estado actualizado", order: updatedOrder });
+    } catch (error) {
+      console.error("Error actualizando estado:", error);
+      res.status(500).json({ message: "Error del servidor" });
+    }
+  }
+);
+
+/**
+ * Procesa una devolución de productos (Refund).
+ * 1. Restaura el stock de los productos devueltos.
+ * 2. Registra una "Venta Negativa" para contabilidad.
+ *
+ * @route POST /orders/return
+ * @access Private (Ring 2 - Cashier)
+ */
 router.post("/return", verifyToken, hasPermission(2), async (req, res) => {
   try {
     const { originalSaleId, itemsToReturn, cashier } = req.body;
 
-    // 1. Buscar la venta original
     const originalSale = await Sale.findById(originalSaleId);
     if (!originalSale) {
       return res.status(404).json({ error: "Venta original no encontrada" });
@@ -381,9 +447,7 @@ router.post("/return", verifyToken, hasPermission(2), async (req, res) => {
     const returnItems = [];
     const stockUpdates = [];
 
-    // 2. Procesar cada item devuelto
     for (const item of itemsToReturn) {
-      // Verificar que el producto estaba en la venta original
       const originalItem = originalSale.items.find(
         (i) => i.variant.toString() === item.variantId
       );
@@ -397,28 +461,26 @@ router.post("/return", verifyToken, hasPermission(2), async (req, res) => {
         stockUpdates.push(variant.save());
       }
 
-      // Calcular reembolso (Precio original * cantidad)
-      // Nota: Usamos el precio al que se vendió originalmente
+      // Calcular reembolso
       const itemTotal = originalItem.unit_price * parseInt(item.quantity);
       refundTotal += itemTotal;
 
       returnItems.push({
         variant: item.variantId,
         quantity: parseInt(item.quantity),
-        unit_price: originalItem.unit_price, // Precio original
-        discount_rate: originalItem.discount_rate || 0
+        unit_price: originalItem.unit_price,
+        discount_rate: originalItem.discount_rate || 0,
       });
     }
 
-    // 3. Crear registro de Devolución (Venta Negativa)
     const returnSale = new Sale({
       user: originalSale.user,
       cashier: cashier || req.user.id,
       items: returnItems,
-      total: -refundTotal, // Total negativo para cuadrar caja
-      payment_method: "CASH", // O el método original
+      total: -refundTotal, // Negativo para cuadrar caja
+      payment_method: "CASH",
       transaction_type: "RETURN",
-      shipping_status: "Delivered" // Las devoluciones se completan al instante
+      shipping_status: "Delivered",
     });
 
     await returnSale.save();
@@ -427,21 +489,24 @@ router.post("/return", verifyToken, hasPermission(2), async (req, res) => {
     res.status(201).json({
       message: "Devolución procesada exitosamente",
       returnId: returnSale._id,
-      refundAmount: refundTotal
+      refundAmount: refundTotal,
     });
-
   } catch (error) {
     console.error("Error en devolución:", error);
     res.status(500).json({ error: "Error al procesar la devolución" });
   }
 });
 
-// --- BUSCAR VENTA POR ID (Para devoluciones POS) ---
+/**
+ * Busca detalles de una venta específica por ID (para tickets o devoluciones).
+ *
+ * @route GET /orders/detail/:id
+ */
 router.get("/detail/:id", verifyToken, hasPermission(2), async (req, res) => {
   try {
     const sale = await Sale.findById(req.params.id).populate({
       path: "items.variant",
-      populate: { path: "product" }
+      populate: { path: "product" },
     });
 
     if (!sale) {
@@ -451,7 +516,9 @@ router.get("/detail/:id", verifyToken, hasPermission(2), async (req, res) => {
     res.json(sale);
   } catch (err) {
     console.error("Error buscando venta por ID:", err);
-    res.status(500).json({ error: "Error al buscar venta", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Error al buscar venta", details: err.message });
   }
 });
 

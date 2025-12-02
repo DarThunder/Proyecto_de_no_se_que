@@ -1,6 +1,14 @@
 import mongoose, { model } from "mongoose";
 const { Schema } = mongoose;
 
+/**
+ * @typedef {Object} PaymentConfigDocument
+ * @property {Object} _id - ID config (ObjectId)
+ * @property {string} providerName - Proveedor
+ * @property {boolean} isActive - Activo
+ * @property {Object} credentials - Credenciales
+ */
+
 const paymentConfigSchema = new Schema(
   {
     providerName: {

@@ -1,11 +1,34 @@
-// js/GestionUsuarios.js
+/**
+ * @file js/gestionUsuarios.js
+ * @description Módulo de administración de usuarios.
+ * Permite a los administradores y gerentes listar todos los usuarios registrados
+ * y modificar su rol asignado (ej. ascender de Cliente a Cajero).
+ * Incluye lógica de protección para evitar que un usuario modifique roles superiores al suyo.
+ */
 
 // --- 1. Variables Globales ---
-let availableRoles = []; // Almacenará los roles de la BD
-let currentEditingUserId = null;
-let currentUserRing = -1; // Almacenará el 'permission_ring' del gerente
 
-// --- 2. Referencias al DOM (se definirán en DOMContentLoaded) ---
+/**
+ * Almacena la lista de roles disponibles cargados desde la base de datos.
+ * Se utiliza para poblar el selector en el modal de edición.
+ * @type {Array<Object>}
+ */
+let availableRoles = [];
+
+/**
+ * ID del usuario que se está editando actualmente.
+ * @type {string|null}
+ */
+let currentEditingUserId = null;
+
+/**
+ * Nivel de permisos (`permission_ring`) del usuario actual (el que está usando el sistema).
+ * Se usa para restringir qué roles puede asignar a otros.
+ * @type {number}
+ */
+let currentUserRing = -1;
+
+// --- 2. Referencias al DOM (se inicializan en DOMContentLoaded) ---
 let modal,
   modalTitle,
   userForm,
@@ -18,6 +41,15 @@ let modal,
  * ===============================================
  * INICIO: Autenticación y Carga Inicial
  * ===============================================
+ */
+
+/**
+ * Inicializa el gestor de usuarios cuando el DOM está listo.
+ * 1. Obtiene referencias a elementos del DOM.
+ * 2. Verifica la sesión y permisos del usuario actual.
+ * 3. Carga roles y usuarios si la autenticación es exitosa.
+ * 4. Configura listeners para el modal y logout.
+ * @listens document#DOMContentLoaded
  */
 document.addEventListener("DOMContentLoaded", async () => {
   // --- 3. Definir Referencias al DOM ---
@@ -48,9 +80,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         userInfo.username || "Admin";
       currentUserRing = userInfo.role.permission_ring; // Guardamos el ring del gerente
 
-      // Si el usuario es válido, cargamos los datos necesarios
-      await loadRoles(); // 1ro los roles
-      await loadUsers(); // 2do los usuarios
+      // Carga secuencial de datos necesarios
+      await loadRoles(); // 1ro los roles (para tenerlos listos en el modal)
+      await loadUsers(); // 2do los usuarios (para llenar la tabla)
     } else {
       throw new Error("Acceso denegado. Redirigiendo al login.");
     }
@@ -85,6 +117,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   cancelBtn.addEventListener("click", closeUserModal);
   userForm.addEventListener("submit", handleFormSubmit);
 });
+
 /*
  * ===============================================
  * FIN: Autenticación y Carga Inicial
@@ -92,7 +125,9 @@ document.addEventListener("DOMContentLoaded", async () => {
  */
 
 /**
- * Carga la lista de roles desde la API
+ * Obtiene la lista de roles desde la API y la guarda en memoria.
+ * Esta lista se usa posteriormente para llenar el `<select>` de roles.
+ * @async
  */
 async function loadRoles() {
   try {
@@ -110,7 +145,9 @@ async function loadRoles() {
 }
 
 /**
- * Carga todos los usuarios desde la API y los muestra en la tabla
+ * Obtiene la lista de usuarios y renderiza la tabla.
+ * Decide dinámicamente si mostrar el botón de "Editar" basándose en la jerarquía de roles.
+ * @async
  */
 async function loadUsers() {
   try {
@@ -134,11 +171,14 @@ async function loadUsers() {
       const tr = document.createElement("tr");
       const roleName = user.role ? user.role.name : "Sin Rol";
       const roleId = user.role ? user.role._id : "null";
+      // Si no tiene rol, asignamos un ring alto (99) para que sea editable
       const userRing = user.role ? user.role.permission_ring : 99;
 
       let actionsHtml = "";
 
-      // El Gerente/Admin solo puede editar usuarios con ring IGUAL O INFERIOR al suyo
+      // REGLA DE SEGURIDAD:
+      // El usuario actual solo puede editar a usuarios con igual o menor rango (mayor valor numérico de ring)
+      // Ejemplo: Gerente (1) puede editar Cajero (2), pero no Admin (0).
       if (currentUserRing <= userRing) {
         actionsHtml = `
                     <button class="btn btn-secondary" 
@@ -167,25 +207,34 @@ async function loadUsers() {
 }
 
 /**
- * Abre el modal para editar el rol de un usuario
+ * Abre el modal para cambiar el rol de un usuario.
+ * Filtra las opciones del selector de roles para que el usuario no pueda
+ * auto-promoverse o promover a otros a un nivel superior al suyo.
+ * * @global
+ * @param {string} id - ID del usuario a editar.
+ * @param {string} currentRoleId - ID del rol actual del usuario.
+ * @param {string} username - Nombre de usuario (para mostrar en el título).
+ * @param {number} targetUserRing - Nivel de permisos actual del usuario objetivo.
  */
-function openEditModal(id, currentRoleId, username, targetUserRing) {
+window.openEditModal = function (id, currentRoleId, username, targetUserRing) {
   currentEditingUserId = id;
 
-  // Llenamos el formulario
+  // Llenamos datos visuales
   modalTitle.textContent = `Editar Rol de: ${username}`;
   userUsernameDisplay.textContent = username;
 
-  // Llenamos el select con los roles disponibles
+  // Llenamos el select dinámicamente
   userRoleSelect.innerHTML = "";
   availableRoles.forEach((role) => {
-    // Un Gerente no puede asignar un rol superior a él mismo (ej. Admin)
+    // REGLA DE SEGURIDAD:
+    // Solo mostramos roles que son iguales o inferiores al del usuario actual.
+    // Un Gerente (1) no verá la opción "Admin" (0).
     if (currentUserRing <= role.permission_ring) {
       const option = document.createElement("option");
       option.value = role._id;
       option.textContent = `${role.name} (Nivel ${role.permission_ring})`;
 
-      // Seleccionamos el rol actual del usuario
+      // Pre-seleccionar el rol actual
       if (role._id === currentRoleId) {
         option.selected = true;
       }
@@ -194,10 +243,10 @@ function openEditModal(id, currentRoleId, username, targetUserRing) {
   });
 
   modal.style.display = "flex";
-}
+};
 
 /**
- * Cierra el modal
+ * Cierra el modal de edición.
  */
 function closeUserModal() {
   modal.style.display = "none";
@@ -205,7 +254,9 @@ function closeUserModal() {
 }
 
 /**
- * Maneja el envío del formulario (Editar Rol)
+ * Envía la petición para actualizar el rol del usuario seleccionado.
+ * @async
+ * @param {Event} e - Evento de envío del formulario.
  */
 async function handleFormSubmit(e) {
   e.preventDefault();
@@ -213,7 +264,7 @@ async function handleFormSubmit(e) {
   saveBtn.disabled = true;
   saveBtn.textContent = "Guardando...";
 
-  // Recolectamos los datos del formulario
+  // Datos a enviar
   const data = {
     role: document.getElementById("user-role-select").value,
   };
@@ -236,7 +287,7 @@ async function handleFormSubmit(e) {
 
     // Éxito
     closeUserModal();
-    await loadUsers(); // Recargamos la tabla
+    await loadUsers(); // Recargamos la tabla para ver el cambio
   } catch (error) {
     console.error(error.message);
     alert(`Error: ${error.message}`);

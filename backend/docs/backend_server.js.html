@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: backend/server.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: backend/server.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file server.js
+ * @description Punto de entrada principal del servidor Backend (Express + MongoDB).
+ * Configura middlewares, conecta a la base de datos y define las rutas de la API.
+ */
+
+import "dotenv/config";
+import express, { json } from "express";
+import { connect } from "mongoose";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Importación de Rutas
+import productRoutes from "./routes/productRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import cartRoutes from "./routes/cartRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
+import couponRoutes from "./routes/couponRoutes.js";
+import wishlistRoutes from "./routes/wishlistRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
+import messageRoutes from "./routes/messageRoutes.js";
+import providerRoutes from "./routes/providerRoutes.js";
+import contentRoutes from "./routes/contentRoutes.js";
+import categoryRoutes from "./routes/categoryRoutes.js";
+import paymentConfigRoutes from "./routes/paymentConfigRoutes.js";
+import roleRoutes from "./routes/roleRoutes.js";
+import backupRoutes from "./routes/backupRoutes.js";
+import cashRoutes from "./routes/cashRoutes.js";
+
+const app = express();
+const PORT = process.env.PORT || 8080;
+const MONGODB_URI = process.env.MONGODB_URI;
+
+// Configuración de rutas estáticas (ES Modules fix)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+/**
+ * Lista de orígenes permitidos para CORS.
+ * Incluye localhost y Live Server (127.0.0.1).
+ */
+const allowedOrigins = new Set([
+  "http://127.0.0.1:5500",
+  "http://127.0.0.1:3000",
+  "http://localhost:5500",
+  "http://localhost:3000",
+  "http://localhost:8080",
+]);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.has(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Origen no permitido por CORS: " + origin));
+    }
+  },
+  credentials: true, // Permite envío de cookies
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  optionsSuccessStatus: 200,
+};
+
+// --- Middlewares Globales ---
+app.use(cors(corsOptions));
+app.use(json());
+app.use(cookieParser());
+
+// Archivos Estáticos
+app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "html")));
+// Servir carpeta sources padre para imágenes
+app.use("/sources", express.static(path.join(__dirname, "..", "sources")));
+
+// --- Conexión a Base de Datos ---
+connect(MONGODB_URI)
+  .then(() => {
+    console.log("Conexión a MongoDB exitosa.");
+    app.listen(PORT, () => {
+      console.log(`Servidor corriendo en http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Error al conectar a MongoDB:", err.message);
+    process.exit(1);
+  });
+
+// --- Definición de Endpoints ---
+app.use("/products", productRoutes);
+app.use("/auth", authRoutes);
+app.use("/orders", orderRoutes);
+app.use("/users", userRoutes);
+app.use("/cart", cartRoutes);
+app.use("/reviews", reviewRoutes);
+app.use("/coupons", couponRoutes);
+app.use("/wishlist", wishlistRoutes);
+app.use("/reports", reportRoutes);
+app.use("/providers", providerRoutes);
+
+app.use("/content", contentRoutes);
+app.use("/categories", categoryRoutes);
+app.use("/messages", messageRoutes);
+app.use("/payment-config", paymentConfigRoutes);
+app.use("/roles", roleRoutes);
+app.use("/backup", backupRoutes);
+app.use("/cash-movements", cashRoutes);
+
+// Ruta especial para vista HTML de inventario
+app.get("/inventario-stock-bajo", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "html", "InventarioStockB.html"));
+});
+
+// Debug: Imprimir rutas cargadas (Solo desarrollo)
+app._router.stack.forEach((middleware) => {
+  if (middleware.route) {
+    console.log(
+      `Ruta directa: ${Object.keys(middleware.route.methods)} ${
+        middleware.route.path
+      }`
+    );
+  } else if (middleware.name === "router") {
+    console.log(`Router montado: ${middleware.regexp}`);
+  }
+});
+
+// Middleware de Error 404
+app.use((_, res) => {
+  res.status(404).json({ error: "Recurso no encontrado" });
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CategoryManager.html">CategoryManager</a></li><li><a href="ProductManager.html">ProductManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:submit">submit</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addBtn">addBtn</a></li><li><a href="global.html#addWishlistListeners">addWishlistListeners</a></li><li><a href="global.html#allCategoryProducts">allCategoryProducts</a></li><li><a href="global.html#allowedOrigins">allowedOrigins</a></li><li><a href="global.html#applyFilters">applyFilters</a></li><li><a href="global.html#approveOrder">approveOrder</a></li><li><a href="global.html#availableRoles">availableRoles</a></li><li><a href="global.html#cancelBtn">cancelBtn</a></li><li><a href="global.html#cargarTerminosUsuario">cargarTerminosUsuario</a></li><li><a href="global.html#checkIfEmpty">checkIfEmpty</a></li><li><a href="global.html#checkLoginStatus">checkLoginStatus</a></li><li><a href="global.html#closeCouponModal">closeCouponModal</a></li><li><a href="global.html#closeEditModal">closeEditModal</a></li><li><a href="global.html#closeProviderModal">closeProviderModal</a></li><li><a href="global.html#closeUserModal">closeUserModal</a></li><li><a href="global.html#couponForm">couponForm</a></li><li><a href="global.html#createEditModal">createEditModal</a></li><li><a href="global.html#createOrderCardHTML">createOrderCardHTML</a></li><li><a href="global.html#createProductHTML">createProductHTML</a></li><li><a href="global.html#createReviewHTML">createReviewHTML</a></li><li><a href="global.html#createStarsHTML">createStarsHTML</a></li><li><a href="global.html#currentEditingUserId">currentEditingUserId</a></li><li><a href="global.html#currentUserRing">currentUserRing</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#deleteCoupon">deleteCoupon</a></li><li><a href="global.html#deleteProvider">deleteProvider</a></li><li><a href="global.html#deleteReview">deleteReview</a></li><li><a href="global.html#displayProducts">displayProducts</a></li><li><a href="global.html#editReview">editReview</a></li><li><a href="global.html#editarRol">editarRol</a></li><li><a href="global.html#editingCouponId">editingCouponId</a></li><li><a href="global.html#editingProviderId">editingProviderId</a></li><li><a href="global.html#editingReviewId">editingReviewId</a></li><li><a href="global.html#eliminarRol">eliminarRol</a></li><li><a href="global.html#form">form</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#generateCouponCode">generateCouponCode</a></li><li><a href="global.html#getStatusLabel">getStatusLabel</a></li><li><a href="global.html#getUrgencyLabel">getUrgencyLabel</a></li><li><a href="global.html#goBackToProducts">goBackToProducts</a></li><li><a href="global.html#handleFormSubmit">handleFormSubmit</a></li><li><a href="global.html#hasPermission">hasPermission</a></li><li><a href="global.html#initializeBarcodesModal">initializeBarcodesModal</a></li><li><a href="global.html#initializeCarousels">initializeCarousels</a></li><li><a href="global.html#initializeCatProductButtons">initializeCatProductButtons</a></li><li><a href="global.html#initializeCatWishlistButtons">initializeCatWishlistButtons</a></li><li><a href="global.html#initializeMessagesSystem">initializeMessagesSystem</a></li><li><a href="global.html#initializeProductButtons">initializeProductButtons</a></li><li><a href="global.html#initializeWishlistButtons">initializeWishlistButtons</a></li><li><a href="global.html#isEditing">isEditing</a></li><li><a href="global.html#loadBestSellersReport">loadBestSellersReport</a></li><li><a href="global.html#loadCartItems">loadCartItems</a></li><li><a href="global.html#loadCategoryProducts">loadCategoryProducts</a></li><li><a href="global.html#loadCoupons">loadCoupons</a></li><li><a href="global.html#loadDashboardStats">loadDashboardStats</a></li><li><a href="global.html#loadDynamicCategories">loadDynamicCategories</a></li><li><a href="global.html#loadEmployeeSalesReport">loadEmployeeSalesReport</a></li><li><a href="global.html#loadMessagesFromBackend">loadMessagesFromBackend</a></li><li><a href="global.html#loadProducts">loadProducts</a></li><li><a href="global.html#loadProviders">loadProviders</a></li><li><a href="global.html#loadRoles">loadRoles</a></li><li><a href="global.html#loadUserData">loadUserData</a></li><li><a href="global.html#loadUserDataAndProducts">loadUserDataAndProducts</a></li><li><a href="global.html#loadUserOrders">loadUserOrders</a></li><li><a href="global.html#loadUserReviews">loadUserReviews</a></li><li><a href="global.html#loadUsers">loadUsers</a></li><li><a href="global.html#loadWebOrders">loadWebOrders</a></li><li><a href="global.html#loadWishlistItems">loadWishlistItems</a></li><li><a href="global.html#markAllAsRead">markAllAsRead</a></li><li><a href="global.html#markMessageAsRead">markMessageAsRead</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#modalTitle">modalTitle</a></li><li><a href="global.html#moveItemToCart">moveItemToCart</a></li><li><a href="global.html#openCreateModal">openCreateModal</a></li><li><a href="global.html#openEditModal">openEditModal</a></li><li><a href="global.html#productGrid">productGrid</a></li><li><a href="global.html#productsToInsert">productsToInsert</a></li><li><a href="global.html#providerForm">providerForm</a></li><li><a href="global.html#recalculateSummary">recalculateSummary</a></li><li><a href="global.html#recalculateTotal">recalculateTotal</a></li><li><a href="global.html#rejectOrder">rejectOrder</a></li><li><a href="global.html#removeFromWishlist">removeFromWishlist</a></li><li><a href="global.html#removeItemFromCart">removeItemFromCart</a></li><li><a href="global.html#renderProducts">renderProducts</a></li><li><a href="global.html#resetForm">resetForm</a></li><li><a href="global.html#selectProduct">selectProduct</a></li><li><a href="global.html#selectedProduct">selectedProduct</a></li><li><a href="global.html#selectedProvider">selectedProvider</a></li><li><a href="global.html#selectedRating">selectedRating</a></li><li><a href="global.html#selectedSize">selectedSize</a></li><li><a href="global.html#sendPasswordResetEmail">sendPasswordResetEmail</a></li><li><a href="global.html#setupCartEventListeners">setupCartEventListeners</a></li><li><a href="global.html#setupEditModalListeners">setupEditModalListeners</a></li><li><a href="global.html#setupEventListeners">setupEventListeners</a></li><li><a href="global.html#setupFilterListeners">setupFilterListeners</a></li><li><a href="global.html#setupModal">setupModal</a></li><li><a href="global.html#setupScrollEffects">setupScrollEffects</a></li><li><a href="global.html#shippingData">shippingData</a></li><li><a href="global.html#showMessageDetail">showMessageDetail</a></li><li><a href="global.html#showMessagesError">showMessagesError</a></li><li><a href="global.html#showNotification">showNotification</a></li><li><a href="global.html#startMessagesRealTimeUpdates">startMessagesRealTimeUpdates</a></li><li><a href="global.html#submitReview">submitReview</a></li><li><a href="global.html#tableBody">tableBody</a></li><li><a href="global.html#toggleWishlistItem">toggleWishlistItem</a></li><li><a href="global.html#toggleWishlistItemCat">toggleWishlistItemCat</a></li><li><a href="global.html#transporter">transporter</a></li><li><a href="global.html#updateCartItemQuantity">updateCartItemQuantity</a></li><li><a href="global.html#updateMessagesUI">updateMessagesUI</a></li><li><a href="global.html#updateRatingStars">updateRatingStars</a></li><li><a href="global.html#updateSidebarForLoggedInUser">updateSidebarForLoggedInUser</a></li><li><a href="global.html#updateSizeSelection">updateSizeSelection</a></li><li><a href="global.html#updateSummary">updateSummary</a></li><li><a href="global.html#updateWishlistSummary">updateWishlistSummary</a></li><li><a href="global.html#verifyToken">verifyToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 08:00:47 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

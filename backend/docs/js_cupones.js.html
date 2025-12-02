@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: js/cupones.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: js/cupones.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file js/cupones.js
+ * @description Gestiona el CRUD (Crear, Leer, Actualizar, Eliminar) de cupones de descuento.
+ * Permite a los administradores y gerentes listar cupones activos, crear nuevos códigos promocionales,
+ * editar sus propiedades (descuento, vigencia, límite de usos) y eliminarlos.
+ */
+
+// --- Estado Global ---
+
+/**
+ * Indica si el formulario modal se encuentra en modo de edición (`true`) o creación (`false`).
+ * @type {boolean}
+ */
+let isEditing = false;
+
+/**
+ * Almacena el ID del cupón que se está editando actualmente.
+ * Es `null` si se está creando un nuevo cupón.
+ * @type {string|null}
+ */
+let editingCouponId = null;
+
+// --- Referencias al DOM ---
+
+/** @type {HTMLElement} Modal contenedor del formulario. */
+const modal = document.getElementById("coupon-modal");
+/** @type {HTMLElement} Título del modal (cambia entre "Crear" y "Editar"). */
+const modalTitle = document.getElementById("modal-title");
+/** @type {HTMLFormElement} Formulario de datos del cupón. */
+const couponForm = document.getElementById("coupon-form");
+/** @type {HTMLElement} Cuerpo de la tabla donde se renderizan los cupones. */
+const tableBody = document.getElementById("coupons-table-body");
+/** @type {HTMLButtonElement} Botón para abrir el modal de creación. */
+const addBtn = document.getElementById("add-coupon-btn");
+/** @type {HTMLButtonElement} Botón para cancelar y cerrar el modal. */
+const cancelBtn = document.getElementById("cancel-btn");
+
+/*
+ * ===============================================
+ * INICIO: Autenticación y Carga Inicial
+ * ===============================================
+ */
+
+/**
+ * Inicializa la gestión de cupones al cargar el DOM.
+ * 1. Verifica la autenticación y permisos del usuario (Rol &lt;= 1).
+ * 2. Carga la lista inicial de cupones.
+ * 3. Configura los listeners para botones y formularios.
+ * @listens document#DOMContentLoaded
+ */
+document.addEventListener("DOMContentLoaded", async () => {
+  // 1. Verificar la autenticación y permisos
+  try {
+    /** @type {Response} Respuesta del endpoint de sesión. */
+    const meResponse = await fetch("http://localhost:8080/users/me", {
+      method: "GET",
+      credentials: "include", // Envía la cookie de sesión
+    });
+
+    if (!meResponse.ok) {
+      throw new Error("No autorizado. Redirigiendo al login.");
+    }
+
+    const userInfo = await meResponse.json();
+
+    // Verificamos el rol (Admin=0, Gerente=1)
+    if (userInfo.role &amp;&amp; userInfo.role.permission_ring &lt;= 1) {
+      const adminUserDisplay = document.getElementById("admin-username");
+      if (adminUserDisplay) {
+        adminUserDisplay.textContent = userInfo.username || "Admin";
+      }
+      // Si el usuario es válido, cargamos los cupones
+      await loadCoupons();
+    } else {
+      throw new Error("Acceso denegado. Redirigiendo al login.");
+    }
+  } catch (error) {
+    console.error(error.message);
+    alert(
+      "Acceso denegado. Debes iniciar sesión como Gerente o Administrador."
+    );
+    window.location.href = "login.html";
+  }
+
+  // 2. Lógica del botón de Cerrar Sesión
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      try {
+        await fetch("http://localhost:8080/auth/logout", {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch (err) {
+        console.error("Error al cerrar sesión", err);
+      } finally {
+        alert("Sesión cerrada.");
+        window.location.href = "login.html";
+      }
+    });
+  }
+
+  // 3. Listeners del Modal
+  if (addBtn) addBtn.addEventListener("click", openCreateModal);
+  if (cancelBtn) cancelBtn.addEventListener("click", closeCouponModal);
+  if (couponForm) couponForm.addEventListener("submit", handleFormSubmit);
+});
+
+/*
+ * ===============================================
+ * FIN: Autenticación y Carga Inicial
+ * ===============================================
+ */
+
+/**
+ * Obtiene todos los cupones desde la API y renderiza la tabla.
+ * @async
+ */
+async function loadCoupons() {
+  try {
+    const response = await fetch("http://localhost:8080/coupons", {
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new Error("Error al cargar los cupones.");
+    }
+    const coupons = await response.json();
+
+    tableBody.innerHTML = ""; // Limpiamos la tabla
+
+    if (coupons.length === 0) {
+      tableBody.innerHTML =
+        '&lt;tr>&lt;td colspan="7">No se encontraron cupones.&lt;/td>&lt;/tr>';
+      return;
+    }
+
+    coupons.forEach((coupon) => {
+      const tr = document.createElement("tr");
+
+      // Formatear fecha (si existe)
+      const expDate = coupon.expiration_date
+        ? new Date(coupon.expiration_date).toLocaleDateString()
+        : "Nunca";
+
+      // Usos (Actuales / Máximos)
+      const uses = `${coupon.actual_uses} / ${coupon.maximum_uses || "∞"}`;
+
+      // Estado visual
+      const status = coupon.active
+        ? '&lt;span class="status-active">Activo&lt;/span>'
+        : '&lt;span class="status-inactive">Inactivo&lt;/span>';
+
+      tr.innerHTML = `
+                &lt;td>${coupon.name}&lt;/td>
+                &lt;td>${coupon.code}&lt;/td>
+                &lt;td>${coupon.discount}%&lt;/td>
+                &lt;td>${uses}&lt;/td>
+                &lt;td>${expDate}&lt;/td>
+                &lt;td>${status}&lt;/td>
+                &lt;td class="coupon-actions">
+                    &lt;button class="btn btn-secondary" onclick="openEditModal('${coupon._id}')">
+                        &lt;i class="fas fa-edit">&lt;/i>
+                    &lt;/button>
+                    &lt;button class="btn btn-danger" onclick="deleteCoupon('${coupon._id}')">
+                        &lt;i class="fas fa-trash">&lt;/i>
+                    &lt;/button>
+                &lt;/td>
+            `;
+      tableBody.appendChild(tr);
+    });
+  } catch (error) {
+    console.error(error.message);
+    tableBody.innerHTML = `&lt;tr>&lt;td colspan="7">${error.message}&lt;/td>&lt;/tr>`;
+  }
+}
+
+/**
+ * Prepara la interfaz para la creación de un nuevo cupón.
+ * Resetea el formulario, establece el modo a 'creación' y muestra el modal.
+ */
+function openCreateModal() {
+  isEditing = false;
+  editingCouponId = null;
+
+  modalTitle.textContent = "Crear Nuevo Cupón";
+  couponForm.reset(); // Limpia el formulario
+  document.getElementById("coupon-active").checked = true; // Activo por defecto
+
+  modal.style.display = "flex";
+}
+
+/**
+ * Prepara la interfaz para la edición de un cupón existente.
+ * Obtiene los detalles del cupón desde la API, rellena el formulario y muestra el modal.
+ * @async
+ * @param {string} id - El ID del cupón a editar.
+ */
+async function openEditModal(id) {
+  isEditing = true;
+  editingCouponId = id;
+
+  try {
+    const response = await fetch(`http://localhost:8080/coupons/${id}`, {
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("No se pudo cargar el cupón");
+
+    const coupon = await response.json();
+
+    // Llenamos el formulario con los datos
+    modalTitle.textContent = `Editar Cupón: ${coupon.code}`;
+    document.getElementById("coupon-id").value = coupon._id;
+    document.getElementById("coupon-name").value = coupon.name;
+    document.getElementById("coupon-discount").value = coupon.discount;
+
+    // Formatear la fecha para el input type="date" (YYYY-MM-DD)
+    document.getElementById("coupon-expiration").value = coupon.expiration_date
+      ? new Date(coupon.expiration_date).toISOString().split("T")[0]
+      : "";
+
+    document.getElementById("coupon-uses").value = coupon.maximum_uses || "";
+    document.getElementById("coupon-active").checked = coupon.active;
+
+    modal.style.display = "flex";
+  } catch (error) {
+    console.error(error.message);
+    alert("Error al cargar datos del cupón.");
+  }
+}
+
+/**
+ * Cierra el modal de cupones y resetea el formulario.
+ */
+function closeCouponModal() {
+  modal.style.display = "none";
+  couponForm.reset();
+}
+
+/**
+ * Maneja el envío del formulario (Crear o Editar).
+ * Determina si es POST (crear) o PUT (editar) basándose en `isEditing`.
+ * @async
+ * @param {Event} e - Evento de envío del formulario.
+ */
+async function handleFormSubmit(e) {
+  e.preventDefault();
+  const saveBtn = document.getElementById("save-btn");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Guardando...";
+
+  // Recolectamos los datos del formulario
+  const data = {
+    name: document.getElementById("coupon-name").value,
+    discount: parseInt(document.getElementById("coupon-discount").value),
+    expiration_date: document.getElementById("coupon-expiration").value || null,
+    maximum_uses:
+      parseInt(document.getElementById("coupon-uses").value) || null,
+    active: document.getElementById("coupon-active").checked,
+  };
+
+  let url = "http://localhost:8080/coupons";
+  let method = "POST";
+
+  if (isEditing) {
+    url = `http://localhost:8080/coupons/${editingCouponId}`;
+    method = "PUT";
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: method,
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Error al guardar el cupón");
+    }
+
+    // Éxito
+    closeCouponModal();
+    await loadCoupons(); // Recargamos la tabla
+  } catch (error) {
+    console.error(error.message);
+    alert(`Error: ${error.message}`);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Guardar";
+  }
+}
+
+/**
+ * Elimina un cupón de forma permanente.
+ * @async
+ * @param {string} id - ID del cupón a eliminar.
+ */
+async function deleteCoupon(id) {
+  // Pedimos confirmación
+  if (
+    !confirm(
+      "¿Estás seguro de que quieres eliminar este cupón? Esta acción no se puede deshacer."
+    )
+  ) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`http://localhost:8080/coupons/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Error al eliminar");
+    }
+
+    // Éxito
+    await loadCoupons(); // Recargamos la tabla
+  } catch (error) {
+    console.error(error.message);
+    alert(`Error: ${error.message}`);
+  }
+}
+
+// Exponer funciones globales para los botones onclick del HTML dinámico
+window.openEditModal = openEditModal;
+window.deleteCoupon = deleteCoupon;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CategoryManager.html">CategoryManager</a></li><li><a href="ProductManager.html">ProductManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:submit">submit</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addBtn">addBtn</a></li><li><a href="global.html#addWishlistListeners">addWishlistListeners</a></li><li><a href="global.html#allCategoryProducts">allCategoryProducts</a></li><li><a href="global.html#allowedOrigins">allowedOrigins</a></li><li><a href="global.html#applyFilters">applyFilters</a></li><li><a href="global.html#approveOrder">approveOrder</a></li><li><a href="global.html#availableRoles">availableRoles</a></li><li><a href="global.html#cancelBtn">cancelBtn</a></li><li><a href="global.html#cargarTerminosUsuario">cargarTerminosUsuario</a></li><li><a href="global.html#checkIfEmpty">checkIfEmpty</a></li><li><a href="global.html#checkLoginStatus">checkLoginStatus</a></li><li><a href="global.html#closeCouponModal">closeCouponModal</a></li><li><a href="global.html#closeEditModal">closeEditModal</a></li><li><a href="global.html#closeProviderModal">closeProviderModal</a></li><li><a href="global.html#closeUserModal">closeUserModal</a></li><li><a href="global.html#couponForm">couponForm</a></li><li><a href="global.html#createEditModal">createEditModal</a></li><li><a href="global.html#createOrderCardHTML">createOrderCardHTML</a></li><li><a href="global.html#createProductHTML">createProductHTML</a></li><li><a href="global.html#createReviewHTML">createReviewHTML</a></li><li><a href="global.html#createStarsHTML">createStarsHTML</a></li><li><a href="global.html#currentEditingUserId">currentEditingUserId</a></li><li><a href="global.html#currentUserRing">currentUserRing</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#deleteCoupon">deleteCoupon</a></li><li><a href="global.html#deleteProvider">deleteProvider</a></li><li><a href="global.html#deleteReview">deleteReview</a></li><li><a href="global.html#displayProducts">displayProducts</a></li><li><a href="global.html#editReview">editReview</a></li><li><a href="global.html#editarRol">editarRol</a></li><li><a href="global.html#editingCouponId">editingCouponId</a></li><li><a href="global.html#editingProviderId">editingProviderId</a></li><li><a href="global.html#editingReviewId">editingReviewId</a></li><li><a href="global.html#eliminarRol">eliminarRol</a></li><li><a href="global.html#form">form</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#generateCouponCode">generateCouponCode</a></li><li><a href="global.html#getStatusLabel">getStatusLabel</a></li><li><a href="global.html#getUrgencyLabel">getUrgencyLabel</a></li><li><a href="global.html#goBackToProducts">goBackToProducts</a></li><li><a href="global.html#handleFormSubmit">handleFormSubmit</a></li><li><a href="global.html#hasPermission">hasPermission</a></li><li><a href="global.html#initializeBarcodesModal">initializeBarcodesModal</a></li><li><a href="global.html#initializeCarousels">initializeCarousels</a></li><li><a href="global.html#initializeCatProductButtons">initializeCatProductButtons</a></li><li><a href="global.html#initializeCatWishlistButtons">initializeCatWishlistButtons</a></li><li><a href="global.html#initializeMessagesSystem">initializeMessagesSystem</a></li><li><a href="global.html#initializeProductButtons">initializeProductButtons</a></li><li><a href="global.html#initializeWishlistButtons">initializeWishlistButtons</a></li><li><a href="global.html#isEditing">isEditing</a></li><li><a href="global.html#loadBestSellersReport">loadBestSellersReport</a></li><li><a href="global.html#loadCartItems">loadCartItems</a></li><li><a href="global.html#loadCategoryProducts">loadCategoryProducts</a></li><li><a href="global.html#loadCoupons">loadCoupons</a></li><li><a href="global.html#loadDashboardStats">loadDashboardStats</a></li><li><a href="global.html#loadDynamicCategories">loadDynamicCategories</a></li><li><a href="global.html#loadEmployeeSalesReport">loadEmployeeSalesReport</a></li><li><a href="global.html#loadMessagesFromBackend">loadMessagesFromBackend</a></li><li><a href="global.html#loadProducts">loadProducts</a></li><li><a href="global.html#loadProviders">loadProviders</a></li><li><a href="global.html#loadRoles">loadRoles</a></li><li><a href="global.html#loadUserData">loadUserData</a></li><li><a href="global.html#loadUserDataAndProducts">loadUserDataAndProducts</a></li><li><a href="global.html#loadUserOrders">loadUserOrders</a></li><li><a href="global.html#loadUserReviews">loadUserReviews</a></li><li><a href="global.html#loadUsers">loadUsers</a></li><li><a href="global.html#loadWebOrders">loadWebOrders</a></li><li><a href="global.html#loadWishlistItems">loadWishlistItems</a></li><li><a href="global.html#markAllAsRead">markAllAsRead</a></li><li><a href="global.html#markMessageAsRead">markMessageAsRead</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#modalTitle">modalTitle</a></li><li><a href="global.html#moveItemToCart">moveItemToCart</a></li><li><a href="global.html#openCreateModal">openCreateModal</a></li><li><a href="global.html#openEditModal">openEditModal</a></li><li><a href="global.html#productGrid">productGrid</a></li><li><a href="global.html#productsToInsert">productsToInsert</a></li><li><a href="global.html#providerForm">providerForm</a></li><li><a href="global.html#recalculateSummary">recalculateSummary</a></li><li><a href="global.html#recalculateTotal">recalculateTotal</a></li><li><a href="global.html#rejectOrder">rejectOrder</a></li><li><a href="global.html#removeFromWishlist">removeFromWishlist</a></li><li><a href="global.html#removeItemFromCart">removeItemFromCart</a></li><li><a href="global.html#renderProducts">renderProducts</a></li><li><a href="global.html#resetForm">resetForm</a></li><li><a href="global.html#selectProduct">selectProduct</a></li><li><a href="global.html#selectedProduct">selectedProduct</a></li><li><a href="global.html#selectedProvider">selectedProvider</a></li><li><a href="global.html#selectedRating">selectedRating</a></li><li><a href="global.html#selectedSize">selectedSize</a></li><li><a href="global.html#sendPasswordResetEmail">sendPasswordResetEmail</a></li><li><a href="global.html#setupCartEventListeners">setupCartEventListeners</a></li><li><a href="global.html#setupEditModalListeners">setupEditModalListeners</a></li><li><a href="global.html#setupEventListeners">setupEventListeners</a></li><li><a href="global.html#setupFilterListeners">setupFilterListeners</a></li><li><a href="global.html#setupModal">setupModal</a></li><li><a href="global.html#setupScrollEffects">setupScrollEffects</a></li><li><a href="global.html#shippingData">shippingData</a></li><li><a href="global.html#showMessageDetail">showMessageDetail</a></li><li><a href="global.html#showMessagesError">showMessagesError</a></li><li><a href="global.html#showNotification">showNotification</a></li><li><a href="global.html#startMessagesRealTimeUpdates">startMessagesRealTimeUpdates</a></li><li><a href="global.html#submitReview">submitReview</a></li><li><a href="global.html#tableBody">tableBody</a></li><li><a href="global.html#toggleWishlistItem">toggleWishlistItem</a></li><li><a href="global.html#toggleWishlistItemCat">toggleWishlistItemCat</a></li><li><a href="global.html#transporter">transporter</a></li><li><a href="global.html#updateCartItemQuantity">updateCartItemQuantity</a></li><li><a href="global.html#updateMessagesUI">updateMessagesUI</a></li><li><a href="global.html#updateRatingStars">updateRatingStars</a></li><li><a href="global.html#updateSidebarForLoggedInUser">updateSidebarForLoggedInUser</a></li><li><a href="global.html#updateSizeSelection">updateSizeSelection</a></li><li><a href="global.html#updateSummary">updateSummary</a></li><li><a href="global.html#updateWishlistSummary">updateWishlistSummary</a></li><li><a href="global.html#verifyToken">verifyToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 08:00:47 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

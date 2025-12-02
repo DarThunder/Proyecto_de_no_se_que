@@ -2,6 +2,40 @@ import mongoose, { model } from "mongoose";
 const { Schema } = mongoose;
 import ProductVariant from "./ProductVariant.js";
 
+/**
+ * @typedef {Object} SaleItem
+ * @property {Object} variant - Variante vendida (ObjectId)
+ * @property {number} quantity - Cantidad
+ * @property {number} unit_price - Precio al momento de la venta
+ * @property {number} discount_rate - Descuento aplicado al ítem
+ */
+
+/**
+ * @typedef {Object} ShippingAddress
+ * @property {string} full_name - Nombre del receptor
+ * @property {string} address - Calle y número
+ * @property {string} city - Ciudad
+ * @property {string} state - Estado/Provincia
+ * @property {string} zip_code - Código postal
+ * @property {string} country - País (default MX)
+ */
+
+/**
+ * @typedef {Object} SaleDocument
+ * @property {Object} _id - ID de la venta (ObjectId)
+ * @property {Object} user - Cliente que compró (ObjectId)
+ * @property {Object} [cashier] - Cajero (ObjectId, opcional)
+ * @property {SaleItem[]} items - Detalles de la venta
+ * @property {number} total - Monto total pagado
+ * @property {'CASH'|'CARD'|'ONLINE'} payment_method - Método de pago
+ * @property {'POS'|'WEB'|'RETURN'} transaction_type - Origen de la venta
+ * @property {ShippingAddress} [shipping_address] - Dirección (solo para WEB)
+ * @property {'Processing'|'Shipped'|'Delivered'|'Cancelled'} shipping_status - Estado del envío
+ * @property {string} [tracking_number] - Número de guía
+ * @property {Date} createdAt
+ * @property {Date} updatedAt
+ */
+
 const saleItemSchema = new Schema(
   {
     variant: {

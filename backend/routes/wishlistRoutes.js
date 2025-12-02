@@ -1,12 +1,15 @@
 import { Router } from "express";
 const router = Router();
-import verifyToken from "../middleware/verifyToken.js";
 import Wishlist from "../models/Wishlist.js";
-import ProductVariant from "../models/ProductVariant.js";
+import verifyToken from "../middleware/verifyToken.js";
 
-router.use(verifyToken);
-
-router.get("/", async (req, res) => {
+/**
+ * Obtiene la lista de deseos del usuario autenticado.
+ *
+ * @route GET /wishlist/items
+ * @access Private (User)
+ */
+router.get("/items", verifyToken, async (req, res) => {
   try {
     const wishlist = await Wishlist.findOne({ user: req.user.id }).populate({
       path: "items.variant",
@@ -14,9 +17,7 @@ router.get("/", async (req, res) => {
     });
 
     if (!wishlist) {
-      const newWishlist = new Wishlist({ user: req.user.id, items: [] });
-      await newWishlist.save();
-      return res.status(200).json(newWishlist);
+      return res.status(200).json({ items: [] });
     }
 
     res.status(200).json(wishlist);
@@ -28,67 +29,84 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+/**
+ * Agrega un producto (variante) a la lista de deseos.
+ * Evita duplicados automáticamente con `$addToSet`.
+ *
+ * @route POST /wishlist/items
+ * @access Private (User)
+ * @param {string} req.body.variantId - ID de la variante a agregar
+ */
+router.post("/items", verifyToken, async (req, res) => {
   const { variantId } = req.body;
   const userId = req.user.id;
 
-  try {
-    const variant = await ProductVariant.findById(variantId);
-    if (!variant) {
-      return res
-        .status(404)
-        .json({ error: "Variante de producto no encontrada" });
-    }
+  if (!variantId) {
+    return res.status(400).json({ error: "Falta variantId" });
+  }
 
+  try {
     let wishlist = await Wishlist.findOne({ user: userId });
     if (!wishlist) {
       wishlist = new Wishlist({ user: userId, items: [] });
     }
 
-    const itemExists = wishlist.items.some(
+    // Verifica si ya existe antes de agregar (aunque addToSet lo haría, aquí es lógica manual)
+    const exists = wishlist.items.some(
       (item) => item.variant.toString() === variantId
     );
 
-    if (itemExists) {
-      return res
-        .status(400)
-        .json({ message: "El producto ya está en tu lista de deseos" });
+    if (!exists) {
+      wishlist.items.push({ variant: variantId });
+      await wishlist.save();
     }
 
-    wishlist.items.push({ variant: variantId });
-    await wishlist.save();
-    res
-      .status(201)
-      .json({ message: "Producto añadido a la lista de deseos", wishlist });
+    await wishlist.populate({
+      path: "items.variant",
+      populate: { path: "product" },
+    });
+
+    res.status(200).json(wishlist);
   } catch (err) {
     res.status(500).json({
-      error: "Error al añadir a la lista de deseos",
+      error: "Error al agregar a la lista de deseos",
       details: err.message,
     });
   }
 });
 
-router.delete("/:variantId", async (req, res) => {
-  const { variantId } = req.params;
-  const userId = req.user.id;
-
+/**
+ * Elimina un producto de la lista de deseos.
+ *
+ * @route DELETE /wishlist/items
+ * @access Private (User)
+ * @param {string} req.body.variantId - ID de la variante a eliminar
+ */
+router.delete("/items", verifyToken, async (req, res) => {
   try {
+    const { variantId } = req.body;
+    const userId = req.user.id;
+
     const wishlist = await Wishlist.findOne({ user: userId });
     if (!wishlist) {
-      return res.status(404).json({ error: "Lista de deseos no encontrada" });
+      return res.status(404).json({ message: "Lista de deseos no encontrada" });
     }
 
-    wishlist.items.pull({ variant: variantId });
-    await wishlist.save();
+    // Filtra el array excluyendo el ID enviado
+    wishlist.items = wishlist.items.filter(
+      (item) => item.variant.toString() !== variantId
+    );
 
-    res
-      .status(200)
-      .json({ message: "Producto eliminado de la lista de deseos" });
-  } catch (err) {
-    res.status(500).json({
-      error: "Error al eliminar de la lista de deseos",
-      details: err.message,
+    const updatedWishlist = await wishlist.save();
+    await updatedWishlist.populate({
+      path: "items.variant",
+      populate: { path: "product" },
     });
+
+    res.status(200).json(updatedWishlist);
+  } catch (error) {
+    console.error("Error al eliminar de wishlist:", error);
+    res.status(500).json({ message: "Error del servidor" });
   }
 });
 

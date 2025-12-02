@@ -5,7 +5,12 @@ import Review from "../models/Review.js";
 import verifyToken from "../middleware/verifyToken.js";
 import Sale from "../models/Sale.js";
 
-// --- OBTENER RESEÑAS DEL USUARIO ---
+/**
+ * Obtiene todas las reseñas creadas por el usuario autenticado.
+ *
+ * @route GET /reviews/my-reviews
+ * @access Private (User)
+ */
 router.get("/my-reviews", verifyToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -16,9 +21,8 @@ router.get("/my-reviews", verifyToken, async (req, res) => {
         select: "name image_url category base_price",
       })
       .populate({
-        // ← AGREGAR ESTE POPULATE
         path: "user",
-        select: "username", // Incluir ambos campos por si acaso
+        select: "username",
       })
       .sort({ createdAt: -1 });
 
@@ -32,7 +36,17 @@ router.get("/my-reviews", verifyToken, async (req, res) => {
   }
 });
 
-// --- CREAR NUEVA RESEÑA ---
+/**
+ * Crea una nueva reseña para un producto.
+ * Valida que el usuario no haya reseñado el producto previamente.
+ *
+ * @route POST /reviews
+ * @access Private (User)
+ * @param {string} req.body.product - ID del producto
+ * @param {number} req.body.rating - Calificación (1-5)
+ * @param {string} req.body.comment - Comentario
+ * @param {string} req.body.size - Talla comprada
+ */
 router.post("/", verifyToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -49,7 +63,7 @@ router.post("/", verifyToken, async (req, res) => {
         .json({ error: "La calificación debe ser entre 1 y 5" });
     }
 
-    // Verificar si ya existe una reseña para este producto
+    // Verificar duplicidad
     const existingReview = await Review.findOne({
       user: userId,
       product: product,
@@ -59,7 +73,6 @@ router.post("/", verifyToken, async (req, res) => {
       return res.status(400).json({ error: "Ya has reseñado este producto" });
     }
 
-    // Crear nueva reseña
     const newReview = new Review({
       user: userId,
       product,
@@ -70,7 +83,6 @@ router.post("/", verifyToken, async (req, res) => {
 
     await newReview.save();
 
-    // Poblar datos para la respuesta
     await newReview.populate({
       path: "product",
       select: "name image_url category",
@@ -94,6 +106,12 @@ router.post("/", verifyToken, async (req, res) => {
   }
 });
 
+/**
+ * Obtiene la lista de productos únicos que el usuario ha comprado.
+ * Se usa para habilitar la opción de "Dejar Reseña" solo en productos comprados.
+ *
+ * @route GET /reviews/user/purchased-products
+ */
 router.get("/user/purchased-products", verifyToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -107,17 +125,14 @@ router.get("/user/purchased-products", verifyToken, async (req, res) => {
       },
     });
 
-    console.log("Órdenes encontradas:", orders?.length);
-
     if (!orders || orders.length === 0) {
-      console.log("No se encontraron órdenes");
       return res.status(200).json([]);
     }
 
     const purchasedProductsMap = new Map();
 
+    // Filtrar y deducir productos únicos de todas las órdenes
     orders.forEach((order) => {
-      console.log("Procesando orden:", order._id);
       order.items.forEach((item) => {
         if (item.variant && item.variant.product) {
           const product = item.variant.product;
@@ -134,14 +149,11 @@ router.get("/user/purchased-products", verifyToken, async (req, res) => {
               size: item.variant.size,
             });
           }
-        } else {
-          console.log("Item sin variante o producto:", item);
         }
       });
     });
 
     const purchasedProducts = Array.from(purchasedProductsMap.values());
-    console.log("Productos para reseñar:", purchasedProducts.length);
     res.status(200).json(purchasedProducts);
   } catch (err) {
     console.error("Error en /user/purchased-products:", err);
@@ -152,6 +164,12 @@ router.get("/user/purchased-products", verifyToken, async (req, res) => {
   }
 });
 
+/**
+ * Obtiene reseñas públicas aprobadas de un producto.
+ *
+ * @route GET /reviews/product/:productId
+ * @access Public
+ */
 router.get("/product/:productId", async (req, res) => {
   try {
     const { productId } = req.params;
@@ -167,7 +185,6 @@ router.get("/product/:productId", async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
-    console.log("Reseñas encontradas:", reviews.length);
     res.status(200).json(reviews);
   } catch (err) {
     console.error("Error en /product/:productId:", err);
@@ -178,6 +195,13 @@ router.get("/product/:productId", async (req, res) => {
   }
 });
 
+/**
+ * Elimina una reseña propia.
+ * Valida que el usuario sea el dueño de la reseña.
+ *
+ * @route DELETE /reviews/:reviewId
+ * @access Private (Owner Only)
+ */
 router.delete("/:reviewId", verifyToken, async (req, res) => {
   try {
     const { reviewId } = req.params;
@@ -209,6 +233,12 @@ router.delete("/:reviewId", verifyToken, async (req, res) => {
   }
 });
 
+/**
+ * Actualiza una reseña propia.
+ *
+ * @route PUT /reviews/:reviewId
+ * @access Private (Owner Only)
+ */
 router.put("/:reviewId", verifyToken, async (req, res) => {
   try {
     const { reviewId } = req.params;

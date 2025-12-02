@@ -1,0 +1,2917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Home</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Home</h1>
+
+    
+
+
+
+    
+
+
+    <h3> </h3>
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+    <section>
+        <article><h1>Manual de Uso: Backend y Despliegue</h1>
+<p>Este manual describe cómo desplegar, validar y utilizar la API del backend, basándose en la configuración de Docker y los scripts proporcionados.</p>
+<hr>
+<h2>1. Despliegue y Validación de Contenedores</h2>
+<p>El despliegue se gestiona mediante <strong>Docker Compose</strong>, que levanta los servicios de la base de datos (mongo) y la aplicación (backend).</p>
+<h3>Cómo usar los Scripts de Despliegue</h3>
+<p>Los scripts <code>start-dev.sh</code> (para Linux/macOS) y <code>start-dev.ps1</code> (para Windows) automatizan el proceso.</p>
+<p>Asegúrate de tener permisos de ejecución para el script que corresponda a tu sistema operativo:</p>
+<pre class="prettyprint source lang-bash"><code>chmod +x scripts/start-dev.sh
+</code></pre>
+<p>Ejecuta el script desde la raíz del proyecto:</p>
+<pre class="prettyprint source lang-bash"><code># Linux/macOS
+./scripts/start-dev.sh
+
+# PowerShell
+.\scripts\start-dev.ps1
+</code></pre>
+<p>Estos scripts realizarán las siguientes acciones:</p>
+<ol>
+<li>Detendrán y eliminarán contenedores anteriores (<code>docker-compose down</code>).</li>
+<li>Construirán la imagen del backend y crearán los contenedores (<code>docker-compose up --build -d</code>).</li>
+<li>Mostrarán el estado final de los contenedores (<code>docker-compose ps</code>).</li>
+</ol>
+<h3>Cómo Validar los Contenedores</h3>
+<p>Puedes validar que los contenedores estén levantados ejecutando:</p>
+<pre class="prettyprint source lang-bash"><code>docker-compose -f docker-compose.yml ps
+</code></pre>
+<p>Salida esperada:</p>
+<pre class="prettyprint source"><code>NAME                             COMMAND                  SERVICE    STATUS      PORTS
+ropa_backend_node_container      &quot;docker-entrypoint.s…&quot;   backend    Up          0.0.0.0:8080->8080/tcp
+ropadb_mongo_container           &quot;docker-entrypoint.s…&quot;   mongo      Up          0.0.0.0:27017->27017/tcp
+</code></pre>
+<ul>
+<li>La base de datos <strong>Mongo</strong> está disponible en el puerto <strong>27017</strong>.</li>
+<li>La API del backend está disponible en <strong>http://localhost:8080</strong>.</li>
+</ul>
+<hr>
+<h2>2. Manual de Endpoints de la API</h2>
+<p>La API utiliza un sistema de autenticación (<strong>JWT</strong>) y permisos basados en <em>anillos</em> (<code>permission_ring</code>).
+Un anillo menor implica permisos más altos (<strong>Admin=0</strong>, <strong>Cajero=1</strong>, <strong>Usuario=2</strong>).</p>
+<p><strong>URL Base:</strong> <code>http://localhost:8080</code></p>
+<hr>
+<h3>🧩 Autenticación (<code>/auth</code>)</h3>
+<h4>POST /auth/login <em>(Público)</em></h4>
+<p><strong>Descripción:</strong> Inicia sesión para obtener un token JWT.</p>
+<p><strong>Usuarios de prueba:</strong></p>
+<ul>
+<li><code>superadmin / password123</code> (Rol Admin, Anillo 0)</li>
+<li><code>cajero01 / password123</code> (Rol Cajero, Anillo 1)</li>
+</ul>
+<p><strong>Body (JSON):</strong></p>
+<pre class="prettyprint source lang-json"><code>{ &quot;username&quot;: &quot;superadmin&quot;, &quot;password&quot;: &quot;password123&quot; }
+</code></pre>
+<p><strong>Respuesta:</strong></p>
+<pre class="prettyprint source lang-json"><code>{ &quot;token&quot;: &quot;...&quot;, &quot;message&quot;: &quot;Inicio de sesión exitoso&quot; }
+</code></pre>
+<p><strong>Ejemplo en JavaScript:</strong></p>
+<pre class="prettyprint source lang-js"><code>fetch(&quot;http://localhost:8080/auth/login&quot;, {
+  method: &quot;POST&quot;,
+  headers: { &quot;Content-Type&quot;: &quot;application/json&quot; },
+  body: JSON.stringify({ username: &quot;superadmin&quot;, password: &quot;password123&quot; }),
+})
+  .then((res) => res.json())
+  .then((data) => console.log(data));
+</code></pre>
+<h4>POST /auth/register <em>(Público)</em></h4>
+<p><strong>Descripción:</strong> Registra un nuevo usuario.</p>
+<pre class="prettyprint source lang-json"><code>{ &quot;username&quot;: &quot;nuevo_usuario&quot;, &quot;password&quot;: &quot;password123&quot;, &quot;role&quot;: &quot;user&quot; }
+</code></pre>
+<hr>
+<h3>🛍️ Productos (<code>/products</code>)</h3>
+<h4>GET /products <em>(Público)</em></h4>
+<p><strong>Descripción:</strong> Obtiene una lista de todas las variantes de productos.</p>
+<p><strong>Ejemplo JavaScript:</strong></p>
+<pre class="prettyprint source lang-js"><code>fetch(&quot;http://localhost:8080/products&quot;)
+  .then((res) => res.json())
+  .then((data) => console.log(data));
+</code></pre>
+<h4>GET /products/:id <em>(Público)</em></h4>
+<p><strong>Descripción:</strong> Obtiene una variante de producto específica por su ID.</p>
+<p><strong>Ejemplo JavaScript:</strong></p>
+<pre class="prettyprint source lang-js"><code>fetch(&quot;http://localhost:8080/products/672fbc125e9d&quot;)
+  .then((res) => res.json())
+  .then((data) => console.log(data));
+</code></pre>
+<h4>POST /products <em>(Protegido - Permiso Anillo 1 o 0)</em></h4>
+<p><strong>Descripción:</strong> Crea un nuevo producto base y su primera variante.</p>
+<p><strong>Body (JSON):</strong></p>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;name&quot;: &quot;Camiseta&quot;,
+  &quot;base_price&quot;: 350.5,
+  &quot;description&quot;: &quot;Camiseta de algodón&quot;,
+  &quot;size&quot;: &quot;M&quot;,
+  &quot;sku&quot;: &quot;prodsku1&quot;,
+  &quot;stock&quot;: 100
+}
+</code></pre>
+<p><strong>Ejemplo JavaScript:</strong></p>
+<pre class="prettyprint source lang-js"><code>fetch(&quot;http://localhost:8080/products&quot;, {
+  method: &quot;POST&quot;,
+  headers: {
+    &quot;Content-Type&quot;: &quot;application/json&quot;,
+    Authorization: &quot;Bearer &lt;token>&quot;,
+  },
+  body: JSON.stringify({
+    name: &quot;Camiseta&quot;,
+    base_price: 350.5,
+    description: &quot;Camiseta de algodón&quot;,
+    size: &quot;M&quot;,
+    sku: &quot;prodsku1&quot;,
+    stock: 100,
+  }),
+})
+  .then((res) => res.json())
+  .then(console.log);
+</code></pre>
+<h4>PUT /products/:id <em>(Protegido - Permiso Anillo 1 o 0)</em></h4>
+<p><strong>Descripción:</strong> Actualiza un producto existente.</p>
+<p><strong>Ejemplo JavaScript:</strong></p>
+<pre class="prettyprint source lang-js"><code>fetch(&quot;http://localhost:8080/products/672fbc125e9d&quot;, {
+  method: &quot;PUT&quot;,
+  headers: {
+    &quot;Content-Type&quot;: &quot;application/json&quot;,
+    Authorization: &quot;Bearer &lt;token>&quot;,
+  },
+  body: JSON.stringify({ stock: 150 }),
+})
+  .then((res) => res.json())
+  .then(console.log);
+</code></pre>
+<h4>DELETE /products/:id <em>(Protegido - Permiso Anillo 0)</em></h4>
+<p><strong>Descripción:</strong> Elimina un producto existente.</p>
+<p><strong>Ejemplo JavaScript:</strong></p>
+<pre class="prettyprint source lang-js"><code>fetch(&quot;http://localhost:8080/products/672fbc125e9d&quot;, {
+  method: &quot;DELETE&quot;,
+  headers: { Authorization: &quot;Bearer &lt;token>&quot; },
+})
+  .then((res) => res.json())
+  .then(console.log);
+</code></pre>
+<hr>
+<h3>💰 Órdenes/Ventas (<code>/orders</code>)</h3>
+<h4>POST /orders <em>(Protegido - Permiso Anillo 1 o 0)</em></h4>
+<p><strong>Descripción:</strong> Registra una nueva venta (orden) y descuenta stock automáticamente.</p>
+<p><strong>Body (JSON):</strong></p>
+<pre class="prettyprint source lang-json"><code>{
+  &quot;cashier&quot;: &quot;ID_del_cajero_logueado&quot;,
+  &quot;user&quot;: null,
+  &quot;transaction_type&quot;: &quot;POS&quot;,
+  &quot;payment_method&quot;: &quot;CASH&quot;,
+  &quot;items&quot;: [
+    {
+      &quot;variant&quot;: &quot;ID_variante_producto&quot;,
+      &quot;quantity&quot;: 1,
+      &quot;unit_price&quot;: 350.5,
+      &quot;discount_rate&quot;: 0.0
+    }
+  ]
+}
+</code></pre>
+<hr>
+<h3>👥 Usuarios (<code>/users</code>)</h3>
+<ul>
+<li><strong>GET /users</strong> <em>(Protegido - Admin)</em>: Lista de todos los usuarios.</li>
+<li><strong>GET /users/:id</strong> <em>(Protegido)</em>: Obtiene información de un usuario.</li>
+<li><strong>PUT /users/:id</strong> <em>(Protegido - Admin)</em>: Actualiza información de usuario.</li>
+<li><strong>DELETE /users/:id</strong> <em>(Protegido - Admin)</em>: Elimina un usuario.</li>
+</ul>
+<p><strong>Ejemplo GET:</strong></p>
+<pre class="prettyprint source lang-js"><code>fetch(&quot;http://localhost:8080/users&quot;, {
+  headers: { Authorization: &quot;Bearer &lt;token>&quot; },
+})
+  .then((res) => res.json())
+  .then(console.log);
+</code></pre>
+<hr>
+<h2>3. Cómo usar el Script de Prueba</h2>
+<p>El script <code>scripts/test_server.sh</code> (para Linux/macOS) prueba la secuencia completa de autenticación y creación de entidades.</p>
+<h3>Ejecución:</h3>
+<pre class="prettyprint source lang-bash"><code>chmod +x scripts/test_server.sh
+./scripts/test_server.sh
+</code></pre>
+<p>El script hará lo siguiente:</p>
+<ol>
+<li>Solicita un token JWT usando las credenciales <code>superadmin / password123</code>.</li>
+<li>Usa ese token para crear un nuevo producto.</li>
+<li>Usa el token y el ID del producto para crear una orden.</li>
+</ol>
+<p>Si el script se completa sin errores, significa que los flujos principales de la API (autenticación, permisos, creación de productos y creación de órdenes con descuento de stock) funcionan correctamente.</p></article>
+    </section>
+
+
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>backend/server.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Punto de entrada principal del servidor Backend (Express + MongoDB).
+Configura middlewares, conecta a la base de datos y define las rutas de la API.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="backend_server.js.html">backend/server.js</a>, <a href="backend_server.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/GestionCategorias.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Administra el CRUD completo de categorías en el panel de administración.
+Utiliza una clase <code>CategoryManager</code> para encapsular la lógica de autenticación,
+carga de datos, renderizado de tarjetas, gestión de modales y operaciones con la API.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_GestionCategorias.js.html">js/GestionCategorias.js</a>, <a href="js_GestionCategorias.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/GestionP.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Módulo de administración de productos.
+Define la clase <code>ProductManager</code> que gestiona el ciclo de vida completo de los productos (CRUD),
+incluyendo la gestión de variantes (tallas/SKUs), control de stock y subida de imágenes.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_GestionP.js.html">js/GestionP.js</a>, <a href="js_GestionP.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/IStockBajo.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Módulo de gestión de inventario crítico.
+Permite visualizar el estado del stock de todos los productos, clasificarlos por niveles de alerta (Bajo, Medio, Normal)
+y enviar solicitudes de reabastecimiento (notificaciones) al gerente.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_IStockBajo.js.html">js/IStockBajo.js</a>, <a href="js_IStockBajo.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/admin.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Script principal del Panel de Administración.
+Se encarga de la seguridad (verificar sesión y roles), renderizado condicional del menú,
+carga de estadísticas del dashboard y utilidades como generación de códigos de barras y backups.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_admin.js.html">js/admin.js</a>, <a href="js_admin.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/carrito.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Gestiona la lógica del carrito de compras en el frontend.
+Se encarga de cargar los productos del usuario, manejar cambios de cantidad,
+eliminar ítems y calcular los totales (subtotal, envío, total) dinámicamente.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_carrito.js.html">js/carrito.js</a>, <a href="js_carrito.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/categoria.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Controla la página de visualización de productos por categoría.
+Obtiene el tipo de categoría de la URL, carga los productos desde la API,
+gestiona los filtros dinámicos (talla, género, precio) y renderiza la cuadrícula de productos.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_categoria.js.html">js/categoria.js</a>, <a href="js_categoria.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/checkout.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Gestiona el flujo de pago (Checkout) en múltiples pasos.
+Controla la captura de dirección de envío, la selección de métodos de pago dinámicos,
+el resumen del carrito y la creación final de la orden.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_checkout.js.html">js/checkout.js</a>, <a href="js_checkout.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/codigos.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Gestiona la interfaz de generación de códigos de barras para productos.
+Permite seleccionar un producto, generar un código visual (usando JsBarcode) basado en su SKU/Nombre,
+y ofrece funcionalidad para imprimir la etiqueta.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_codigos.js.html">js/codigos.js</a>, <a href="js_codigos.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/configuracionPagos.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Administra la configuración de las pasarelas de pago en el panel de administración.
+Permite listar los proveedores disponibles (PayPal, Stripe), activar/desactivar servicios,
+y guardar las credenciales (API Keys, Client Secrets) y el modo de operación (Sandbox/Live).</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_configuracionPagos.js.html">js/configuracionPagos.js</a>, <a href="js_configuracionPagos.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/contraseñaOlvidada.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Maneja la lógica del lado del cliente para solicitar el restablecimiento de contraseña.
+Captura el email del usuario y envía una petición al backend para generar un token de recuperación.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_contrase%C3%B1aOlvidada.js.html">js/contraseñaOlvidada.js</a>, <a href="js_contrase%C3%B1aOlvidada.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/cupones.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Gestiona el CRUD (Crear, Leer, Actualizar, Eliminar) de cupones de descuento.
+Permite a los administradores y gerentes listar cupones activos, crear nuevos códigos promocionales,
+editar sus propiedades (descuento, vigencia, límite de usos) y eliminarlos.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_cupones.js.html">js/cupones.js</a>, <a href="js_cupones.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/gestionRoles.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Administra el CRUD (Crear, Leer, Actualizar, Eliminar) de los roles de usuario.
+Permite definir nuevos roles, asignarles un nivel de permisos (<code>permission_ring</code>) y una descripción.
+Los roles con nivel 0 (Sistema/Admin Supremo) están protegidos y no pueden ser eliminados ni editados completamente.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_gestionRoles.js.html">js/gestionRoles.js</a>, <a href="js_gestionRoles.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/gestionUsuarios.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Módulo de administración de usuarios.
+Permite a los administradores y gerentes listar todos los usuarios registrados
+y modificar su rol asignado (ej. ascender de Cliente a Cajero).
+Incluye lógica de protección para evitar que un usuario modifique roles superiores al suyo.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_gestionUsuarios.js.html">js/gestionUsuarios.js</a>, <a href="js_gestionUsuarios.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/gestion_envios.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Gestiona la interfaz de administración para el seguimiento y actualización
+del estado de envíos de pedidos realizados vía web.
+Permite visualizar una lista de pedidos, ver detalles básicos y actualizar su estado de envío (Procesando, Enviado, Entregado).</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_gestion_envios.js.html">js/gestion_envios.js</a>, <a href="js_gestion_envios.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/listadeseos.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Gestiona la funcionalidad de la lista de deseos (Wishlist) del usuario.
+Permite visualizar los productos guardados, eliminarlos, limpiar la lista completa
+y mover productos directamente al carrito de compras.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_listadeseos.js.html">js/listadeseos.js</a>, <a href="js_listadeseos.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/mensajes.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Gestiona el sistema de mensajería interna y notificaciones de reabastecimiento.
+Permite visualizar solicitudes de stock bajo, marcar mensajes como leídos y procesar
+las órdenes (Aprobar/Rechazar) interactuando con el backend.
+Incluye un sistema de actualización en tiempo real (polling).</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_mensajes.js.html">js/mensajes.js</a>, <a href="js_mensajes.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/misreseñas.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Gestiona la visualización y administración de las reseñas del usuario.
+Permite listar el historial de opiniones, eliminar reseñas existentes y editar
+el contenido (calificación, comentario, talla) mediante un modal dinámico.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_misrese%C3%B1as.js.html">js/misreseñas.js</a>, <a href="js_misrese%C3%B1as.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/orders.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Gestiona la visualización del historial de pedidos del usuario.
+Carga las órdenes desde el backend, maneja la autenticación requerida y
+renderiza tarjetas detalladas con información de productos, totales y estado de envío.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_orders.js.html">js/orders.js</a>, <a href="js_orders.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/proveedores.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Gestiona el mantenimiento de proveedores en el sistema.
+Permite listar, crear, editar y eliminar proveedores, así como gestionar su estado (activo/inactivo).
+Incluye validación de permisos de usuario (Admin/Gerente) al inicio.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_proveedores.js.html">js/proveedores.js</a>, <a href="js_proveedores.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/reporte_vendedores.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Genera el reporte de desempeño de ventas por vendedor (empleado).
+Verifica permisos administrativos, obtiene los datos agregados de ventas por usuario
+desde el backend y renderiza una tabla con métricas clave (Total Ventas, Ingresos, Ticket Promedio).</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_reporte_vendedores.js.html">js/reporte_vendedores.js</a>, <a href="js_reporte_vendedores.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/reportes.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Gestiona la visualización de reportes de negocio generales en el panel de administración.
+Se centra principalmente en cargar y mostrar el informe de &quot;Productos Más Vendidos&quot; (Best Sellers).
+Incluye verificación de roles (Admin/Gerente) y formateo de datos monetarios.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_reportes.js.html">js/reportes.js</a>, <a href="js_reportes.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/reseñaUser.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Gestiona el flujo de creación de nuevas reseñas por parte del usuario.
+Permite listar los productos comprados previamente, seleccionar uno para calificar,
+y enviar la reseña completa (rating, comentario, talla) al backend.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_rese%C3%B1aUser.js.html">js/reseñaUser.js</a>, <a href="js_rese%C3%B1aUser.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/restorePassword.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Gestiona el restablecimiento de contraseña en el frontend.
+Verifica la presencia de un token en la URL, valida que las contraseñas coincidan
+y envía la nueva credencial al backend.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_restorePassword.js.html">js/restorePassword.js</a>, <a href="js_restorePassword.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/script.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Maneja la lógica de inicio de sesión (Login).
+Conecta con el backend, valida credenciales y redirige según el rol del usuario.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_script.js.html">js/script.js</a>, <a href="js_script.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/scriptCC.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Gestiona la funcionalidad de la página de &quot;Crear Cuenta&quot; (Registro).
+Escucha el envío del formulario de registro, captura los datos del usuario (username, password, email)
+y los envía al backend para crear una nueva cuenta.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_scriptCC.js.html">js/scriptCC.js</a>, <a href="js_scriptCC.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/scriptMain.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Controlador principal de la página de inicio (Landing Page) y navegación global.
+Gestiona la interactividad del menú móvil, la carga dinámica de productos destacados y categorías,
+la personalización de la interfaz según el estado de sesión del usuario, y la inicialización de carruseles.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_scriptMain.js.html">js/scriptMain.js</a>, <a href="js_scriptMain.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>js/seguimiento.js</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><p>Controlador para la página de rastreo de pedidos (Tracking).
+Permite a los usuarios buscar un pedido mediante su número de seguimiento,
+visualizar los detalles de los productos comprados y ver el estado actual del envío
+en una línea de tiempo visual.</p></div>
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="js_seguimiento.js.html">js/seguimiento.js</a>, <a href="js_seguimiento.js.html#line1">line 1</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CategoryManager.html">CategoryManager</a></li><li><a href="ProductManager.html">ProductManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:submit">submit</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addBtn">addBtn</a></li><li><a href="global.html#addWishlistListeners">addWishlistListeners</a></li><li><a href="global.html#allCategoryProducts">allCategoryProducts</a></li><li><a href="global.html#allowedOrigins">allowedOrigins</a></li><li><a href="global.html#applyFilters">applyFilters</a></li><li><a href="global.html#approveOrder">approveOrder</a></li><li><a href="global.html#availableRoles">availableRoles</a></li><li><a href="global.html#cancelBtn">cancelBtn</a></li><li><a href="global.html#cargarTerminosUsuario">cargarTerminosUsuario</a></li><li><a href="global.html#checkIfEmpty">checkIfEmpty</a></li><li><a href="global.html#checkLoginStatus">checkLoginStatus</a></li><li><a href="global.html#closeCouponModal">closeCouponModal</a></li><li><a href="global.html#closeEditModal">closeEditModal</a></li><li><a href="global.html#closeProviderModal">closeProviderModal</a></li><li><a href="global.html#closeUserModal">closeUserModal</a></li><li><a href="global.html#couponForm">couponForm</a></li><li><a href="global.html#createEditModal">createEditModal</a></li><li><a href="global.html#createOrderCardHTML">createOrderCardHTML</a></li><li><a href="global.html#createProductHTML">createProductHTML</a></li><li><a href="global.html#createReviewHTML">createReviewHTML</a></li><li><a href="global.html#createStarsHTML">createStarsHTML</a></li><li><a href="global.html#currentEditingUserId">currentEditingUserId</a></li><li><a href="global.html#currentUserRing">currentUserRing</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#deleteCoupon">deleteCoupon</a></li><li><a href="global.html#deleteProvider">deleteProvider</a></li><li><a href="global.html#deleteReview">deleteReview</a></li><li><a href="global.html#displayProducts">displayProducts</a></li><li><a href="global.html#editReview">editReview</a></li><li><a href="global.html#editarRol">editarRol</a></li><li><a href="global.html#editingCouponId">editingCouponId</a></li><li><a href="global.html#editingProviderId">editingProviderId</a></li><li><a href="global.html#editingReviewId">editingReviewId</a></li><li><a href="global.html#eliminarRol">eliminarRol</a></li><li><a href="global.html#form">form</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#generateCouponCode">generateCouponCode</a></li><li><a href="global.html#getStatusLabel">getStatusLabel</a></li><li><a href="global.html#getUrgencyLabel">getUrgencyLabel</a></li><li><a href="global.html#goBackToProducts">goBackToProducts</a></li><li><a href="global.html#handleFormSubmit">handleFormSubmit</a></li><li><a href="global.html#hasPermission">hasPermission</a></li><li><a href="global.html#initializeBarcodesModal">initializeBarcodesModal</a></li><li><a href="global.html#initializeCarousels">initializeCarousels</a></li><li><a href="global.html#initializeCatProductButtons">initializeCatProductButtons</a></li><li><a href="global.html#initializeCatWishlistButtons">initializeCatWishlistButtons</a></li><li><a href="global.html#initializeMessagesSystem">initializeMessagesSystem</a></li><li><a href="global.html#initializeProductButtons">initializeProductButtons</a></li><li><a href="global.html#initializeWishlistButtons">initializeWishlistButtons</a></li><li><a href="global.html#isEditing">isEditing</a></li><li><a href="global.html#loadBestSellersReport">loadBestSellersReport</a></li><li><a href="global.html#loadCartItems">loadCartItems</a></li><li><a href="global.html#loadCategoryProducts">loadCategoryProducts</a></li><li><a href="global.html#loadCoupons">loadCoupons</a></li><li><a href="global.html#loadDashboardStats">loadDashboardStats</a></li><li><a href="global.html#loadDynamicCategories">loadDynamicCategories</a></li><li><a href="global.html#loadEmployeeSalesReport">loadEmployeeSalesReport</a></li><li><a href="global.html#loadMessagesFromBackend">loadMessagesFromBackend</a></li><li><a href="global.html#loadProducts">loadProducts</a></li><li><a href="global.html#loadProviders">loadProviders</a></li><li><a href="global.html#loadRoles">loadRoles</a></li><li><a href="global.html#loadUserData">loadUserData</a></li><li><a href="global.html#loadUserDataAndProducts">loadUserDataAndProducts</a></li><li><a href="global.html#loadUserOrders">loadUserOrders</a></li><li><a href="global.html#loadUserReviews">loadUserReviews</a></li><li><a href="global.html#loadUsers">loadUsers</a></li><li><a href="global.html#loadWebOrders">loadWebOrders</a></li><li><a href="global.html#loadWishlistItems">loadWishlistItems</a></li><li><a href="global.html#markAllAsRead">markAllAsRead</a></li><li><a href="global.html#markMessageAsRead">markMessageAsRead</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#modalTitle">modalTitle</a></li><li><a href="global.html#moveItemToCart">moveItemToCart</a></li><li><a href="global.html#openCreateModal">openCreateModal</a></li><li><a href="global.html#openEditModal">openEditModal</a></li><li><a href="global.html#productGrid">productGrid</a></li><li><a href="global.html#productsToInsert">productsToInsert</a></li><li><a href="global.html#providerForm">providerForm</a></li><li><a href="global.html#recalculateSummary">recalculateSummary</a></li><li><a href="global.html#recalculateTotal">recalculateTotal</a></li><li><a href="global.html#rejectOrder">rejectOrder</a></li><li><a href="global.html#removeFromWishlist">removeFromWishlist</a></li><li><a href="global.html#removeItemFromCart">removeItemFromCart</a></li><li><a href="global.html#renderProducts">renderProducts</a></li><li><a href="global.html#resetForm">resetForm</a></li><li><a href="global.html#selectProduct">selectProduct</a></li><li><a href="global.html#selectedProduct">selectedProduct</a></li><li><a href="global.html#selectedProvider">selectedProvider</a></li><li><a href="global.html#selectedRating">selectedRating</a></li><li><a href="global.html#selectedSize">selectedSize</a></li><li><a href="global.html#sendPasswordResetEmail">sendPasswordResetEmail</a></li><li><a href="global.html#setupCartEventListeners">setupCartEventListeners</a></li><li><a href="global.html#setupEditModalListeners">setupEditModalListeners</a></li><li><a href="global.html#setupEventListeners">setupEventListeners</a></li><li><a href="global.html#setupFilterListeners">setupFilterListeners</a></li><li><a href="global.html#setupModal">setupModal</a></li><li><a href="global.html#setupScrollEffects">setupScrollEffects</a></li><li><a href="global.html#shippingData">shippingData</a></li><li><a href="global.html#showMessageDetail">showMessageDetail</a></li><li><a href="global.html#showMessagesError">showMessagesError</a></li><li><a href="global.html#showNotification">showNotification</a></li><li><a href="global.html#startMessagesRealTimeUpdates">startMessagesRealTimeUpdates</a></li><li><a href="global.html#submitReview">submitReview</a></li><li><a href="global.html#tableBody">tableBody</a></li><li><a href="global.html#toggleWishlistItem">toggleWishlistItem</a></li><li><a href="global.html#toggleWishlistItemCat">toggleWishlistItemCat</a></li><li><a href="global.html#transporter">transporter</a></li><li><a href="global.html#updateCartItemQuantity">updateCartItemQuantity</a></li><li><a href="global.html#updateMessagesUI">updateMessagesUI</a></li><li><a href="global.html#updateRatingStars">updateRatingStars</a></li><li><a href="global.html#updateSidebarForLoggedInUser">updateSidebarForLoggedInUser</a></li><li><a href="global.html#updateSizeSelection">updateSizeSelection</a></li><li><a href="global.html#updateSummary">updateSummary</a></li><li><a href="global.html#updateWishlistSummary">updateWishlistSummary</a></li><li><a href="global.html#verifyToken">verifyToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 08:00:47 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

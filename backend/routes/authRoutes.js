@@ -6,7 +6,24 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { sendPasswordResetEmail } from "../utils/emailService.js";
 
+/**
+ * @typedef {Object} RegisterBody
+ * @property {string} username - Nombre de usuario deseado
+ * @property {string} password - Contraseña en texto plano
+ * @property {string} [email] - Correo electrónico opcional
+ * @property {string} [role] - Nombre del rol (ej: 'user', 'admin'). Por defecto 'user'.
+ */
+
+/**
+ * Registra un nuevo usuario en el sistema.
+ * Asigna automáticamente el rol por defecto si no se especifica.
+ *
+ * @route POST /auth/register
+ * @param {Object} req - Request de Express con RegisterBody
+ * @param {Object} res - Response de Express
+ */
 router.post("/register", async (req, res) => {
+  // ... (código sin cambios)
   const { username, password, email, role } = req.body;
   let roleDocument;
 
@@ -69,7 +86,15 @@ router.post("/register", async (req, res) => {
   }
 });
 
+/**
+ * Inicia sesión y genera un token JWT en una cookie HttpOnly.
+ *
+ * @route POST /auth/login
+ * @param {Object} req - Request con {username, password}
+ * @param {Object} res - Response
+ */
 router.post("/login", async (req, res) => {
+  // ... (código sin cambios)
   const { username, password } = req.body;
 
   try {
@@ -108,7 +133,15 @@ router.post("/login", async (req, res) => {
   }
 });
 
+/**
+ * Solicita un enlace de recuperación de contraseña por correo.
+ *
+ * @route POST /auth/forgot-password
+ * @param {Object} req - Request con {email}
+ * @param {Object} res - Response
+ */
 router.post("/forgot-password", async (req, res) => {
+  // ... (código sin cambios)
   const { email } = req.body;
 
   try {
@@ -141,7 +174,15 @@ router.post("/forgot-password", async (req, res) => {
   }
 });
 
+/**
+ * Restablece la contraseña usando un token válido.
+ *
+ * @route POST /auth/reset-password/:token
+ * @param {Object} req - Request con params.token y body.newPassword
+ * @param {Object} res - Response
+ */
 router.post("/reset-password/:token", async (req, res) => {
+  // ... (código sin cambios)
   const { token } = req.params;
   const { newPassword } = req.body;
 

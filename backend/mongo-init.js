@@ -1,5 +1,16 @@
+/**
+ * Script de inicialización de la Base de Datos 'ropadb'.
+ * Se ejecuta automáticamente al levantar el contenedor de MongoDB por primera vez.
+ * * Acciones:
+ * 1. Crea y puebla la colección de Cupones.
+ * 2. Carga `product-data.js` e inserta Productos y Variantes relacionándolos.
+ * 3. Define Roles (admin, gerente, cashier, user).
+ * 4. Crea Usuarios por defecto para cada rol con contraseñas pre-hasheadas.
+ */
+
 const db = db.getSiblingDB("ropadb");
 
+// --- 1. CUPONES ---
 db.createCollection("coupons");
 let cuponBuenFin = {
   name: "Buen Fin 2024",
@@ -37,8 +48,10 @@ let cuponBienvenida = {
 db.coupons.insertMany([cuponBuenFin, cuponVerano, cuponBienvenida]);
 print("Cupones de prueba creados.");
 
+// --- 2. PRODUCTOS ---
 print("Cargando datos de productos desde product-data.js...");
 
+// Carga el archivo externo (disponible en el volumen de Docker)
 load("/docker-entrypoint-initdb.d/product-data.js");
 
 if (typeof productsToInsert === "undefined") {
@@ -49,6 +62,7 @@ if (typeof productsToInsert === "undefined") {
   print(`Encontrados ${productsToInsert.length} productos para insertar.`);
 
   productsToInsert.forEach((productData) => {
+    // Separamos variantes para insertarlas en su propia colección
     const variantsData = productData.variants;
     delete productData.variants;
 
@@ -59,6 +73,7 @@ if (typeof productsToInsert === "undefined") {
     const newProductId = insertResult.insertedId;
 
     if (newProductId) {
+      // Asignamos el ID del producto padre a cada variante
       const variantsToInsert = variantsData.map((variant) => {
         return {
           ...variant,
@@ -78,6 +93,7 @@ if (typeof productsToInsert === "undefined") {
   print("¡Todos los productos y variantes fueron insertados exitosamente!");
 }
 
+// --- 3. ROLES ---
 print("Borrando roles y usuarios antiguos para re-crear con 'Gerente'...");
 db.roles.deleteMany({});
 db.users.deleteMany({});
@@ -112,11 +128,13 @@ db.roles.insertMany([
 
 print("Roles 'admin', 'gerente', 'cashier', 'user' creados.");
 
+// --- 4. USUARIOS ---
 const adminRole = db.roles.findOne({ name: "admin" });
 const gerenteRole = db.roles.findOne({ name: "gerente" });
 const cashierRole = db.roles.findOne({ name: "cashier" });
 const userRole = db.roles.findOne({ name: "user" });
 
+// Hash pre-calculado para la contraseña 'password123' (o similar)
 const samplePasswordHash =
   "$2b$10$zNZEVbIXGs84eNZS3VmVyO/IPeoglQ9Jc90muzjRms/SwWQPBjHay";
 

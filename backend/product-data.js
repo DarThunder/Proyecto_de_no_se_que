@@ -1,3 +1,26 @@
+/**
+ * @typedef {Object} SeedVariant
+ * @property {'XS'|'S'|'M'|'L'|'XL'} size - Talla de la variante
+ * @property {string} sku - Stock Keeping Unit único
+ * @property {number} stock - Cantidad inicial
+ */
+
+/**
+ * @typedef {Object} SeedProduct
+ * @property {string} name - Nombre del producto
+ * @property {number} base_price - Precio base
+ * @property {string} description - Descripción corta
+ * @property {string} image_url - Ruta relativa de la imagen
+ * @property {'hombre'|'mujer'|'unisex'} category - Categoría principal
+ * @property {string} productType - Tipo de prenda (hoodie, pantalones, etc.)
+ * @property {SeedVariant[]} variants - Lista de variantes iniciales
+ */
+
+/**
+ * Lista de productos iniciales para poblar la base de datos.
+ * Este archivo es cargado por `mongo-init.js`.
+ * * @type {SeedProduct[]}
+ */
 const productsToInsert = [
   {
     name: "Hoodie Clásica",
@@ -8,8 +31,8 @@ const productsToInsert = [
     productType: "hoodie",
     variants: [
       { size: "M", sku: "HOOD-CLA-M", stock: 50 },
-      { size: "L", sku: "HOOD-CLA-L", stock: 30 }
-    ]
+      { size: "L", sku: "HOOD-CLA-L", stock: 30 },
+    ],
   },
   {
     name: "Pantalón Cargo",
@@ -18,9 +41,7 @@ const productsToInsert = [
     image_url: "sources/img/pantalones.jpg",
     category: "hombre",
     productType: "pantalones",
-    variants: [
-      { size: "M", sku: "PANT-CAR-M", stock: 40 }
-    ]
+    variants: [{ size: "M", sku: "PANT-CAR-M", stock: 40 }],
   },
   {
     name: "Camiseta Básica",
@@ -31,8 +52,8 @@ const productsToInsert = [
     productType: "camisas",
     variants: [
       { size: "S", sku: "CAMI-BAS-S", stock: 100 },
-      { size: "M", sku: "CAMI-BAS-M", stock: 120 }
-    ]
+      { size: "M", sku: "CAMI-BAS-M", stock: 120 },
+    ],
   },
   {
     name: "Hoodie Oversize",
@@ -43,8 +64,8 @@ const productsToInsert = [
     productType: "hoodie",
     variants: [
       { size: "M", sku: "HOOD-OVER-M", stock: 60 },
-      { size: "L", sku: "HOOD-OVER-L", stock: 40 }
-    ]
+      { size: "L", sku: "HOOD-OVER-L", stock: 40 },
+    ],
   },
   {
     name: "Pantalón Jogger",
@@ -55,8 +76,8 @@ const productsToInsert = [
     productType: "pantalones",
     variants: [
       { size: "M", sku: "PANT-JOG-M", stock: 35 },
-      { size: "L", sku: "PANT-JOG-L", stock: 25 }
-    ]
+      { size: "L", sku: "PANT-JOG-L", stock: 25 },
+    ],
   },
   {
     name: "Short Deportivo",
@@ -67,8 +88,8 @@ const productsToInsert = [
     productType: "shorts",
     variants: [
       { size: "M", sku: "SHOR-DEP-M", stock: 70 },
-      { size: "L", sku: "SHOR-DEP-L", stock: 50 }
-    ]
+      { size: "L", sku: "SHOR-DEP-L", stock: 50 },
+    ],
   },
   {
     name: "Camisa de Lino",
@@ -79,8 +100,8 @@ const productsToInsert = [
     productType: "camisas",
     variants: [
       { size: "M", sku: "CAMS-LIN-M", stock: 40 },
-      { size: "L", sku: "CAMS-LIN-L", stock: 30 }
-    ]
+      { size: "L", sku: "CAMS-LIN-L", stock: 30 },
+    ],
   },
   {
     name: "Hoodie con Cierre",
@@ -91,8 +112,8 @@ const productsToInsert = [
     productType: "hoodie",
     variants: [
       { size: "S", sku: "HOOD-CIE-S", stock: 45 },
-      { size: "M", sku: "HOOD-CIE-M", stock: 40 }
-    ]
+      { size: "M", sku: "HOOD-CIE-M", stock: 40 },
+    ],
   },
   {
     name: "Camiseta Estampada",
@@ -103,8 +124,8 @@ const productsToInsert = [
     productType: "camisas",
     variants: [
       { size: "S", sku: "CAMI-EST-S", stock: 90 },
-      { size: "M", sku: "CAMI-EST-M", stock: 85 }
-    ]
+      { size: "M", sku: "CAMI-EST-M", stock: 85 },
+    ],
   },
   {
     name: "Pantalón Formal",
@@ -115,8 +136,8 @@ const productsToInsert = [
     productType: "pantalones",
     variants: [
       { size: "M", sku: "PANT-FOR-M", stock: 25 },
-      { size: "L", sku: "PANT-FOR-L", stock: 20 }
-    ]
+      { size: "L", sku: "PANT-FOR-L", stock: 20 },
+    ],
   },
   {
     name: "Short Casual",
@@ -127,8 +148,8 @@ const productsToInsert = [
     productType: "shorts",
     variants: [
       { size: "S", sku: "SHOR-CAS-S", stock: 80 },
-      { size: "M", sku: "SHOR-CAS-M", stock: 60 }
-    ]
+      { size: "M", sku: "SHOR-CAS-M", stock: 60 },
+    ],
   },
   {
     name: "Camisa Cuadros",
@@ -139,8 +160,8 @@ const productsToInsert = [
     productType: "camisas",
     variants: [
       { size: "M", sku: "CAMS-CUA-M", stock: 35 },
-      { size: "L", sku: "CAMS-CUA-L", stock: 25 }
-    ]
+      { size: "L", sku: "CAMS-CUA-L", stock: 25 },
+    ],
   },
   {
     name: "Hoodie Crop Top",
@@ -151,8 +172,8 @@ const productsToInsert = [
     productType: "hoodie",
     variants: [
       { size: "S", sku: "HOOD-CRO-S", stock: 50 },
-      { size: "M", sku: "HOOD-CRO-M", stock: 40 }
-    ]
+      { size: "M", sku: "HOOD-CRO-M", stock: 40 },
+    ],
   },
   {
     name: "Camiseta Sin Mangas",
@@ -163,8 +184,8 @@ const productsToInsert = [
     productType: "camisas",
     variants: [
       { size: "M", sku: "CAMI-SIN-M", stock: 70 },
-      { size: "L", sku: "CAMI-SIN-L", stock: 60 }
-    ]
+      { size: "L", sku: "CAMI-SIN-L", stock: 60 },
+    ],
   },
   {
     name: "Pantalón Skinny",
@@ -175,8 +196,8 @@ const productsToInsert = [
     productType: "pantalones",
     variants: [
       { size: "S", sku: "PANT-SKI-S", stock: 45 },
-      { size: "M", sku: "PANT-SKI-M", stock: 40 }
-    ]
+      { size: "M", sku: "PANT-SKI-M", stock: 40 },
+    ],
   },
   {
     name: "Short Running",
@@ -187,8 +208,8 @@ const productsToInsert = [
     productType: "shorts",
     variants: [
       { size: "M", sku: "SHOR-RUN-M", stock: 60 },
-      { size: "L", sku: "SHOR-RUN-L", stock: 50 }
-    ]
+      { size: "L", sku: "SHOR-RUN-L", stock: 50 },
+    ],
   },
   {
     name: "Camisa Casual Blanca",
@@ -199,8 +220,8 @@ const productsToInsert = [
     productType: "camisas",
     variants: [
       { size: "M", sku: "CAMS-BLA-M", stock: 40 },
-      { size: "L", sku: "CAMS-BLA-L", stock: 30 }
-    ]
+      { size: "L", sku: "CAMS-BLA-L", stock: 30 },
+    ],
   },
   {
     name: "Hoodie con Bolsillo Canguro",
@@ -211,8 +232,8 @@ const productsToInsert = [
     productType: "hoodie",
     variants: [
       { size: "M", sku: "HOOD-CAN-M", stock: 55 },
-      { size: "L", sku: "HOOD-CAN-L", stock: 45 }
-    ]
+      { size: "L", sku: "HOOD-CAN-L", stock: 45 },
+    ],
   },
   {
     name: "Pantalón Chino",
@@ -223,8 +244,8 @@ const productsToInsert = [
     productType: "pantalones",
     variants: [
       { size: "M", sku: "PANT-CHI-M", stock: 30 },
-      { size: "L", sku: "PANT-CHI-L", stock: 25 }
-    ]
+      { size: "L", sku: "PANT-CHI-L", stock: 25 },
+    ],
   },
   {
     name: "Camiseta Vintage",
@@ -235,7 +256,7 @@ const productsToInsert = [
     productType: "camisas",
     variants: [
       { size: "S", sku: "CAMI-VIN-S", stock: 80 },
-      { size: "M", sku: "CAMI-VIN-M", stock: 70 }
-    ]
-  }
+      { size: "M", sku: "CAMI-VIN-M", stock: 70 },
+    ],
+  },
 ];

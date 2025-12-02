@@ -5,6 +5,16 @@ import verifyToken from "../middleware/verifyToken.js";
 import hasPermission from "../middleware/hasPermission.js";
 import Sale from "../models/Sale.js";
 
+/**
+ * Registra un movimiento manual de efectivo (Entrada o Salida).
+ * Útil para registrar fondo inicial, retiros parciales o pagos a proveedores desde caja.
+ *
+ * @route POST /cash-movements
+ * @access Private (Ring 2 - Cashier+)
+ * @param {string} req.body.type - Tipo de movimiento ('IN' | 'OUT')
+ * @param {number} req.body.amount - Cantidad monetaria
+ * @param {string} req.body.description - Motivo del movimiento
+ */
 router.post("/", verifyToken, hasPermission(2), async (req, res) => {
   try {
     const { type, amount, description } = req.body;
@@ -26,6 +36,14 @@ router.post("/", verifyToken, hasPermission(2), async (req, res) => {
   }
 });
 
+/**
+ * Calcula el balance actual de la caja del día.
+ * La fórmula es: (Ventas en Efectivo del día) + (Movimientos IN) - (Movimientos OUT).
+ *
+ * @route GET /cash-movements/balance
+ * @access Private (Ring 2 - Cashier+)
+ * @returns {object} { balance, dailySales, transactions }
+ */
 router.get("/balance", verifyToken, hasPermission(2), async (req, res) => {
   try {
     const startOfDay = new Date();
@@ -33,6 +51,7 @@ router.get("/balance", verifyToken, hasPermission(2), async (req, res) => {
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
+    // Agregación para obtener totales de Ventas (Sale) tipo POS
     const salesStats = await Sale.aggregate([
       {
         $match: {
@@ -43,10 +62,11 @@ router.get("/balance", verifyToken, hasPermission(2), async (req, res) => {
       {
         $group: {
           _id: null,
-          totalRevenue: { $sum: "$total" },
+          totalRevenue: { $sum: "$total" }, // Total vendido (cualquier método)
           totalTransactions: { $sum: 1 },
           cashRevenue: {
             $sum: {
+              // Sumar solo si el método de pago es 'CASH'
               $cond: [{ $eq: ["$payment_method", "CASH"] }, "$total", 0],
             },
           },
@@ -54,13 +74,14 @@ router.get("/balance", verifyToken, hasPermission(2), async (req, res) => {
       },
     ]);
 
+    // Agregación para obtener movimientos manuales (CashMovement)
     const movements = await CashMovement.aggregate([
       {
         $match: { createdAt: { $gte: startOfDay, $lte: endOfDay } },
       },
       {
         $group: {
-          _id: "$type",
+          _id: "$type", // Agrupar por IN o OUT
           total: { $sum: "$amount" },
         },
       },
@@ -74,6 +95,7 @@ router.get("/balance", verifyToken, hasPermission(2), async (req, res) => {
     const movesIn = movements.find((m) => m._id === "IN")?.total || 0;
     const movesOut = movements.find((m) => m._id === "OUT")?.total || 0;
 
+    // Cálculo final del efectivo esperado en caja
     const currentBalance = stats.cashRevenue + movesIn - movesOut;
 
     res.json({

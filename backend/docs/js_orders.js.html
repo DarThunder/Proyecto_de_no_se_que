@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: js/orders.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: js/orders.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file js/orders.js
+ * @description Gestiona la visualización del historial de pedidos del usuario.
+ * Carga las órdenes desde el backend, maneja la autenticación requerida y
+ * renderiza tarjetas detalladas con información de productos, totales y estado de envío.
+ */
+
+/**
+ * Inicializa la carga de pedidos cuando el DOM está completamente cargado.
+ * @listens document#DOMContentLoaded
+ */
+document.addEventListener("DOMContentLoaded", () => {
+  loadUserOrders();
+});
+
+/**
+ * Obtiene la lista de pedidos del usuario actual desde la API.
+ * Gestiona los estados de la interfaz: cargando, sin sesión, error, lista vacía y éxito.
+ * @async
+ */
+async function loadUserOrders() {
+  const container = document.getElementById("orders-list");
+  const loadingMsg = document.getElementById("loading-message");
+  const emptyMsg = document.getElementById("empty-orders-message");
+
+  try {
+    /**
+     * Petición GET al endpoint de "mis pedidos".
+     * Es crucial incluir `credentials: "include"` para enviar la cookie de sesión.
+     * @type {Response}
+     */
+    const response = await fetch("http://localhost:8080/orders/my-orders", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    // Manejo de usuario no autenticado (401 Unauthorized)
+    if (response.status === 401) {
+      loadingMsg.style.display = "none";
+      emptyMsg.innerHTML = `
+        &lt;div class="empty-icon">&lt;i class="fas fa-lock">&lt;/i>&lt;/div>
+        &lt;h2>Debes iniciar sesión&lt;/h2>
+        &lt;p>Para ver tu historial de compras, por favor inicia sesión.&lt;/p>
+        &lt;a href="login.html" class="cta-button">Iniciar Sesión&lt;/a>`;
+      emptyMsg.style.display = "block";
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error("Error del servidor al cargar pedidos.");
+    }
+
+    /** @type {Array&lt;Object>} Lista de pedidos obtenidos. */
+    const orders = await response.json();
+
+    // Ocultar indicador de carga
+    loadingMsg.style.display = "none";
+
+    // Manejo de lista vacía
+    if (orders.length === 0) {
+      emptyMsg.style.display = "block";
+      return;
+    }
+
+    // Renderizado de tarjetas de pedido
+    orders.forEach((order, index) => {
+      const cardHTML = createOrderCardHTML(order);
+
+      // Creamos un elemento temporal para convertir el string HTML a nodo DOM
+      const cardElement = document.createElement("div");
+      cardElement.innerHTML = cardHTML;
+
+      // Insertamos solo el primer hijo elemento (evitando nodos de texto vacíos)
+      if (cardElement.firstElementChild) {
+        // Añadimos un retraso escalonado para la animación de entrada
+        cardElement.firstElementChild.style.animationDelay = `${index * 0.1}s`;
+        container.appendChild(cardElement.firstElementChild);
+      }
+    });
+  } catch (error) {
+    console.error("Error al cargar pedidos:", error);
+    loadingMsg.style.display = "none";
+    emptyMsg.innerHTML = `
+        &lt;div class="empty-icon">&lt;i class="fas fa-exclamation-triangle">&lt;/i>&lt;/div>
+        &lt;h2>Error al cargar&lt;/h2>
+        &lt;p>No se pudo conectar con el servidor. Intenta de nuevo más tarde.&lt;/p>`;
+    emptyMsg.style.display = "block";
+  }
+}
+
+/**
+ * Genera el string HTML para una tarjeta de pedido completa.
+ * Incluye cabecera con resumen (fecha, total, tracking) y cuerpo con lista de productos.
+ * * @param {Object} order - Objeto con los datos del pedido.
+ * @param {string} order.createdAt - Fecha de creación.
+ * @param {number} order.total - Monto total.
+ * @param {string} order.tracking_number - Número de guía.
+ * @param {string} order.shipping_status - Estado del envío (Processing, Shipped, etc.).
+ * @param {Array&lt;Object>} order.items - Lista de productos en el pedido.
+ * @returns {string} HTML de la tarjeta de pedido.
+ */
+function createOrderCardHTML(order) {
+  // Formatear la fecha a formato local (ej: 12 de enero de 2024)
+  const orderDate = new Date(order.createdAt).toLocaleDateString("es-ES", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  // Generar HTML para la lista de productos dentro del pedido
+  const itemsHTML = order.items
+    .map((item) => {
+      // Protección contra datos corruptos (si el producto fue eliminado de la BD)
+      if (!item.variant || !item.variant.product) {
+        return '&lt;div class="order-item">&lt;li>Producto ya no disponible&lt;/li>&lt;/div>';
+      }
+
+      const product = item.variant.product;
+      const itemTotal = item.unit_price * item.quantity;
+
+      // Ajuste de ruta de imagen (subir desde /html/ a raíz)
+      const imageUrl = product.image_url
+        ? `../${product.image_url}`
+        : "../sources/img/logo_negro.png";
+
+      return `
+      &lt;div class="order-item">
+          &lt;div class="order-item-img" style="background-image: url('${imageUrl}')">&lt;/div>
+          &lt;div class="order-item-details">
+              &lt;h5>${product.name}&lt;/h5>
+              &lt;p>Talla: ${item.variant.size} | Cantidad: ${item.quantity}&lt;/p>
+          &lt;/div>
+          &lt;div class="order-item-price">
+              $${itemTotal.toFixed(2)}
+              &lt;span>($${item.unit_price.toFixed(2)} c/u)&lt;/span>
+          &lt;/div>
+      &lt;/div>
+    `;
+    })
+    .join("");
+
+  // Determinar clase CSS para el estado (ej. 'status-shipped', 'status-processing')
+  const statusClass = order.shipping_status
+    ? order.shipping_status.toLowerCase()
+    : "processing";
+
+  return ` 
+    &lt;div class="order-card">
+        &lt;div class="order-card-header">
+            &lt;div class="order-info">
+                &lt;strong>Fecha del Pedido:&lt;/strong>
+                ${orderDate}
+            &lt;/div>
+            &lt;div class="order-info">
+                &lt;strong>Total del Pedido:&lt;/strong>
+                $${order.total.toFixed(2)} MXN
+            &lt;/div>
+            &lt;div class="order-info">
+                &lt;strong>No. Seguimiento:&lt;/strong>
+                &lt;a href="seguimiento.html?tracking=${
+                  order.tracking_number
+                }" title="Rastrear este pedido">
+                    &lt;span>${order.tracking_number}&lt;/span>
+                &lt;/a>
+            &lt;/div>
+            &lt;div class="order-status ${statusClass}">
+                ${order.shipping_status}
+            &lt;/div>
+        &lt;/div>
+        &lt;div class="order-card-body">
+            &lt;h4>Productos en este pedido (${order.items.length})&lt;/h4>
+            &lt;div class="order-item-list">
+                ${itemsHTML}
+            &lt;/div>
+        &lt;/div>
+    &lt;/div>
+  `;
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CategoryManager.html">CategoryManager</a></li><li><a href="ProductManager.html">ProductManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:submit">submit</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addBtn">addBtn</a></li><li><a href="global.html#addWishlistListeners">addWishlistListeners</a></li><li><a href="global.html#allCategoryProducts">allCategoryProducts</a></li><li><a href="global.html#allowedOrigins">allowedOrigins</a></li><li><a href="global.html#applyFilters">applyFilters</a></li><li><a href="global.html#approveOrder">approveOrder</a></li><li><a href="global.html#availableRoles">availableRoles</a></li><li><a href="global.html#cancelBtn">cancelBtn</a></li><li><a href="global.html#cargarTerminosUsuario">cargarTerminosUsuario</a></li><li><a href="global.html#checkIfEmpty">checkIfEmpty</a></li><li><a href="global.html#checkLoginStatus">checkLoginStatus</a></li><li><a href="global.html#closeCouponModal">closeCouponModal</a></li><li><a href="global.html#closeEditModal">closeEditModal</a></li><li><a href="global.html#closeProviderModal">closeProviderModal</a></li><li><a href="global.html#closeUserModal">closeUserModal</a></li><li><a href="global.html#couponForm">couponForm</a></li><li><a href="global.html#createEditModal">createEditModal</a></li><li><a href="global.html#createOrderCardHTML">createOrderCardHTML</a></li><li><a href="global.html#createProductHTML">createProductHTML</a></li><li><a href="global.html#createReviewHTML">createReviewHTML</a></li><li><a href="global.html#createStarsHTML">createStarsHTML</a></li><li><a href="global.html#currentEditingUserId">currentEditingUserId</a></li><li><a href="global.html#currentUserRing">currentUserRing</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#deleteCoupon">deleteCoupon</a></li><li><a href="global.html#deleteProvider">deleteProvider</a></li><li><a href="global.html#deleteReview">deleteReview</a></li><li><a href="global.html#displayProducts">displayProducts</a></li><li><a href="global.html#editReview">editReview</a></li><li><a href="global.html#editarRol">editarRol</a></li><li><a href="global.html#editingCouponId">editingCouponId</a></li><li><a href="global.html#editingProviderId">editingProviderId</a></li><li><a href="global.html#editingReviewId">editingReviewId</a></li><li><a href="global.html#eliminarRol">eliminarRol</a></li><li><a href="global.html#form">form</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#generateCouponCode">generateCouponCode</a></li><li><a href="global.html#getStatusLabel">getStatusLabel</a></li><li><a href="global.html#getUrgencyLabel">getUrgencyLabel</a></li><li><a href="global.html#goBackToProducts">goBackToProducts</a></li><li><a href="global.html#handleFormSubmit">handleFormSubmit</a></li><li><a href="global.html#hasPermission">hasPermission</a></li><li><a href="global.html#initializeBarcodesModal">initializeBarcodesModal</a></li><li><a href="global.html#initializeCarousels">initializeCarousels</a></li><li><a href="global.html#initializeCatProductButtons">initializeCatProductButtons</a></li><li><a href="global.html#initializeCatWishlistButtons">initializeCatWishlistButtons</a></li><li><a href="global.html#initializeMessagesSystem">initializeMessagesSystem</a></li><li><a href="global.html#initializeProductButtons">initializeProductButtons</a></li><li><a href="global.html#initializeWishlistButtons">initializeWishlistButtons</a></li><li><a href="global.html#isEditing">isEditing</a></li><li><a href="global.html#loadBestSellersReport">loadBestSellersReport</a></li><li><a href="global.html#loadCartItems">loadCartItems</a></li><li><a href="global.html#loadCategoryProducts">loadCategoryProducts</a></li><li><a href="global.html#loadCoupons">loadCoupons</a></li><li><a href="global.html#loadDashboardStats">loadDashboardStats</a></li><li><a href="global.html#loadDynamicCategories">loadDynamicCategories</a></li><li><a href="global.html#loadEmployeeSalesReport">loadEmployeeSalesReport</a></li><li><a href="global.html#loadMessagesFromBackend">loadMessagesFromBackend</a></li><li><a href="global.html#loadProducts">loadProducts</a></li><li><a href="global.html#loadProviders">loadProviders</a></li><li><a href="global.html#loadRoles">loadRoles</a></li><li><a href="global.html#loadUserData">loadUserData</a></li><li><a href="global.html#loadUserDataAndProducts">loadUserDataAndProducts</a></li><li><a href="global.html#loadUserOrders">loadUserOrders</a></li><li><a href="global.html#loadUserReviews">loadUserReviews</a></li><li><a href="global.html#loadUsers">loadUsers</a></li><li><a href="global.html#loadWebOrders">loadWebOrders</a></li><li><a href="global.html#loadWishlistItems">loadWishlistItems</a></li><li><a href="global.html#markAllAsRead">markAllAsRead</a></li><li><a href="global.html#markMessageAsRead">markMessageAsRead</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#modalTitle">modalTitle</a></li><li><a href="global.html#moveItemToCart">moveItemToCart</a></li><li><a href="global.html#openCreateModal">openCreateModal</a></li><li><a href="global.html#openEditModal">openEditModal</a></li><li><a href="global.html#productGrid">productGrid</a></li><li><a href="global.html#productsToInsert">productsToInsert</a></li><li><a href="global.html#providerForm">providerForm</a></li><li><a href="global.html#recalculateSummary">recalculateSummary</a></li><li><a href="global.html#recalculateTotal">recalculateTotal</a></li><li><a href="global.html#rejectOrder">rejectOrder</a></li><li><a href="global.html#removeFromWishlist">removeFromWishlist</a></li><li><a href="global.html#removeItemFromCart">removeItemFromCart</a></li><li><a href="global.html#renderProducts">renderProducts</a></li><li><a href="global.html#resetForm">resetForm</a></li><li><a href="global.html#selectProduct">selectProduct</a></li><li><a href="global.html#selectedProduct">selectedProduct</a></li><li><a href="global.html#selectedProvider">selectedProvider</a></li><li><a href="global.html#selectedRating">selectedRating</a></li><li><a href="global.html#selectedSize">selectedSize</a></li><li><a href="global.html#sendPasswordResetEmail">sendPasswordResetEmail</a></li><li><a href="global.html#setupCartEventListeners">setupCartEventListeners</a></li><li><a href="global.html#setupEditModalListeners">setupEditModalListeners</a></li><li><a href="global.html#setupEventListeners">setupEventListeners</a></li><li><a href="global.html#setupFilterListeners">setupFilterListeners</a></li><li><a href="global.html#setupModal">setupModal</a></li><li><a href="global.html#setupScrollEffects">setupScrollEffects</a></li><li><a href="global.html#shippingData">shippingData</a></li><li><a href="global.html#showMessageDetail">showMessageDetail</a></li><li><a href="global.html#showMessagesError">showMessagesError</a></li><li><a href="global.html#showNotification">showNotification</a></li><li><a href="global.html#startMessagesRealTimeUpdates">startMessagesRealTimeUpdates</a></li><li><a href="global.html#submitReview">submitReview</a></li><li><a href="global.html#tableBody">tableBody</a></li><li><a href="global.html#toggleWishlistItem">toggleWishlistItem</a></li><li><a href="global.html#toggleWishlistItemCat">toggleWishlistItemCat</a></li><li><a href="global.html#transporter">transporter</a></li><li><a href="global.html#updateCartItemQuantity">updateCartItemQuantity</a></li><li><a href="global.html#updateMessagesUI">updateMessagesUI</a></li><li><a href="global.html#updateRatingStars">updateRatingStars</a></li><li><a href="global.html#updateSidebarForLoggedInUser">updateSidebarForLoggedInUser</a></li><li><a href="global.html#updateSizeSelection">updateSizeSelection</a></li><li><a href="global.html#updateSummary">updateSummary</a></li><li><a href="global.html#updateWishlistSummary">updateWishlistSummary</a></li><li><a href="global.html#verifyToken">verifyToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 08:00:47 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

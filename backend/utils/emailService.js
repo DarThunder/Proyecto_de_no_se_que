@@ -1,5 +1,9 @@
 import nodemailer from "nodemailer";
 
+/**
+ * Configuración del transporte de correo electrónico (Nodemailer).
+ * Lee las credenciales de las variables de entorno.
+ */
 const transporter = nodemailer.createTransport({
   service: process.env.EMAIL_SERVICE,
   auth: {
@@ -8,6 +12,15 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+/**
+ * Envía un correo electrónico al usuario con el enlace para restablecer su contraseña.
+ *
+ * @async
+ * @param {string} to - Dirección de correo electrónico del destinatario.
+ * @param {string} resetLink - La URL completa (incluyendo token) para el restablecimiento.
+ * @returns {Promise<boolean>} Retorna `true` si el envío fue exitoso.
+ * @throws {Error} Si ocurre un error al intentar enviar el correo.
+ */
 export const sendPasswordResetEmail = async (to, resetLink) => {
   const mailOptions = {
     from: process.env.EMAIL_HOST_USER,

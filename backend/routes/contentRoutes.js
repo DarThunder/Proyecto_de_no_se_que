@@ -5,11 +5,20 @@ import hasPermission from "../middleware/hasPermission.js";
 
 const router = Router();
 
+/**
+ * Obtiene el contenido HTML de una sección específica.
+ * Si la sección no existe en la BD, la crea automáticamente con un texto por defecto.
+ *
+ * @route GET /content/:name
+ * @param {string} req.params.name - Identificador de la sección (ej: 'home-banner', 'about-us')
+ * @returns {object} { htmlContent: string }
+ */
 router.get("/:name", async (req, res) => {
   try {
     let contentDoc = await Content.findOne({ name: req.params.name });
 
     if (!contentDoc) {
+      // Lazy creation: Si no existe, lo creamos al vuelo
       contentDoc = new Content({ name: req.params.name });
       await contentDoc.save();
     }
@@ -22,6 +31,15 @@ router.get("/:name", async (req, res) => {
   }
 });
 
+/**
+ * Actualiza el contenido HTML de una sección.
+ * Utiliza 'upsert' para crear el documento si no existiera (doble seguridad).
+ *
+ * @route PUT /content/:name
+ * @access Private (Ring 0 - Admin Only)
+ * @param {string} req.params.name - Identificador de la sección
+ * @param {string} req.body.htmlContent - Nuevo contenido HTML
+ */
 router.put("/:name", [verifyToken, hasPermission(0)], async (req, res) => {
   const { htmlContent } = req.body;
 
@@ -37,7 +55,7 @@ router.put("/:name", [verifyToken, hasPermission(0)], async (req, res) => {
       { $set: { htmlContent: htmlContent } },
       {
         new: true,
-        upsert: true,
+        upsert: true, // Crea si no existe
       }
     );
 
@@ -46,12 +64,10 @@ router.put("/:name", [verifyToken, hasPermission(0)], async (req, res) => {
       content: updatedContent,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        message: "Error al actualizar el contenido",
-        error: error.message,
-      });
+    res.status(500).json({
+      message: "Error al actualizar el contenido",
+      error: error.message,
+    });
   }
 });
 

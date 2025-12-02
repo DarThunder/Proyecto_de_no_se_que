@@ -2,6 +2,13 @@ import { Router } from "express";
 const router = Router();
 import Message from "../models/Message.js";
 
+/**
+ * Obtiene todos los mensajes de tipo "reorder" (solicitud de stock).
+ * Ordenados del más reciente al más antiguo.
+ *
+ * @route GET /messages/reorder
+ * @access Public (Debería ser Private - Ring 1/2)
+ */
 router.get("/reorder", async (req, res) => {
   try {
     const messages = await Message.find({ type: "reorder" }).sort({
@@ -14,6 +21,15 @@ router.get("/reorder", async (req, res) => {
   }
 });
 
+/**
+ * Crea una nueva solicitud de reabastecimiento.
+ *
+ * @route POST /messages/reorder
+ * @param {string} req.body.productName - Nombre del producto
+ * @param {string} req.body.supplier - ID del proveedor
+ * @param {number} req.body.quantity - Cantidad a pedir
+ * @param {string} req.body.urgency - 'normal' | 'urgent' | 'critical'
+ */
 router.post("/reorder", async (req, res) => {
   try {
     const {
@@ -51,6 +67,11 @@ router.post("/reorder", async (req, res) => {
   }
 });
 
+/**
+ * Marca un mensaje específico como leído.
+ *
+ * @route PUT /messages/:id/read
+ */
 router.put("/:id/read", async (req, res) => {
   try {
     const message = await Message.findByIdAndUpdate(
@@ -70,6 +91,12 @@ router.put("/:id/read", async (req, res) => {
   }
 });
 
+/**
+ * Marca TODOS los mensajes pendientes como leídos.
+ * Útil para botón "Marcar todo como leído".
+ *
+ * @route PUT /messages/mark-all-read
+ */
 router.put("/mark-all-read", async (req, res) => {
   try {
     await Message.updateMany({ read: false }, { read: true });
@@ -80,6 +107,12 @@ router.put("/mark-all-read", async (req, res) => {
   }
 });
 
+/**
+ * Aprueba una solicitud de reabastecimiento.
+ * Cambia estado a 'approved' y guarda la fecha.
+ *
+ * @route PUT /messages/:id/approve
+ */
 router.put("/:id/approve", async (req, res) => {
   try {
     const message = await Message.findByIdAndUpdate(
@@ -102,6 +135,13 @@ router.put("/:id/approve", async (req, res) => {
   }
 });
 
+/**
+ * Rechaza una solicitud de reabastecimiento.
+ * Requiere un motivo de rechazo.
+ *
+ * @route PUT /messages/:id/reject
+ * @param {string} req.body.reason - Motivo del rechazo
+ */
 router.put("/:id/reject", async (req, res) => {
   try {
     const { reason } = req.body;

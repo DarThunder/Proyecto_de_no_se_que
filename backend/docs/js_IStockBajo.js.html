@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: js/IStockBajo.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: js/IStockBajo.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file js/IStockBajo.js
+ * @description Módulo de gestión de inventario crítico.
+ * Permite visualizar el estado del stock de todos los productos, clasificarlos por niveles de alerta (Bajo, Medio, Normal)
+ * y enviar solicitudes de reabastecimiento (notificaciones) al gerente.
+ */
+
+/**
+ * Inicializa el módulo de stock bajo cuando el DOM está listo.
+ * Configura referencias al DOM, constantes de niveles de stock y la lógica de la aplicación.
+ * @listens document#DOMContentLoaded
+ */
+document.addEventListener("DOMContentLoaded", function () {
+  // --- Referencias al DOM ---
+  const statsCritical = document.querySelector(".stat-card:nth-child(1) h3");
+  const statsWarning = document.querySelector(".stat-card:nth-child(2) h3");
+  const statsNormal = document.querySelector(".stat-card:nth-child(3) h3");
+  const alertBanner = document.querySelector(".alert-banner");
+  const alertMessage = document.getElementById("alertMessage");
+  const tableBody = document.querySelector("tbody");
+  const filterButtons = document.querySelectorAll(".filter-btn");
+  const reorderForm = document.getElementById("reorderForm");
+  const closeForm = document.getElementById("closeForm");
+  const orderForm = document.getElementById("orderForm");
+  const productNameInput = document.getElementById("productName");
+  const userAvatar = document.getElementById("userAvatar");
+  const userName = document.getElementById("userName");
+  const userRole = document.getElementById("userRole");
+
+  // --- Estado de la aplicación ---
+  /** @type {Array&lt;Object>} Lista completa de productos procesados. */
+  let allProducts = [];
+  /** @type {Array&lt;Object>} Lista de productos filtrados actualmente visibles. */
+  let filteredProducts = [];
+  /** @type {string} Filtro activo actual ('all', 'bajo', 'medio', 'normal'). */
+  let currentFilter = "all";
+
+  // --- Configuración ---
+  /**
+   * Umbrales para determinar el estado del inventario.
+   * @const {Object}
+   */
+  const STOCK_LEVELS = {
+    BAJO: 15, // 0-15 unidades: Crítico/Bajo
+    MEDIO: 50, // 16-49 unidades: Advertencia/Medio
+    NORMAL: 50, // 50+ unidades: Normal
+  };
+
+  /**
+   * Envía una notificación de solicitud de reabastecimiento al backend.
+   * @async
+   * @param {Object} orderDetails - Detalles del pedido.
+   * @param {string} orderDetails.productName - Nombre del producto.
+   * @param {string} orderDetails.productId - ID del producto/variante.
+   * @param {string} orderDetails.supplier - ID del proveedor seleccionado.
+   * @param {number} orderDetails.quantity - Cantidad solicitada.
+   * @param {string} orderDetails.urgency - Nivel de urgencia.
+   * @returns {Promise&lt;boolean>} True si el envío fue exitoso, false si falló.
+   */
+  async function sendManagerNotification(orderDetails) {
+    try {
+      console.log("Enviando notificación al gerente:", orderDetails);
+
+      // Determinar la URL base (manejo de puertos para desarrollo local)
+      const baseUrl = window.location.origin.includes("5500")
+        ? "http://localhost:8080"
+        : window.location.origin;
+
+      const response = await fetch(`${baseUrl}/messages/reorder`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          productName: orderDetails.productName,
+          variantId: orderDetails.productId,
+          supplier: orderDetails.supplier,
+          supplierName: orderDetails.supplierName,
+          quantity: parseInt(orderDetails.quantity),
+          urgency: orderDetails.urgency,
+          orderId: orderDetails.orderId || "N/A",
+          requestedBy: "Encargado de Inventario",
+          notes:
+            orderDetails.notes ||
+            "Solicitud de reabastecimiento por stock bajo",
+        }),
+      });
+
+      if (response.ok) {
+        console.log("✅ Notificación enviada al gerente correctamente");
+        return true;
+      } else {
+        console.error(
+          "❌ Error al enviar notificación al gerente:",
+          response.status
+        );
+        return false;
+      }
+    } catch (error) {
+      console.error("❌ Error enviando notificación:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Abre el formulario modal de reabastecimiento para un producto específico.
+   * Pre-selecciona la urgencia sugerida basada en el stock actual.
+   * @param {string} productId - ID de la variante/producto.
+   * @param {string} productName - Nombre para mostrar en el formulario.
+   */
+  function openReorderForm(productId, productName) {
+    const form = document.getElementById("reorderForm");
+    const productInput = document.getElementById("productName");
+
+    productInput.value = productName;
+    form.style.display = "block";
+    form.dataset.productId = productId;
+
+    // Auto-seleccionar urgencia basada en el stock actual
+    const product = allProducts.find((p) => p.id === productId);
+    if (product) {
+      const urgencySelect = document.getElementById("urgency");
+      if (urgencySelect) {
+        if (product.stock &lt;= 5) {
+          urgencySelect.value = "critical";
+        } else if (product.stock &lt;= 15) {
+          urgencySelect.value = "urgent";
+        } else {
+          urgencySelect.value = "normal";
+        }
+      }
+    }
+  }
+
+  /**
+   * Procesa el envío del formulario de reabastecimiento.
+   * Recolecta datos, valida y llama a `sendManagerNotification`.
+   * @async
+   */
+  async function submitReorderForm() {
+    const form = document.getElementById("reorderForm");
+    const productId = form.dataset.productId;
+    const productName = document.getElementById("productName").value;
+    const supplierSelect = document.getElementById("supplier");
+    const quantity = document.getElementById("quantity").value;
+    const urgency = document.getElementById("urgency").value;
+
+    if (!supplierSelect.value) {
+      alert("Por favor selecciona un proveedor");
+      return;
+    }
+
+    const supplier = supplierSelect.value;
+    const supplierName =
+      supplierSelect.options[supplierSelect.selectedIndex].text;
+
+    try {
+      // Enviar notificación al gerente
+      const notificationSent = await sendManagerNotification({
+        productId: productId,
+        productName: productName,
+        supplier: supplier,
+        supplierName: supplierName,
+        quantity: quantity,
+        urgency: urgency,
+      });
+
+      if (notificationSent) {
+        alert(
+          `✅ ¡Solicitud enviada al gerente!\n\nProducto: ${productName}\nCantidad: ${quantity}\nProveedor: ${supplierName}\nUrgencia: ${urgency}`
+        );
+      } else {
+        alert(
+          `⚠️ Error al enviar notificación\n\nProducto: ${productName}\nCantidad: ${quantity}\nProveedor: ${supplierName}`
+        );
+      }
+
+      closeReorderForm();
+    } catch (error) {
+      console.error("Error realizando pedido:", error);
+      alert("Error al realizar el pedido");
+    }
+  }
+
+  /**
+   * Cierra el formulario modal y resetea sus campos.
+   */
+  function closeReorderForm() {
+    document.getElementById("reorderForm").style.display = "none";
+    document.getElementById("orderForm").reset();
+  }
+
+  // Exponer funciones necesarias al scope global para los botones onclick inline
+  window.openReorderForm = openReorderForm;
+  window.closeReorderForm = closeReorderForm;
+  window.submitReorderForm = submitReorderForm;
+
+  /**
+   * Función orquestadora de inicialización.
+   * Carga datos de usuario y productos, y configura eventos.
+   */
+  async function init() {
+    await loadUserInfo();
+    await loadProducts();
+    setupEventListeners();
+  }
+
+  /**
+   * Carga la información del usuario en el header (Actualmente datos mock).
+   */
+  async function loadUserInfo() {
+    try {
+      // TODO: Conectar con /users/me para datos reales si es necesario
+      const user = {
+        name: "Inventario",
+        role: "Encargado del Inventario",
+        initials: "I",
+      };
+
+      userAvatar.textContent = user.initials;
+      userName.textContent = user.name;
+      userRole.textContent = user.role;
+    } catch (error) {
+      console.error("Error cargando información del usuario:", error);
+    }
+  }
+
+  /**
+   * Obtiene la lista de productos desde la API y procesa sus niveles de stock.
+   * Actualiza la tabla, estadísticas y banners.
+   * @async
+   */
+  async function loadProducts() {
+    try {
+      showLoadingState();
+
+      const baseUrl = window.location.origin.includes("5500")
+        ? "http://localhost:8080"
+        : window.location.origin;
+
+      const response = await fetch(`${baseUrl}/products`);
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const variants = await response.json();
+      allProducts = processProductData(variants);
+
+      applyFilter("all");
+      updateStats();
+      updateAlertBanner();
+    } catch (error) {
+      console.error("Error cargando productos:", error);
+      showErrorState("Error al cargar los productos.");
+    }
+  }
+
+  /**
+   * Transforma los datos crudos de la API en un formato optimizado para la tabla de inventario.
+   * Calcula el nivel de stock (`stockLevel`) y estado para cada variante.
+   * @param {Array&lt;Object>} variants - Datos crudos de la API.
+   * @returns {Array&lt;Object>} Lista procesada de productos.
+   */
+  function processProductData(variants) {
+    return variants
+      .map((variant) => {
+        const product = variant.product;
+
+        if (!product) {
+          console.warn("Variante sin producto:", variant);
+          return null;
+        }
+
+        const stockLevel = getStockLevel(variant.stock);
+
+        let imageUrl = product.image_url || "/sources/img/logo_negro.png";
+        if (!imageUrl.startsWith("/")) {
+          imageUrl = "/" + imageUrl;
+        }
+
+        return {
+          id: variant._id,
+          productId: product._id,
+          name: product.name,
+          category: product.category,
+          size: variant.size,
+          sku: variant.sku,
+          stock: variant.stock,
+          stockLevel: stockLevel,
+          status: getStockStatus(stockLevel),
+          minStock: STOCK_LEVELS.BAJO,
+          image: imageUrl,
+        };
+      })
+      .filter((product) => product !== null);
+  }
+
+  /**
+   * Determina la categoría de nivel de stock basada en la cantidad.
+   * @param {number} stock
+   * @returns {'bajo'|'medio'|'normal'}
+   */
+  function getStockLevel(stock) {
+    if (stock &lt;= STOCK_LEVELS.BAJO) return "bajo";
+    if (stock &lt; STOCK_LEVELS.NORMAL) return "medio";
+    return "normal";
+  }
+
+  /**
+   * Devuelve una etiqueta legible para el estado del stock.
+   * @param {string} level
+   * @returns {string} Texto UI (ej. 'Bajo', 'Normal').
+   */
+  function getStockStatus(level) {
+    const statusMap = {
+      bajo: "Bajo",
+      medio: "Medio",
+      normal: "Normal",
+    };
+    return statusMap[level] || "Desconocido";
+  }
+
+  /**
+   * Filtra la lista de productos visible según el criterio seleccionado.
+   * @param {'all'|'bajo'|'medio'|'normal'} filter
+   */
+  function applyFilter(filter) {
+    currentFilter = filter;
+
+    switch (filter) {
+      case "bajo":
+        filteredProducts = allProducts.filter((p) => p.stockLevel === "bajo");
+        break;
+      case "medio":
+        filteredProducts = allProducts.filter((p) => p.stockLevel === "medio");
+        break;
+      case "normal":
+        filteredProducts = allProducts.filter((p) => p.stockLevel === "normal");
+        break;
+      default:
+        filteredProducts = allProducts;
+    }
+
+    renderTable();
+    updateFilterButtons();
+  }
+
+  /**
+   * Genera el HTML de la tabla con los productos filtrados.
+   */
+  function renderTable() {
+    if (filteredProducts.length === 0) {
+      tableBody.innerHTML = `
+                &lt;tr>
+                    &lt;td colspan="5" style="text-align: center; padding: 40px; color: #666;">
+                        &lt;i class="fas fa-check-circle" style="font-size: 2rem; margin-bottom: 10px; color: var(--success);">&lt;/i>
+                        &lt;br>
+                        ${
+                          currentFilter === "all"
+                            ? "No hay productos con stock bajo"
+                            : "No hay productos"
+                        }
+                    &lt;/td>
+                &lt;/tr>
+            `;
+      return;
+    }
+
+    tableBody.innerHTML = filteredProducts
+      .map(
+        (product) => `
+            &lt;tr>
+                &lt;td>
+                    &lt;div style="display: flex; align-items: center; gap: 10px;">
+                        &lt;img src="${product.image}" alt="${product.name}" 
+                            style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px;">
+                        &lt;div>
+                            &lt;strong>${product.name}&lt;/strong>
+                            &lt;br>
+                            &lt;small style="color: #666;">Talla: ${
+                              product.size
+                            } | SKU: ${product.sku}&lt;/small>
+                        &lt;/div>
+                    &lt;/div>
+                &lt;/td>
+                &lt;td>${
+                  product.category.charAt(0).toUpperCase() +
+                  product.category.slice(1)
+                }&lt;/td>
+                &lt;td class="stock-${product.stockLevel}">${
+          product.stock
+        } unidades&lt;/td>
+                &lt;td>
+                    &lt;span class="stock-${product.stockLevel}">
+                        ${product.status}
+                        ${
+                          product.stockLevel === "bajo"
+                            ? ' &lt;i class="fas fa-exclamation-circle">&lt;/i>'
+                            : product.stockLevel === "medio"
+                            ? ' &lt;i class="fas fa-clock">&lt;/i>'
+                            : ' &lt;i class="fas fa-check-circle">&lt;/i>'
+                        }
+                    &lt;/span>
+                &lt;/td>
+                &lt;td>
+                    &lt;button class="action-btn order-btn" 
+                            onclick="openReorderForm('${product.id}', '${
+          product.name
+        } - ${product.size}')"
+                            ${
+                              product.stockLevel === "normal"
+                                ? 'disabled style="opacity: 0.5;"'
+                                : ""
+                            }>
+                        &lt;i class="fas fa-box">&lt;/i> Pedir
+                    &lt;/button>
+                &lt;/td>
+            &lt;/tr>
+        `
+      )
+      .join("");
+  }
+
+  /**
+   * Actualiza el estado visual (clase `active`) de los botones de filtro.
+   */
+  function updateFilterButtons() {
+    filterButtons.forEach((btn) => {
+      const filterType = btn.textContent.toLowerCase();
+      btn.classList.toggle(
+        "active",
+        (filterType === "todos" &amp;&amp; currentFilter === "all") ||
+          (filterType === "normal" &amp;&amp; currentFilter === "normal") ||
+          (filterType === "medio" &amp;&amp; currentFilter === "medio") ||
+          (filterType === "bajo" &amp;&amp; currentFilter === "bajo")
+      );
+    });
+  }
+
+  /**
+   * Recalcula y actualiza los contadores de las tarjetas de estadísticas.
+   */
+  function updateStats() {
+    const bajoCount = allProducts.filter((p) => p.stockLevel === "bajo").length;
+    const medioCount = allProducts.filter(
+      (p) => p.stockLevel === "medio"
+    ).length;
+    const normalCount = allProducts.filter(
+      (p) => p.stockLevel === "normal"
+    ).length;
+
+    statsCritical.textContent = bajoCount;
+    statsWarning.textContent = medioCount;
+    statsNormal.textContent = normalCount;
+  }
+
+  /**
+   * Muestra u oculta el banner de alerta superior si hay productos críticos.
+   */
+  function updateAlertBanner() {
+    // Nota: El código original buscaba 'critical', pero el nivel se define como 'bajo' en getStockLevel
+    const criticalProducts = allProducts.filter((p) => p.stockLevel === "bajo"); // Corregido conceptualmente a 'bajo' para coincidir con lógica
+
+    if (criticalProducts.length > 0) {
+      alertMessage.textContent = `${criticalProducts.length} producto(s) tienen niveles de inventario por debajo del mínimo.`;
+      alertBanner.style.display = "flex";
+    } else {
+      alertBanner.style.display = "none";
+    }
+  }
+
+  function showLoadingState() {
+    tableBody.innerHTML = `
+            &lt;tr>
+                &lt;td colspan="6" style="text-align: center; padding: 40px; color: #666;">
+                    &lt;i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 10px;">&lt;/i>
+                    &lt;br>
+                    Cargando productos del inventario...
+                &lt;/td>
+            &lt;/tr>
+        `;
+  }
+
+  function showErrorState(message) {
+    tableBody.innerHTML = `
+            &lt;tr>
+                &lt;td colspan="6" style="text-align: center; padding: 40px; color: var(--danger);">
+                    &lt;i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 10px;">&lt;/i>
+                    &lt;br>
+                    ${message}
+                    &lt;br>
+                    &lt;button onclick="location.reload()" class="action-btn order-btn" style="margin-top: 10px;">
+                        &lt;i class="fas fa-redo">&lt;/i> Reintentar
+                    &lt;/button>
+                &lt;/td>
+            &lt;/tr>
+        `;
+  }
+
+  /**
+   * Configura los event listeners para filtros, formularios y cierre de modales.
+   */
+  function setupEventListeners() {
+    filterButtons.forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const filter = this.textContent.toLowerCase();
+        const filterMap = {
+          todos: "all",
+          normal: "normal",
+          medio: "medio",
+          bajo: "bajo",
+        };
+        applyFilter(filterMap[filter] || "all");
+      });
+    });
+
+    closeForm.addEventListener("click", closeReorderForm);
+
+    orderForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      submitReorderForm();
+    });
+
+    // Cerrar modal al hacer click fuera
+    document.addEventListener("click", function (e) {
+      if (
+        reorderForm.style.display === "block" &amp;&amp;
+        !reorderForm.contains(e.target) &amp;&amp;
+        !e.target.classList.contains("order-btn")
+      ) {
+        closeReorderForm();
+      }
+    });
+  }
+
+  // Inicializar
+  init();
+});
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CategoryManager.html">CategoryManager</a></li><li><a href="ProductManager.html">ProductManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:submit">submit</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addBtn">addBtn</a></li><li><a href="global.html#addWishlistListeners">addWishlistListeners</a></li><li><a href="global.html#allCategoryProducts">allCategoryProducts</a></li><li><a href="global.html#allowedOrigins">allowedOrigins</a></li><li><a href="global.html#applyFilters">applyFilters</a></li><li><a href="global.html#approveOrder">approveOrder</a></li><li><a href="global.html#availableRoles">availableRoles</a></li><li><a href="global.html#cancelBtn">cancelBtn</a></li><li><a href="global.html#cargarTerminosUsuario">cargarTerminosUsuario</a></li><li><a href="global.html#checkIfEmpty">checkIfEmpty</a></li><li><a href="global.html#checkLoginStatus">checkLoginStatus</a></li><li><a href="global.html#closeCouponModal">closeCouponModal</a></li><li><a href="global.html#closeEditModal">closeEditModal</a></li><li><a href="global.html#closeProviderModal">closeProviderModal</a></li><li><a href="global.html#closeUserModal">closeUserModal</a></li><li><a href="global.html#couponForm">couponForm</a></li><li><a href="global.html#createEditModal">createEditModal</a></li><li><a href="global.html#createOrderCardHTML">createOrderCardHTML</a></li><li><a href="global.html#createProductHTML">createProductHTML</a></li><li><a href="global.html#createReviewHTML">createReviewHTML</a></li><li><a href="global.html#createStarsHTML">createStarsHTML</a></li><li><a href="global.html#currentEditingUserId">currentEditingUserId</a></li><li><a href="global.html#currentUserRing">currentUserRing</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#deleteCoupon">deleteCoupon</a></li><li><a href="global.html#deleteProvider">deleteProvider</a></li><li><a href="global.html#deleteReview">deleteReview</a></li><li><a href="global.html#displayProducts">displayProducts</a></li><li><a href="global.html#editReview">editReview</a></li><li><a href="global.html#editarRol">editarRol</a></li><li><a href="global.html#editingCouponId">editingCouponId</a></li><li><a href="global.html#editingProviderId">editingProviderId</a></li><li><a href="global.html#editingReviewId">editingReviewId</a></li><li><a href="global.html#eliminarRol">eliminarRol</a></li><li><a href="global.html#form">form</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#generateCouponCode">generateCouponCode</a></li><li><a href="global.html#getStatusLabel">getStatusLabel</a></li><li><a href="global.html#getUrgencyLabel">getUrgencyLabel</a></li><li><a href="global.html#goBackToProducts">goBackToProducts</a></li><li><a href="global.html#handleFormSubmit">handleFormSubmit</a></li><li><a href="global.html#hasPermission">hasPermission</a></li><li><a href="global.html#initializeBarcodesModal">initializeBarcodesModal</a></li><li><a href="global.html#initializeCarousels">initializeCarousels</a></li><li><a href="global.html#initializeCatProductButtons">initializeCatProductButtons</a></li><li><a href="global.html#initializeCatWishlistButtons">initializeCatWishlistButtons</a></li><li><a href="global.html#initializeMessagesSystem">initializeMessagesSystem</a></li><li><a href="global.html#initializeProductButtons">initializeProductButtons</a></li><li><a href="global.html#initializeWishlistButtons">initializeWishlistButtons</a></li><li><a href="global.html#isEditing">isEditing</a></li><li><a href="global.html#loadBestSellersReport">loadBestSellersReport</a></li><li><a href="global.html#loadCartItems">loadCartItems</a></li><li><a href="global.html#loadCategoryProducts">loadCategoryProducts</a></li><li><a href="global.html#loadCoupons">loadCoupons</a></li><li><a href="global.html#loadDashboardStats">loadDashboardStats</a></li><li><a href="global.html#loadDynamicCategories">loadDynamicCategories</a></li><li><a href="global.html#loadEmployeeSalesReport">loadEmployeeSalesReport</a></li><li><a href="global.html#loadMessagesFromBackend">loadMessagesFromBackend</a></li><li><a href="global.html#loadProducts">loadProducts</a></li><li><a href="global.html#loadProviders">loadProviders</a></li><li><a href="global.html#loadRoles">loadRoles</a></li><li><a href="global.html#loadUserData">loadUserData</a></li><li><a href="global.html#loadUserDataAndProducts">loadUserDataAndProducts</a></li><li><a href="global.html#loadUserOrders">loadUserOrders</a></li><li><a href="global.html#loadUserReviews">loadUserReviews</a></li><li><a href="global.html#loadUsers">loadUsers</a></li><li><a href="global.html#loadWebOrders">loadWebOrders</a></li><li><a href="global.html#loadWishlistItems">loadWishlistItems</a></li><li><a href="global.html#markAllAsRead">markAllAsRead</a></li><li><a href="global.html#markMessageAsRead">markMessageAsRead</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#modalTitle">modalTitle</a></li><li><a href="global.html#moveItemToCart">moveItemToCart</a></li><li><a href="global.html#openCreateModal">openCreateModal</a></li><li><a href="global.html#openEditModal">openEditModal</a></li><li><a href="global.html#productGrid">productGrid</a></li><li><a href="global.html#productsToInsert">productsToInsert</a></li><li><a href="global.html#providerForm">providerForm</a></li><li><a href="global.html#recalculateSummary">recalculateSummary</a></li><li><a href="global.html#recalculateTotal">recalculateTotal</a></li><li><a href="global.html#rejectOrder">rejectOrder</a></li><li><a href="global.html#removeFromWishlist">removeFromWishlist</a></li><li><a href="global.html#removeItemFromCart">removeItemFromCart</a></li><li><a href="global.html#renderProducts">renderProducts</a></li><li><a href="global.html#resetForm">resetForm</a></li><li><a href="global.html#selectProduct">selectProduct</a></li><li><a href="global.html#selectedProduct">selectedProduct</a></li><li><a href="global.html#selectedProvider">selectedProvider</a></li><li><a href="global.html#selectedRating">selectedRating</a></li><li><a href="global.html#selectedSize">selectedSize</a></li><li><a href="global.html#sendPasswordResetEmail">sendPasswordResetEmail</a></li><li><a href="global.html#setupCartEventListeners">setupCartEventListeners</a></li><li><a href="global.html#setupEditModalListeners">setupEditModalListeners</a></li><li><a href="global.html#setupEventListeners">setupEventListeners</a></li><li><a href="global.html#setupFilterListeners">setupFilterListeners</a></li><li><a href="global.html#setupModal">setupModal</a></li><li><a href="global.html#setupScrollEffects">setupScrollEffects</a></li><li><a href="global.html#shippingData">shippingData</a></li><li><a href="global.html#showMessageDetail">showMessageDetail</a></li><li><a href="global.html#showMessagesError">showMessagesError</a></li><li><a href="global.html#showNotification">showNotification</a></li><li><a href="global.html#startMessagesRealTimeUpdates">startMessagesRealTimeUpdates</a></li><li><a href="global.html#submitReview">submitReview</a></li><li><a href="global.html#tableBody">tableBody</a></li><li><a href="global.html#toggleWishlistItem">toggleWishlistItem</a></li><li><a href="global.html#toggleWishlistItemCat">toggleWishlistItemCat</a></li><li><a href="global.html#transporter">transporter</a></li><li><a href="global.html#updateCartItemQuantity">updateCartItemQuantity</a></li><li><a href="global.html#updateMessagesUI">updateMessagesUI</a></li><li><a href="global.html#updateRatingStars">updateRatingStars</a></li><li><a href="global.html#updateSidebarForLoggedInUser">updateSidebarForLoggedInUser</a></li><li><a href="global.html#updateSizeSelection">updateSizeSelection</a></li><li><a href="global.html#updateSummary">updateSummary</a></li><li><a href="global.html#updateWishlistSummary">updateWishlistSummary</a></li><li><a href="global.html#verifyToken">verifyToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 08:00:47 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

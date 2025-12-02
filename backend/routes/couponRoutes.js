@@ -4,6 +4,25 @@ import Coupon from "../models/Coupon.js";
 import verifyToken from "../middleware/verifyToken.js";
 import hasPermission from "../middleware/hasPermission.js";
 
+/**
+ * Genera un código de cupón aleatorio alfanumérico de 8 caracteres.
+ * @returns {string} Código generado (ej: 'A1B2C3D4')
+ */
+function generateCouponCode() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+/**
+ * Obtiene todos los cupones ordenados por fecha de creación descendente.
+ *
+ * @route GET /coupons
+ * @access Private (Ring 1 - Manager)
+ */
 router.get("/", verifyToken, hasPermission(1), async (req, res) => {
   try {
     const coupons = await Coupon.find().sort({ createdAt: -1 });
@@ -13,6 +32,12 @@ router.get("/", verifyToken, hasPermission(1), async (req, res) => {
   }
 });
 
+/**
+ * Obtiene un cupón específico por su ID interno.
+ *
+ * @route GET /coupons/:id
+ * @access Private (Ring 1 - Manager)
+ */
 router.get("/:id", verifyToken, hasPermission(1), async (req, res) => {
   try {
     const coupon = await Coupon.findById(req.params.id);
@@ -25,6 +50,16 @@ router.get("/:id", verifyToken, hasPermission(1), async (req, res) => {
   }
 });
 
+/**
+ * Crea un nuevo cupón con un código generado automáticamente.
+ *
+ * @route POST /coupons
+ * @access Private (Ring 1 - Manager)
+ * @param {string} req.body.name - Nombre de la promoción
+ * @param {number} req.body.discount - Porcentaje de descuento
+ * @param {Date} [req.body.expiration_date] - Fecha de expiración
+ * @param {number} [req.body.maximum_uses] - Límite de usos totales
+ */
 router.post("/", verifyToken, hasPermission(1), async (req, res) => {
   try {
     const { name, discount, expiration_date, maximum_uses } = req.body;
@@ -49,6 +84,12 @@ router.post("/", verifyToken, hasPermission(1), async (req, res) => {
   }
 });
 
+/**
+ * Actualiza los datos de un cupón existente.
+ *
+ * @route PUT /coupons/:id
+ * @access Private (Ring 1 - Manager)
+ */
 router.put("/:id", verifyToken, hasPermission(1), async (req, res) => {
   try {
     const coupon = await Coupon.findByIdAndUpdate(req.params.id, req.body, {
@@ -64,6 +105,12 @@ router.put("/:id", verifyToken, hasPermission(1), async (req, res) => {
   }
 });
 
+/**
+ * Elimina un cupón permanentemente.
+ *
+ * @route DELETE /coupons/:id
+ * @access Private (Ring 1 - Manager)
+ */
 router.delete("/:id", verifyToken, hasPermission(1), async (req, res) => {
   try {
     const coupon = await Coupon.findByIdAndDelete(req.params.id);
@@ -76,6 +123,15 @@ router.delete("/:id", verifyToken, hasPermission(1), async (req, res) => {
   }
 });
 
+/**
+ * Valida si un cupón es aplicable.
+ * Verifica existencia, estado activo, fecha de expiración y límite de usos.
+ * Endpoint ligero para validación rápida en POS/Checkout.
+ *
+ * @route GET /coupons/validate/:code
+ * @access Private (Ring 2 - Cashier+)
+ * @param {string} req.params.code - Código del cupón
+ */
 router.get(
   "/validate/:code",
   verifyToken,
@@ -116,6 +172,13 @@ router.get(
   }
 );
 
+/**
+ * Busca y devuelve detalles completos de un cupón válido.
+ * Similar a validar, pero retorna más metadatos (fechas, usos, etc.).
+ *
+ * @route GET /coupons/search/:code
+ * @access Private (Ring 2 - Cashier+)
+ */
 router.get("/search/:code", verifyToken, hasPermission(2), async (req, res) => {
   try {
     const code = req.params.code.toUpperCase();
@@ -163,14 +226,5 @@ router.get("/search/:code", verifyToken, hasPermission(2), async (req, res) => {
     });
   }
 });
-
-function generateCouponCode() {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let result = "";
-  for (let i = 0; i < 8; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
 
 export default router;

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: backend/product-data.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: backend/product-data.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @typedef {Object} SeedVariant
+ * @property {'XS'|'S'|'M'|'L'|'XL'} size - Talla de la variante
+ * @property {string} sku - Stock Keeping Unit único
+ * @property {number} stock - Cantidad inicial
+ */
+
+/**
+ * @typedef {Object} SeedProduct
+ * @property {string} name - Nombre del producto
+ * @property {number} base_price - Precio base
+ * @property {string} description - Descripción corta
+ * @property {string} image_url - Ruta relativa de la imagen
+ * @property {'hombre'|'mujer'|'unisex'} category - Categoría principal
+ * @property {string} productType - Tipo de prenda (hoodie, pantalones, etc.)
+ * @property {SeedVariant[]} variants - Lista de variantes iniciales
+ */
+
+/**
+ * Lista de productos iniciales para poblar la base de datos.
+ * Este archivo es cargado por `mongo-init.js`.
+ * * @type {SeedProduct[]}
+ */
+const productsToInsert = [
+  {
+    name: "Hoodie Clásica",
+    base_price: 799.0,
+    description: "Hoodie de algodón grueso, cómoda y duradera.",
+    image_url: "sources/img/hoodie.jpg",
+    category: "hombre",
+    productType: "hoodie",
+    variants: [
+      { size: "M", sku: "HOOD-CLA-M", stock: 50 },
+      { size: "L", sku: "HOOD-CLA-L", stock: 30 },
+    ],
+  },
+  {
+    name: "Pantalón Cargo",
+    base_price: 650.5,
+    description: "Pantalón estilo cargo con múltiples bolsillos.",
+    image_url: "sources/img/pantalones.jpg",
+    category: "hombre",
+    productType: "pantalones",
+    variants: [{ size: "M", sku: "PANT-CAR-M", stock: 40 }],
+  },
+  {
+    name: "Camiseta Básica",
+    base_price: 350.0,
+    description: "Camiseta de algodón suave, corte regular.",
+    image_url: "sources/img/camisa.jpg",
+    category: "mujer",
+    productType: "camisas",
+    variants: [
+      { size: "S", sku: "CAMI-BAS-S", stock: 100 },
+      { size: "M", sku: "CAMI-BAS-M", stock: 120 },
+    ],
+  },
+  {
+    name: "Hoodie Oversize",
+    base_price: 899.0,
+    description: "Hoodie amplia estilo urbano con capucha ajustable.",
+    image_url: "sources/img/hoodie_oversize.jpg",
+    category: "unisex",
+    productType: "hoodie",
+    variants: [
+      { size: "M", sku: "HOOD-OVER-M", stock: 60 },
+      { size: "L", sku: "HOOD-OVER-L", stock: 40 },
+    ],
+  },
+  {
+    name: "Pantalón Jogger",
+    base_price: 720.0,
+    description: "Jogger deportivo con ajuste elástico y bolsillos laterales.",
+    image_url: "sources/img/jogger.jpg",
+    category: "hombre",
+    productType: "pantalones",
+    variants: [
+      { size: "M", sku: "PANT-JOG-M", stock: 35 },
+      { size: "L", sku: "PANT-JOG-L", stock: 25 },
+    ],
+  },
+  {
+    name: "Short Deportivo",
+    base_price: 450.0,
+    description: "Short ligero y transpirable ideal para entrenamiento.",
+    image_url: "sources/img/short_deportivo.jpg",
+    category: "hombre",
+    productType: "shorts",
+    variants: [
+      { size: "M", sku: "SHOR-DEP-M", stock: 70 },
+      { size: "L", sku: "SHOR-DEP-L", stock: 50 },
+    ],
+  },
+  {
+    name: "Camisa de Lino",
+    base_price: 780.0,
+    description: "Camisa fresca de lino ideal para clima cálido.",
+    image_url: "sources/img/camisa_lino.jpg",
+    category: "hombre",
+    productType: "camisas",
+    variants: [
+      { size: "M", sku: "CAMS-LIN-M", stock: 40 },
+      { size: "L", sku: "CAMS-LIN-L", stock: 30 },
+    ],
+  },
+  {
+    name: "Hoodie con Cierre",
+    base_price: 820.0,
+    description: "Hoodie con cierre frontal y bolsillos amplios.",
+    image_url: "sources/img/hoodie_cierre.jpg",
+    category: "mujer",
+    productType: "hoodie",
+    variants: [
+      { size: "S", sku: "HOOD-CIE-S", stock: 45 },
+      { size: "M", sku: "HOOD-CIE-M", stock: 40 },
+    ],
+  },
+  {
+    name: "Camiseta Estampada",
+    base_price: 420.0,
+    description: "Camiseta con estampado moderno y tela suave.",
+    image_url: "sources/img/camiseta_estampada.jpg",
+    category: "mujer",
+    productType: "camisas",
+    variants: [
+      { size: "S", sku: "CAMI-EST-S", stock: 90 },
+      { size: "M", sku: "CAMI-EST-M", stock: 85 },
+    ],
+  },
+  {
+    name: "Pantalón Formal",
+    base_price: 890.0,
+    description: "Pantalón de vestir elegante y cómodo.",
+    image_url: "sources/img/pantalon_formal.jpg",
+    category: "hombre",
+    productType: "pantalones",
+    variants: [
+      { size: "M", sku: "PANT-FOR-M", stock: 25 },
+      { size: "L", sku: "PANT-FOR-L", stock: 20 },
+    ],
+  },
+  {
+    name: "Short Casual",
+    base_price: 499.0,
+    description: "Short de mezclilla suave, ideal para uso diario.",
+    image_url: "sources/img/short_casual.jpg",
+    category: "mujer",
+    productType: "shorts",
+    variants: [
+      { size: "S", sku: "SHOR-CAS-S", stock: 80 },
+      { size: "M", sku: "SHOR-CAS-M", stock: 60 },
+    ],
+  },
+  {
+    name: "Camisa Cuadros",
+    base_price: 650.0,
+    description: "Camisa de franela con diseño de cuadros clásicos.",
+    image_url: "sources/img/camisa_cuadros.jpg",
+    category: "hombre",
+    productType: "camisas",
+    variants: [
+      { size: "M", sku: "CAMS-CUA-M", stock: 35 },
+      { size: "L", sku: "CAMS-CUA-L", stock: 25 },
+    ],
+  },
+  {
+    name: "Hoodie Crop Top",
+    base_price: 770.0,
+    description: "Hoodie corta con diseño juvenil y moderno.",
+    image_url: "sources/img/hoodie_crop.jpg",
+    category: "mujer",
+    productType: "hoodie",
+    variants: [
+      { size: "S", sku: "HOOD-CRO-S", stock: 50 },
+      { size: "M", sku: "HOOD-CRO-M", stock: 40 },
+    ],
+  },
+  {
+    name: "Camiseta Sin Mangas",
+    base_price: 330.0,
+    description: "Camiseta sin mangas ideal para el gimnasio.",
+    image_url: "sources/img/camiseta_sinmangas.jpg",
+    category: "unisex",
+    productType: "camisas",
+    variants: [
+      { size: "M", sku: "CAMI-SIN-M", stock: 70 },
+      { size: "L", sku: "CAMI-SIN-L", stock: 60 },
+    ],
+  },
+  {
+    name: "Pantalón Skinny",
+    base_price: 680.0,
+    description: "Pantalón ajustado con tejido elástico.",
+    image_url: "sources/img/pantalon_skinny.jpg",
+    category: "mujer",
+    productType: "pantalones",
+    variants: [
+      { size: "S", sku: "PANT-SKI-S", stock: 45 },
+      { size: "M", sku: "PANT-SKI-M", stock: 40 },
+    ],
+  },
+  {
+    name: "Short Running",
+    base_price: 420.0,
+    description: "Short ligero con forro interno y bolsillos laterales.",
+    image_url: "sources/img/short_running.jpg",
+    category: "unisex",
+    productType: "shorts",
+    variants: [
+      { size: "M", sku: "SHOR-RUN-M", stock: 60 },
+      { size: "L", sku: "SHOR-RUN-L", stock: 50 },
+    ],
+  },
+  {
+    name: "Camisa Casual Blanca",
+    base_price: 590.0,
+    description: "Camisa blanca de algodón para cualquier ocasión.",
+    image_url: "sources/img/camisa_blanca.jpg",
+    category: "hombre",
+    productType: "camisas",
+    variants: [
+      { size: "M", sku: "CAMS-BLA-M", stock: 40 },
+      { size: "L", sku: "CAMS-BLA-L", stock: 30 },
+    ],
+  },
+  {
+    name: "Hoodie con Bolsillo Canguro",
+    base_price: 840.0,
+    description: "Hoodie con bolsillo delantero y capucha ajustable.",
+    image_url: "sources/img/hoodie_canguro.jpg",
+    category: "unisex",
+    productType: "hoodie",
+    variants: [
+      { size: "M", sku: "HOOD-CAN-M", stock: 55 },
+      { size: "L", sku: "HOOD-CAN-L", stock: 45 },
+    ],
+  },
+  {
+    name: "Pantalón Chino",
+    base_price: 730.0,
+    description: "Pantalón de corte recto, ideal para un look casual elegante.",
+    image_url: "sources/img/pantalon_chino.jpg",
+    category: "hombre",
+    productType: "pantalones",
+    variants: [
+      { size: "M", sku: "PANT-CHI-M", stock: 30 },
+      { size: "L", sku: "PANT-CHI-L", stock: 25 },
+    ],
+  },
+  {
+    name: "Camiseta Vintage",
+    base_price: 390.0,
+    description: "Camiseta con diseño retro y tacto suave.",
+    image_url: "sources/img/camiseta_vintage.jpg",
+    category: "mujer",
+    productType: "camisas",
+    variants: [
+      { size: "S", sku: "CAMI-VIN-S", stock: 80 },
+      { size: "M", sku: "CAMI-VIN-M", stock: 70 },
+    ],
+  },
+];
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CategoryManager.html">CategoryManager</a></li><li><a href="ProductManager.html">ProductManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:submit">submit</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addBtn">addBtn</a></li><li><a href="global.html#addWishlistListeners">addWishlistListeners</a></li><li><a href="global.html#allCategoryProducts">allCategoryProducts</a></li><li><a href="global.html#allowedOrigins">allowedOrigins</a></li><li><a href="global.html#applyFilters">applyFilters</a></li><li><a href="global.html#approveOrder">approveOrder</a></li><li><a href="global.html#availableRoles">availableRoles</a></li><li><a href="global.html#cancelBtn">cancelBtn</a></li><li><a href="global.html#cargarTerminosUsuario">cargarTerminosUsuario</a></li><li><a href="global.html#checkIfEmpty">checkIfEmpty</a></li><li><a href="global.html#checkLoginStatus">checkLoginStatus</a></li><li><a href="global.html#closeCouponModal">closeCouponModal</a></li><li><a href="global.html#closeEditModal">closeEditModal</a></li><li><a href="global.html#closeProviderModal">closeProviderModal</a></li><li><a href="global.html#closeUserModal">closeUserModal</a></li><li><a href="global.html#couponForm">couponForm</a></li><li><a href="global.html#createEditModal">createEditModal</a></li><li><a href="global.html#createOrderCardHTML">createOrderCardHTML</a></li><li><a href="global.html#createProductHTML">createProductHTML</a></li><li><a href="global.html#createReviewHTML">createReviewHTML</a></li><li><a href="global.html#createStarsHTML">createStarsHTML</a></li><li><a href="global.html#currentEditingUserId">currentEditingUserId</a></li><li><a href="global.html#currentUserRing">currentUserRing</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#deleteCoupon">deleteCoupon</a></li><li><a href="global.html#deleteProvider">deleteProvider</a></li><li><a href="global.html#deleteReview">deleteReview</a></li><li><a href="global.html#displayProducts">displayProducts</a></li><li><a href="global.html#editReview">editReview</a></li><li><a href="global.html#editarRol">editarRol</a></li><li><a href="global.html#editingCouponId">editingCouponId</a></li><li><a href="global.html#editingProviderId">editingProviderId</a></li><li><a href="global.html#editingReviewId">editingReviewId</a></li><li><a href="global.html#eliminarRol">eliminarRol</a></li><li><a href="global.html#form">form</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#generateCouponCode">generateCouponCode</a></li><li><a href="global.html#getStatusLabel">getStatusLabel</a></li><li><a href="global.html#getUrgencyLabel">getUrgencyLabel</a></li><li><a href="global.html#goBackToProducts">goBackToProducts</a></li><li><a href="global.html#handleFormSubmit">handleFormSubmit</a></li><li><a href="global.html#hasPermission">hasPermission</a></li><li><a href="global.html#initializeBarcodesModal">initializeBarcodesModal</a></li><li><a href="global.html#initializeCarousels">initializeCarousels</a></li><li><a href="global.html#initializeCatProductButtons">initializeCatProductButtons</a></li><li><a href="global.html#initializeCatWishlistButtons">initializeCatWishlistButtons</a></li><li><a href="global.html#initializeMessagesSystem">initializeMessagesSystem</a></li><li><a href="global.html#initializeProductButtons">initializeProductButtons</a></li><li><a href="global.html#initializeWishlistButtons">initializeWishlistButtons</a></li><li><a href="global.html#isEditing">isEditing</a></li><li><a href="global.html#loadBestSellersReport">loadBestSellersReport</a></li><li><a href="global.html#loadCartItems">loadCartItems</a></li><li><a href="global.html#loadCategoryProducts">loadCategoryProducts</a></li><li><a href="global.html#loadCoupons">loadCoupons</a></li><li><a href="global.html#loadDashboardStats">loadDashboardStats</a></li><li><a href="global.html#loadDynamicCategories">loadDynamicCategories</a></li><li><a href="global.html#loadEmployeeSalesReport">loadEmployeeSalesReport</a></li><li><a href="global.html#loadMessagesFromBackend">loadMessagesFromBackend</a></li><li><a href="global.html#loadProducts">loadProducts</a></li><li><a href="global.html#loadProviders">loadProviders</a></li><li><a href="global.html#loadRoles">loadRoles</a></li><li><a href="global.html#loadUserData">loadUserData</a></li><li><a href="global.html#loadUserDataAndProducts">loadUserDataAndProducts</a></li><li><a href="global.html#loadUserOrders">loadUserOrders</a></li><li><a href="global.html#loadUserReviews">loadUserReviews</a></li><li><a href="global.html#loadUsers">loadUsers</a></li><li><a href="global.html#loadWebOrders">loadWebOrders</a></li><li><a href="global.html#loadWishlistItems">loadWishlistItems</a></li><li><a href="global.html#markAllAsRead">markAllAsRead</a></li><li><a href="global.html#markMessageAsRead">markMessageAsRead</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#modalTitle">modalTitle</a></li><li><a href="global.html#moveItemToCart">moveItemToCart</a></li><li><a href="global.html#openCreateModal">openCreateModal</a></li><li><a href="global.html#openEditModal">openEditModal</a></li><li><a href="global.html#productGrid">productGrid</a></li><li><a href="global.html#productsToInsert">productsToInsert</a></li><li><a href="global.html#providerForm">providerForm</a></li><li><a href="global.html#recalculateSummary">recalculateSummary</a></li><li><a href="global.html#recalculateTotal">recalculateTotal</a></li><li><a href="global.html#rejectOrder">rejectOrder</a></li><li><a href="global.html#removeFromWishlist">removeFromWishlist</a></li><li><a href="global.html#removeItemFromCart">removeItemFromCart</a></li><li><a href="global.html#renderProducts">renderProducts</a></li><li><a href="global.html#resetForm">resetForm</a></li><li><a href="global.html#selectProduct">selectProduct</a></li><li><a href="global.html#selectedProduct">selectedProduct</a></li><li><a href="global.html#selectedProvider">selectedProvider</a></li><li><a href="global.html#selectedRating">selectedRating</a></li><li><a href="global.html#selectedSize">selectedSize</a></li><li><a href="global.html#sendPasswordResetEmail">sendPasswordResetEmail</a></li><li><a href="global.html#setupCartEventListeners">setupCartEventListeners</a></li><li><a href="global.html#setupEditModalListeners">setupEditModalListeners</a></li><li><a href="global.html#setupEventListeners">setupEventListeners</a></li><li><a href="global.html#setupFilterListeners">setupFilterListeners</a></li><li><a href="global.html#setupModal">setupModal</a></li><li><a href="global.html#setupScrollEffects">setupScrollEffects</a></li><li><a href="global.html#shippingData">shippingData</a></li><li><a href="global.html#showMessageDetail">showMessageDetail</a></li><li><a href="global.html#showMessagesError">showMessagesError</a></li><li><a href="global.html#showNotification">showNotification</a></li><li><a href="global.html#startMessagesRealTimeUpdates">startMessagesRealTimeUpdates</a></li><li><a href="global.html#submitReview">submitReview</a></li><li><a href="global.html#tableBody">tableBody</a></li><li><a href="global.html#toggleWishlistItem">toggleWishlistItem</a></li><li><a href="global.html#toggleWishlistItemCat">toggleWishlistItemCat</a></li><li><a href="global.html#transporter">transporter</a></li><li><a href="global.html#updateCartItemQuantity">updateCartItemQuantity</a></li><li><a href="global.html#updateMessagesUI">updateMessagesUI</a></li><li><a href="global.html#updateRatingStars">updateRatingStars</a></li><li><a href="global.html#updateSidebarForLoggedInUser">updateSidebarForLoggedInUser</a></li><li><a href="global.html#updateSizeSelection">updateSizeSelection</a></li><li><a href="global.html#updateSummary">updateSummary</a></li><li><a href="global.html#updateWishlistSummary">updateWishlistSummary</a></li><li><a href="global.html#verifyToken">verifyToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 08:00:47 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

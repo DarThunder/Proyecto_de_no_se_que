@@ -1,5 +1,14 @@
 import jwt from "jsonwebtoken";
 
+/**
+ * Middleware de autenticación que verifica el JWT almacenado en las cookies.
+ * Si es válido, decodifica el payload y lo adjunta a `req.user`.
+ *
+ * @param {Object} req - Objeto de solicitud de Express
+ * @param {Object} res - Objeto de respuesta de Express
+ * @param {Function} next - Función para continuar al siguiente middleware
+ * @returns {any} Retorna respuesta 401/403 si falla, o void si es exitoso.
+ */
 const verifyToken = (req, res, next) => {
   const token = req.cookies.token;
 

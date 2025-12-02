@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: js/reporte_vendedores.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: js/reporte_vendedores.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file js/reporte_vendedores.js
+ * @description Genera el reporte de desempeño de ventas por vendedor (empleado).
+ * Verifica permisos administrativos, obtiene los datos agregados de ventas por usuario
+ * desde el backend y renderiza una tabla con métricas clave (Total Ventas, Ingresos, Ticket Promedio).
+ */
+
+/*
+ * ===============================================
+ * INICIO: Autenticación y Carga Inicial
+ * ===============================================
+ */
+
+/**
+ * Inicializa la página de reportes cuando el DOM está listo.
+ * 1. Verifica la sesión y que el usuario tenga rol de Admin (0) o Gerente (1).
+ * 2. Muestra el nombre del usuario en el encabezado.
+ * 3. Inicia la carga de los datos del reporte.
+ * 4. Configura el botón de cierre de sesión.
+ * @listens document#DOMContentLoaded
+ */
+document.addEventListener("DOMContentLoaded", async () => {
+  // 1. Verificar la autenticación y permisos
+  try {
+    const meResponse = await fetch("http://localhost:8080/users/me", {
+      method: "GET",
+      credentials: "include", // Envía la cookie de sesión
+    });
+
+    if (!meResponse.ok) {
+      throw new Error("No autorizado. Redirigiendo al login.");
+    }
+
+    const userInfo = await meResponse.json();
+
+    // Verificamos el rol (Admin=0, Gerente=1)
+    if (userInfo.role &amp;&amp; userInfo.role.permission_ring &lt;= 1) {
+      document.getElementById("admin-username").textContent =
+        userInfo.username || "Admin";
+
+      // Si el usuario es válido, cargamos el reporte específico
+      await loadEmployeeSalesReport();
+    } else {
+      throw new Error("Acceso denegado. Redirigiendo al login.");
+    }
+  } catch (error) {
+    console.error(error.message);
+    alert(
+      "Acceso denegado. Debes iniciar sesión como Gerente o Administrador."
+    );
+    window.location.href = "login.html";
+  }
+
+  // 2. Lógica del botón de Cerrar Sesión
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      try {
+        await fetch("http://localhost:8080/auth/logout", {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch (err) {
+        console.error("Error al cerrar sesión", err);
+      } finally {
+        alert("Sesión cerrada.");
+        window.location.href = "login.html";
+      }
+    });
+  }
+});
+
+/*
+ * ===============================================
+ * FIN: Autenticación y Carga Inicial
+ * ===============================================
+ */
+
+/**
+ * HU 25: Carga y renderiza el reporte de ventas desglosado por empleado.
+ * Consume el endpoint `/reports/sales-by-employee`, maneja estados de carga/error
+ * y formatea los valores monetarios para la tabla.
+ * @async
+ */
+async function loadEmployeeSalesReport() {
+  const tableBody = document.getElementById("report-table-body");
+
+  // Mostrar estado de carga
+  tableBody.innerHTML = '&lt;tr>&lt;td colspan="5">Cargando reporte...&lt;/td>&lt;/tr>';
+
+  try {
+    const response = await fetch(
+      "http://localhost:8080/reports/sales-by-employee",
+      {
+        credentials: "include",
+      }
+    );
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.message || "Error al cargar el reporte.");
+    }
+
+    /** @type {Array&lt;Object>} Lista de métricas por empleado. */
+    const employeeSales = await response.json();
+
+    tableBody.innerHTML = ""; // Limpiamos la tabla
+
+    if (employeeSales.length === 0) {
+      tableBody.innerHTML =
+        '&lt;tr>&lt;td colspan="5">No hay datos de ventas de empleados para mostrar.&lt;/td>&lt;/tr>';
+      return;
+    }
+
+    /**
+     * Función interna para formatear números a moneda (MXN).
+     * @param {number} amount - Cantidad monetaria.
+     * @returns {string} Cadena formateada (ej. "$1,500.00 MXN").
+     */
+    const formatCurrency = (amount) =>
+      new Intl.NumberFormat("es-MX", {
+        style: "currency",
+        currency: "MXN",
+      }).format(amount || 0);
+
+    // Renderizar cada fila del reporte
+    employeeSales.forEach((item) => {
+      const tr = document.createElement("tr");
+
+      // Manejo de usuarios 'online' o eliminados que pueden no tener username
+      const username = item.username || "Cliente Web";
+      const email = item.email || "N/A";
+
+      tr.innerHTML = `
+                &lt;td>${username}&lt;/td>
+                &lt;td>${email}&lt;/td>
+                &lt;td>${item.totalSales}&lt;/td>
+                &lt;td>${formatCurrency(item.totalRevenue)}&lt;/td>
+                &lt;td>${formatCurrency(item.averageTicket)}&lt;/td>
+            `;
+      tableBody.appendChild(tr);
+    });
+  } catch (error) {
+    console.error(error.message);
+    tableBody.innerHTML = `&lt;tr>&lt;td colspan="5">Error: ${error.message}&lt;/td>&lt;/tr>`;
+  }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CategoryManager.html">CategoryManager</a></li><li><a href="ProductManager.html">ProductManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:submit">submit</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addBtn">addBtn</a></li><li><a href="global.html#addWishlistListeners">addWishlistListeners</a></li><li><a href="global.html#allCategoryProducts">allCategoryProducts</a></li><li><a href="global.html#allowedOrigins">allowedOrigins</a></li><li><a href="global.html#applyFilters">applyFilters</a></li><li><a href="global.html#approveOrder">approveOrder</a></li><li><a href="global.html#availableRoles">availableRoles</a></li><li><a href="global.html#cancelBtn">cancelBtn</a></li><li><a href="global.html#cargarTerminosUsuario">cargarTerminosUsuario</a></li><li><a href="global.html#checkIfEmpty">checkIfEmpty</a></li><li><a href="global.html#checkLoginStatus">checkLoginStatus</a></li><li><a href="global.html#closeCouponModal">closeCouponModal</a></li><li><a href="global.html#closeEditModal">closeEditModal</a></li><li><a href="global.html#closeProviderModal">closeProviderModal</a></li><li><a href="global.html#closeUserModal">closeUserModal</a></li><li><a href="global.html#couponForm">couponForm</a></li><li><a href="global.html#createEditModal">createEditModal</a></li><li><a href="global.html#createOrderCardHTML">createOrderCardHTML</a></li><li><a href="global.html#createProductHTML">createProductHTML</a></li><li><a href="global.html#createReviewHTML">createReviewHTML</a></li><li><a href="global.html#createStarsHTML">createStarsHTML</a></li><li><a href="global.html#currentEditingUserId">currentEditingUserId</a></li><li><a href="global.html#currentUserRing">currentUserRing</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#deleteCoupon">deleteCoupon</a></li><li><a href="global.html#deleteProvider">deleteProvider</a></li><li><a href="global.html#deleteReview">deleteReview</a></li><li><a href="global.html#displayProducts">displayProducts</a></li><li><a href="global.html#editReview">editReview</a></li><li><a href="global.html#editarRol">editarRol</a></li><li><a href="global.html#editingCouponId">editingCouponId</a></li><li><a href="global.html#editingProviderId">editingProviderId</a></li><li><a href="global.html#editingReviewId">editingReviewId</a></li><li><a href="global.html#eliminarRol">eliminarRol</a></li><li><a href="global.html#form">form</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#generateCouponCode">generateCouponCode</a></li><li><a href="global.html#getStatusLabel">getStatusLabel</a></li><li><a href="global.html#getUrgencyLabel">getUrgencyLabel</a></li><li><a href="global.html#goBackToProducts">goBackToProducts</a></li><li><a href="global.html#handleFormSubmit">handleFormSubmit</a></li><li><a href="global.html#hasPermission">hasPermission</a></li><li><a href="global.html#initializeBarcodesModal">initializeBarcodesModal</a></li><li><a href="global.html#initializeCarousels">initializeCarousels</a></li><li><a href="global.html#initializeCatProductButtons">initializeCatProductButtons</a></li><li><a href="global.html#initializeCatWishlistButtons">initializeCatWishlistButtons</a></li><li><a href="global.html#initializeMessagesSystem">initializeMessagesSystem</a></li><li><a href="global.html#initializeProductButtons">initializeProductButtons</a></li><li><a href="global.html#initializeWishlistButtons">initializeWishlistButtons</a></li><li><a href="global.html#isEditing">isEditing</a></li><li><a href="global.html#loadBestSellersReport">loadBestSellersReport</a></li><li><a href="global.html#loadCartItems">loadCartItems</a></li><li><a href="global.html#loadCategoryProducts">loadCategoryProducts</a></li><li><a href="global.html#loadCoupons">loadCoupons</a></li><li><a href="global.html#loadDashboardStats">loadDashboardStats</a></li><li><a href="global.html#loadDynamicCategories">loadDynamicCategories</a></li><li><a href="global.html#loadEmployeeSalesReport">loadEmployeeSalesReport</a></li><li><a href="global.html#loadMessagesFromBackend">loadMessagesFromBackend</a></li><li><a href="global.html#loadProducts">loadProducts</a></li><li><a href="global.html#loadProviders">loadProviders</a></li><li><a href="global.html#loadRoles">loadRoles</a></li><li><a href="global.html#loadUserData">loadUserData</a></li><li><a href="global.html#loadUserDataAndProducts">loadUserDataAndProducts</a></li><li><a href="global.html#loadUserOrders">loadUserOrders</a></li><li><a href="global.html#loadUserReviews">loadUserReviews</a></li><li><a href="global.html#loadUsers">loadUsers</a></li><li><a href="global.html#loadWebOrders">loadWebOrders</a></li><li><a href="global.html#loadWishlistItems">loadWishlistItems</a></li><li><a href="global.html#markAllAsRead">markAllAsRead</a></li><li><a href="global.html#markMessageAsRead">markMessageAsRead</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#modalTitle">modalTitle</a></li><li><a href="global.html#moveItemToCart">moveItemToCart</a></li><li><a href="global.html#openCreateModal">openCreateModal</a></li><li><a href="global.html#openEditModal">openEditModal</a></li><li><a href="global.html#productGrid">productGrid</a></li><li><a href="global.html#productsToInsert">productsToInsert</a></li><li><a href="global.html#providerForm">providerForm</a></li><li><a href="global.html#recalculateSummary">recalculateSummary</a></li><li><a href="global.html#recalculateTotal">recalculateTotal</a></li><li><a href="global.html#rejectOrder">rejectOrder</a></li><li><a href="global.html#removeFromWishlist">removeFromWishlist</a></li><li><a href="global.html#removeItemFromCart">removeItemFromCart</a></li><li><a href="global.html#renderProducts">renderProducts</a></li><li><a href="global.html#resetForm">resetForm</a></li><li><a href="global.html#selectProduct">selectProduct</a></li><li><a href="global.html#selectedProduct">selectedProduct</a></li><li><a href="global.html#selectedProvider">selectedProvider</a></li><li><a href="global.html#selectedRating">selectedRating</a></li><li><a href="global.html#selectedSize">selectedSize</a></li><li><a href="global.html#sendPasswordResetEmail">sendPasswordResetEmail</a></li><li><a href="global.html#setupCartEventListeners">setupCartEventListeners</a></li><li><a href="global.html#setupEditModalListeners">setupEditModalListeners</a></li><li><a href="global.html#setupEventListeners">setupEventListeners</a></li><li><a href="global.html#setupFilterListeners">setupFilterListeners</a></li><li><a href="global.html#setupModal">setupModal</a></li><li><a href="global.html#setupScrollEffects">setupScrollEffects</a></li><li><a href="global.html#shippingData">shippingData</a></li><li><a href="global.html#showMessageDetail">showMessageDetail</a></li><li><a href="global.html#showMessagesError">showMessagesError</a></li><li><a href="global.html#showNotification">showNotification</a></li><li><a href="global.html#startMessagesRealTimeUpdates">startMessagesRealTimeUpdates</a></li><li><a href="global.html#submitReview">submitReview</a></li><li><a href="global.html#tableBody">tableBody</a></li><li><a href="global.html#toggleWishlistItem">toggleWishlistItem</a></li><li><a href="global.html#toggleWishlistItemCat">toggleWishlistItemCat</a></li><li><a href="global.html#transporter">transporter</a></li><li><a href="global.html#updateCartItemQuantity">updateCartItemQuantity</a></li><li><a href="global.html#updateMessagesUI">updateMessagesUI</a></li><li><a href="global.html#updateRatingStars">updateRatingStars</a></li><li><a href="global.html#updateSidebarForLoggedInUser">updateSidebarForLoggedInUser</a></li><li><a href="global.html#updateSizeSelection">updateSizeSelection</a></li><li><a href="global.html#updateSummary">updateSummary</a></li><li><a href="global.html#updateWishlistSummary">updateWishlistSummary</a></li><li><a href="global.html#verifyToken">verifyToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 08:00:47 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

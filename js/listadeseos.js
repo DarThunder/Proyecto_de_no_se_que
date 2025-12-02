@@ -1,3 +1,15 @@
+/**
+ * @file js/listadeseos.js
+ * @description Gestiona la funcionalidad de la lista de deseos (Wishlist) del usuario.
+ * Permite visualizar los productos guardados, eliminarlos, limpiar la lista completa
+ * y mover productos directamente al carrito de compras.
+ */
+
+/**
+ * Inicializa la lógica de la lista de deseos cuando el DOM está listo.
+ * Carga los ítems iniciales y configura el botón de limpieza masiva.
+ * @listens document#DOMContentLoaded
+ */
 document.addEventListener("DOMContentLoaded", () => {
   // Cargar los items de la lista de deseos
   loadWishlistItems();
@@ -6,17 +18,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const clearAllBtn = document.getElementById("clear-all-btn");
   if (clearAllBtn) {
     clearAllBtn.addEventListener("click", () => {
-      if (confirm("¿Estás seguro de que quieres limpiar toda tu lista de deseos?")) {
-        // Itera y elimina uno por uno (o crea una ruta 'DELETE /wishlist' en el backend)
+      if (
+        confirm("¿Estás seguro de que quieres limpiar toda tu lista de deseos?")
+      ) {
+        // Simula limpieza masiva disparando el clic de eliminación en cada elemento
+        // Nota: Idealmente esto debería ser una única petición 'DELETE /wishlist' al backend
         const removeButtons = document.querySelectorAll(".remove-wishlist");
-        removeButtons.forEach(btn => btn.click());
+        removeButtons.forEach((btn) => btn.click());
       }
     });
   }
 });
 
 /**
- * Carga los items de la lista de deseos desde la API
+ * Obtiene los ítems de la lista de deseos desde la API y renderiza el contenido.
+ * Maneja estados de usuario no autenticado, lista vacía y errores de carga.
+ * @async
  */
 async function loadWishlistItems() {
   const container = document.getElementById("wishlist-items-container");
@@ -31,6 +48,7 @@ async function loadWishlistItems() {
       credentials: "include",
     });
 
+    // Manejo de sesión no iniciada
     if (response.status === 401) {
       emptyEl.innerHTML = `
         <div class="empty-icon"><i class="fas fa-lock"></i></div>
@@ -48,6 +66,7 @@ async function loadWishlistItems() {
 
     const wishlist = await response.json();
 
+    // Manejo de lista vacía
     if (!wishlist || wishlist.items.length === 0) {
       contentEl.style.display = "none";
       emptyEl.style.display = "block";
@@ -55,7 +74,7 @@ async function loadWishlistItems() {
       return;
     }
 
-    // Si hay items, muestra el contenido
+    // Renderizado de items
     contentEl.style.display = "grid";
     emptyEl.style.display = "none";
     container.innerHTML = ""; // Limpia items anteriores
@@ -65,7 +84,7 @@ async function loadWishlistItems() {
       const variant = item.variant;
       const product = variant.product;
 
-      if (!product) return; // Salta si el producto fue borrado
+      if (!product) return; // Salta si el producto fue borrado de la BD
 
       const itemPrice = product.base_price;
       subtotal += itemPrice;
@@ -73,8 +92,12 @@ async function loadWishlistItems() {
       const itemHTML = `
         <div class="wishlist-item" id="wishlist-item-${variant._id}">
             <div class="item-image">
-                <img src="../${product.image_url}" alt="${product.name}" onerror="this.src='../sources/img/logo_negro.png'">
-                <button class="remove-wishlist" title="Eliminar de la lista" data-variant-id="${variant._id}">
+                <img src="../${product.image_url}" alt="${
+        product.name
+      }" onerror="this.src='../sources/img/logo_negro.png'">
+                <button class="remove-wishlist" title="Eliminar de la lista" data-variant-id="${
+                  variant._id
+                }">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -83,7 +106,9 @@ async function loadWishlistItems() {
                 <p class="item-price">$${itemPrice.toFixed(2)} MXN</p>
                 <p class="item-size">Talla: ${variant.size}</p>
                 <div class="item-actions">
-                    <button class="move-to-cart" data-variant-id="${variant._id}">
+                    <button class="move-to-cart" data-variant-id="${
+                      variant._id
+                    }">
                         <i class="fas fa-shopping-cart"></i> Agregar al Carrito
                     </button>
                     </div>
@@ -94,8 +119,7 @@ async function loadWishlistItems() {
     });
 
     updateWishlistSummary(wishlist.items.length, subtotal);
-    addWishlistListeners(); // Añade listeners a los botones recién creados
-
+    addWishlistListeners(); // Añade listeners a los nuevos botones renderizados
   } catch (error) {
     console.error("Error al cargar la lista de deseos:", error);
     contentEl.style.display = "none";
@@ -108,7 +132,8 @@ async function loadWishlistItems() {
 }
 
 /**
- * Añade listeners a los botones de "Eliminar" y "Mover al Carrito"
+ * Asigna los event listeners a los botones dinámicos de cada tarjeta de producto.
+ * (Eliminar item y Mover al carrito).
  */
 function addWishlistListeners() {
   // Botones de Eliminar
@@ -129,22 +154,30 @@ function addWishlistListeners() {
 }
 
 /**
- * Llama a la API para eliminar un item de la lista de deseos
+ * Elimina un producto específico de la lista de deseos mediante la API.
+ * Actualiza el DOM y recalcula totales si la petición es exitosa.
+ * @async
+ * @param {string} variantId - ID de la variante a eliminar.
  */
 async function removeFromWishlist(variantId) {
   try {
-    const response = await fetch(`http://localhost:8080/wishlist/${variantId}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
+    const response = await fetch(
+      `http://localhost:8080/wishlist/${variantId}`,
+      {
+        method: "DELETE",
+        credentials: "include",
+      }
+    );
 
     if (response.ok) {
       // Elimina la tarjeta del DOM
-      const cardToRemove = document.getElementById(`wishlist-item-${variantId}`);
+      const cardToRemove = document.getElementById(
+        `wishlist-item-${variantId}`
+      );
       if (cardToRemove) {
         cardToRemove.remove();
       }
-      // Recalcula el total
+      // Recalcula el total y verifica si quedó vacía
       recalculateSummary();
       checkIfEmpty();
     } else {
@@ -156,7 +189,11 @@ async function removeFromWishlist(variantId) {
 }
 
 /**
- * Llama a la API para añadir un item al carrito
+ * Añade un producto de la wishlist al carrito de compras.
+ * Si es exitoso, opcionalmente lo elimina de la wishlist.
+ * @async
+ * @param {string} variantId - ID de la variante.
+ * @param {HTMLButtonElement} button - Botón que disparó la acción (para feedback visual).
  */
 async function moveItemToCart(variantId, button) {
   button.disabled = true;
@@ -172,26 +209,30 @@ async function moveItemToCart(variantId, button) {
 
     if (response.ok) {
       button.innerHTML = "Añadido ✓";
-      button.style.backgroundColor = "#4CAF50"; // Verde
-      
-      // Opcional: eliminar de la lista de deseos después de añadir al carrito
-      await removeFromWishlist(variantId);
+      button.style.backgroundColor = "#4CAF50"; // Verde éxito
 
+      // Opcional: eliminar de la lista de deseos después de añadir al carrito
+      // Descomentar si se desea comportamiento de "mover" en lugar de "copiar"
+      await removeFromWishlist(variantId);
     } else {
       const errorData = await response.json();
       alert(`Error: ${errorData.error}`);
       button.disabled = false;
-      button.innerHTML = '<i class="fas fa-shopping-cart"></i> Agregar al Carrito';
+      button.innerHTML =
+        '<i class="fas fa-shopping-cart"></i> Agregar al Carrito';
     }
   } catch (error) {
     console.error("Error al añadir al carrito:", error);
     button.disabled = false;
-    button.innerHTML = '<i class="fas fa-shopping-cart"></i> Agregar al Carrito';
+    button.innerHTML =
+      '<i class="fas fa-shopping-cart"></i> Agregar al Carrito';
   }
 }
 
 /**
- * Actualiza el resumen de la lista de deseos
+ * Actualiza los contadores visuales del resumen de la wishlist.
+ * @param {number} count - Cantidad total de productos.
+ * @param {number} total - Valor monetario total acumulado.
  */
 function updateWishlistSummary(count, total) {
   const countEl = document.getElementById("wishlist-count");
@@ -202,33 +243,37 @@ function updateWishlistSummary(count, total) {
 }
 
 /**
- * Recalcula el resumen basado en los items que quedan en el DOM
+ * Recalcula el resumen total leyendo los elementos presentes en el DOM.
+ * Útil después de eliminar un elemento sin recargar toda la lista.
  */
 function recalculateSummary() {
-    let subtotal = 0;
-    const items = document.querySelectorAll(".wishlist-item");
-    
-    items.forEach(item => {
-        const priceText = item.querySelector('.item-price').textContent;
-        const price = parseFloat(priceText.replace('$', '').replace(' MXN', '').replace(',', ''));
-        if (!isNaN(price)) {
-            subtotal += price;
-        }
-    });
-    
-    updateWishlistSummary(items.length, subtotal);
+  let subtotal = 0;
+  const items = document.querySelectorAll(".wishlist-item");
+
+  items.forEach((item) => {
+    // Extrae el precio del texto (ej: "$500.00 MXN")
+    const priceText = item.querySelector(".item-price").textContent;
+    const price = parseFloat(
+      priceText.replace("$", "").replace(" MXN", "").replace(",", "")
+    );
+    if (!isNaN(price)) {
+      subtotal += price;
+    }
+  });
+
+  updateWishlistSummary(items.length, subtotal);
 }
 
 /**
- * Comprueba si la lista está vacía y muestra el mensaje correspondiente
+ * Verifica si la lista visual ha quedado vacía y muestra el mensaje correspondiente.
  */
 function checkIfEmpty() {
-    const container = document.getElementById("wishlist-items-container");
-    const contentEl = document.getElementById("wishlist-content");
-    const emptyEl = document.getElementById("empty-wishlist-message");
-    
-    if (container.children.length === 0) {
-        contentEl.style.display = "none";
-        emptyEl.style.display = "block";
-    }
+  const container = document.getElementById("wishlist-items-container");
+  const contentEl = document.getElementById("wishlist-content");
+  const emptyEl = document.getElementById("empty-wishlist-message");
+
+  if (container.children.length === 0) {
+    contentEl.style.display = "none";
+    emptyEl.style.display = "block";
+  }
 }

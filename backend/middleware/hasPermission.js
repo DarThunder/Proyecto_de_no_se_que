@@ -1,6 +1,12 @@
 import Role from "../models/Role.js";
 import User from "../models/User.js";
 
+/**
+ * Genera un middleware de autorización basado en jerarquía de roles.
+ *
+ * @param {number} requiredRing - El nivel de anillo máximo permitido (0=Admin).
+ * @returns {Function} Middleware asíncrono de Express.
+ */
 const hasPermission = (requiredRing) => {
   return async (req, res, next) => {
     try {

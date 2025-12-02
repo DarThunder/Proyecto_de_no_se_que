@@ -1,6 +1,18 @@
-import mongoose from "mongoose";
+import mongoose, { model } from "mongoose";
+const { Schema } = mongoose;
 
-const providerSchema = new mongoose.Schema(
+/**
+ * @typedef {Object} ProviderDocument
+ * @property {Object} _id - ID proveedor (ObjectId)
+ * @property {string} name - Nombre
+ * @property {string} contactName - Contacto
+ * @property {string} email - Email
+ * @property {string} phone - Teléfono
+ * @property {string} address - Dirección
+ * @property {boolean} active - Activo
+ */
+
+const providerSchema = new Schema(
   {
     name: {
       type: String,
@@ -36,4 +48,4 @@ const providerSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model("Provider", providerSchema);
+export default model("Provider", providerSchema);

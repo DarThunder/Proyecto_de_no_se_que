@@ -4,8 +4,16 @@ import Role from "../models/Role.js";
 import verifyToken from "../middleware/verifyToken.js";
 import hasPermission from "../middleware/hasPermission.js";
 
+// Middleware global: Todas las rutas de roles requieren ser ADMIN (Ring 0)
 router.use(verifyToken, hasPermission(0));
 
+/**
+ * Obtiene todos los roles del sistema.
+ * Ordenados por jerarquía (permission_ring ascendente).
+ *
+ * @route GET /roles
+ * @access Private (Ring 0 - Admin)
+ */
 router.get("/", async (req, res) => {
   try {
     const roles = await Role.find().sort({ permission_ring: 1 });
@@ -17,6 +25,15 @@ router.get("/", async (req, res) => {
   }
 });
 
+/**
+ * Crea un nuevo rol en el sistema.
+ *
+ * @route POST /roles
+ * @access Private (Ring 0 - Admin)
+ * @param {string} req.body.name - Nombre único del rol
+ * @param {number} req.body.permission_ring - Nivel de permiso (0=Admin, 1=Gerente...)
+ * @param {string[]} req.body.allowed_modules - Módulos permitidos
+ */
 router.post("/", async (req, res) => {
   const { name, permission_ring, allowed_modules, description } = req.body;
 
@@ -42,6 +59,12 @@ router.post("/", async (req, res) => {
   }
 });
 
+/**
+ * Actualiza un rol existente.
+ *
+ * @route PUT /roles/:id
+ * @access Private (Ring 0 - Admin)
+ */
 router.put("/:id", async (req, res) => {
   try {
     const updatedRole = await Role.findByIdAndUpdate(req.params.id, req.body, {
@@ -60,6 +83,14 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+/**
+ * Elimina un rol.
+ * PROTECCIÓN: Impide borrar el rol 'admin' o cualquier rol con anillo 0
+ * para evitar bloquear el sistema.
+ *
+ * @route DELETE /roles/:id
+ * @access Private (Ring 0 - Admin)
+ */
 router.delete("/:id", async (req, res) => {
   try {
     const role = await Role.findById(req.params.id);

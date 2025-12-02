@@ -1,10 +1,23 @@
-// js/ReporteVendedores.html.js
+/**
+ * @file js/reporte_vendedores.js
+ * @description Genera el reporte de desempeño de ventas por vendedor (empleado).
+ * Verifica permisos administrativos, obtiene los datos agregados de ventas por usuario
+ * desde el backend y renderiza una tabla con métricas clave (Total Ventas, Ingresos, Ticket Promedio).
+ */
 
 /*
  * ===============================================
  * INICIO: Autenticación y Carga Inicial
- * (Copiado y adaptado de reportes.js)
  * ===============================================
+ */
+
+/**
+ * Inicializa la página de reportes cuando el DOM está listo.
+ * 1. Verifica la sesión y que el usuario tenga rol de Admin (0) o Gerente (1).
+ * 2. Muestra el nombre del usuario en el encabezado.
+ * 3. Inicia la carga de los datos del reporte.
+ * 4. Configura el botón de cierre de sesión.
+ * @listens document#DOMContentLoaded
  */
 document.addEventListener("DOMContentLoaded", async () => {
   // 1. Verificar la autenticación y permisos
@@ -24,7 +37,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (userInfo.role && userInfo.role.permission_ring <= 1) {
       document.getElementById("admin-username").textContent =
         userInfo.username || "Admin";
-      // Si el usuario es válido, cargamos el reporte
+
+      // Si el usuario es válido, cargamos el reporte específico
       await loadEmployeeSalesReport();
     } else {
       throw new Error("Acceso denegado. Redirigiendo al login.");
@@ -56,6 +70,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 });
+
 /*
  * ===============================================
  * FIN: Autenticación y Carga Inicial
@@ -63,10 +78,15 @@ document.addEventListener("DOMContentLoaded", async () => {
  */
 
 /**
- * HU 25: Carga el reporte de ventas por vendedor
+ * HU 25: Carga y renderiza el reporte de ventas desglosado por empleado.
+ * Consume el endpoint `/reports/sales-by-employee`, maneja estados de carga/error
+ * y formatea los valores monetarios para la tabla.
+ * @async
  */
 async function loadEmployeeSalesReport() {
   const tableBody = document.getElementById("report-table-body");
+
+  // Mostrar estado de carga
   tableBody.innerHTML = '<tr><td colspan="5">Cargando reporte...</td></tr>';
 
   try {
@@ -82,6 +102,7 @@ async function loadEmployeeSalesReport() {
       throw new Error(errData.message || "Error al cargar el reporte.");
     }
 
+    /** @type {Array<Object>} Lista de métricas por empleado. */
     const employeeSales = await response.json();
 
     tableBody.innerHTML = ""; // Limpiamos la tabla
@@ -92,17 +113,22 @@ async function loadEmployeeSalesReport() {
       return;
     }
 
-    // Función para formatear a moneda
+    /**
+     * Función interna para formatear números a moneda (MXN).
+     * @param {number} amount - Cantidad monetaria.
+     * @returns {string} Cadena formateada (ej. "$1,500.00 MXN").
+     */
     const formatCurrency = (amount) =>
       new Intl.NumberFormat("es-MX", {
         style: "currency",
         currency: "MXN",
       }).format(amount || 0);
 
+    // Renderizar cada fila del reporte
     employeeSales.forEach((item) => {
       const tr = document.createElement("tr");
 
-      // Manejamos usuarios 'online' que pueden no tener username
+      // Manejo de usuarios 'online' o eliminados que pueden no tener username
       const username = item.username || "Cliente Web";
       const email = item.email || "N/A";
 

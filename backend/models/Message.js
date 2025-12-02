@@ -1,6 +1,26 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
 
+/**
+ * @typedef {Object} MessageDocument
+ * @property {Object} _id - ID del mensaje (ObjectId)
+ * @property {'reorder'} type - Tipo
+ * @property {string} productName - Producto
+ * @property {string} variantId - Variante ID
+ * @property {string} supplier - Proveedor ID
+ * @property {string} supplierName - Proveedor Nombre
+ * @property {number} quantity - Cantidad
+ * @property {string} urgency - Urgencia
+ * @property {string} orderId - ID Orden
+ * @property {string} requestedBy - Solicitante
+ * @property {string} notes - Notas
+ * @property {string} status - Estado
+ * @property {boolean} read - Leído
+ * @property {string} rejectionReason - Razón rechazo
+ * @property {Date} approvedAt - Fecha aprobación
+ * @property {Date} rejectedAt - Fecha rechazo
+ */
+
 const messageSchema = new Schema(
   {
     type: {

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: js/proveedores.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: js/proveedores.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file js/proveedores.js
+ * @description Gestiona el mantenimiento de proveedores en el sistema.
+ * Permite listar, crear, editar y eliminar proveedores, así como gestionar su estado (activo/inactivo).
+ * Incluye validación de permisos de usuario (Admin/Gerente) al inicio.
+ */
+
+// --- Estado Global ---
+
+/**
+ * Indica si el formulario se encuentra en modo de edición (`true`) o creación (`false`).
+ * @type {boolean}
+ */
+let isEditing = false;
+
+/**
+ * Almacena el ID del proveedor que se está editando actualmente.
+ * Es `null` durante la creación de un nuevo registro.
+ * @type {string|null}
+ */
+let editingProviderId = null;
+
+// --- Referencias al DOM ---
+
+/** @type {HTMLElement} Modal contenedor del formulario. */
+const modal = document.getElementById("provider-modal");
+/** @type {HTMLElement} Título del modal. */
+const modalTitle = document.getElementById("modal-title");
+/** @type {HTMLFormElement} Formulario de datos del proveedor. */
+const providerForm = document.getElementById("provider-form");
+/** @type {HTMLElement} Cuerpo de la tabla donde se listan los proveedores. */
+const tableBody = document.getElementById("providers-table-body");
+/** @type {HTMLButtonElement} Botón para abrir el modal de creación. */
+const addBtn = document.getElementById("add-provider-btn");
+/** @type {HTMLButtonElement} Botón para cancelar y cerrar el modal. */
+const cancelBtn = document.getElementById("cancel-btn");
+
+/*
+ * ===============================================
+ * INICIO: Autenticación y Carga Inicial
+ * ===============================================
+ */
+
+/**
+ * Inicializa la gestión de proveedores cuando el DOM está listo.
+ * 1. Verifica la sesión y permisos del usuario.
+ * 2. Carga la lista de proveedores.
+ * 3. Configura los listeners de la interfaz.
+ * @listens document#DOMContentLoaded
+ */
+document.addEventListener("DOMContentLoaded", async () => {
+  // 1. Verificar la autenticación y permisos
+  try {
+    const meResponse = await fetch("http://localhost:8080/users/me", {
+      method: "GET",
+      credentials: "include", // Envía la cookie de sesión
+    });
+
+    if (!meResponse.ok) {
+      throw new Error("No autorizado. Redirigiendo al login.");
+    }
+
+    const userInfo = await meResponse.json();
+
+    // Verificamos el rol (Admin=0, Gerente=1)
+    if (userInfo.role &amp;&amp; userInfo.role.permission_ring &lt;= 1) {
+      const adminUserDisplay = document.getElementById("admin-username");
+      if (adminUserDisplay) {
+        adminUserDisplay.textContent = userInfo.username || "Admin";
+      }
+      // Si el usuario es válido, cargamos los proveedores
+      await loadProviders();
+    } else {
+      throw new Error("Acceso denegado. Redirigiendo al login.");
+    }
+  } catch (error) {
+    console.error(error.message);
+    alert(
+      "Acceso denegado. Debes iniciar sesión como Gerente o Administrador."
+    );
+    window.location.href = "login.html";
+  }
+
+  // 2. Lógica del botón de Cerrar Sesión
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      try {
+        await fetch("http://localhost:8080/auth/logout", {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch (err) {
+        console.error("Error al cerrar sesión", err);
+      } finally {
+        alert("Sesión cerrada.");
+        window.location.href = "login.html";
+      }
+    });
+  }
+
+  // 3. Listeners del Modal
+  if (addBtn) addBtn.addEventListener("click", openCreateModal);
+  if (cancelBtn) cancelBtn.addEventListener("click", closeProviderModal);
+  if (providerForm) providerForm.addEventListener("submit", handleFormSubmit);
+});
+
+/*
+ * ===============================================
+ * FIN: Autenticación y Carga Inicial
+ * ===============================================
+ */
+
+/**
+ * Obtiene la lista de proveedores desde la API y renderiza la tabla.
+ * @async
+ */
+async function loadProviders() {
+  try {
+    const response = await fetch("http://localhost:8080/providers", {
+      credentials: "include",
+    });
+    if (!response.ok) {
+      throw new Error("Error al cargar los proveedores.");
+    }
+    const providers = await response.json();
+
+    tableBody.innerHTML = ""; // Limpiamos la tabla
+
+    if (providers.length === 0) {
+      tableBody.innerHTML =
+        '&lt;tr>&lt;td colspan="6">No se encontraron proveedores.&lt;/td>&lt;/tr>';
+      return;
+    }
+
+    providers.forEach((provider) => {
+      const tr = document.createElement("tr");
+
+      // Estado visual
+      const status = provider.active
+        ? '&lt;span class="status-active">Activo&lt;/span>'
+        : '&lt;span class="status-inactive">Inactivo&lt;/span>';
+
+      tr.innerHTML = `
+                &lt;td>${provider.name}&lt;/td>
+                &lt;td>${provider.contactName}&lt;/td>
+                &lt;td>${provider.email}&lt;/td>
+                &lt;td>${provider.phone}&lt;/td>
+                &lt;td>${status}&lt;/td>
+                &lt;td class="coupon-actions">
+                    &lt;button class="btn btn-secondary" onclick="openEditModal('${provider._id}')">
+                        &lt;i class="fas fa-edit">&lt;/i>
+                    &lt;/button>
+                    &lt;button class="btn btn-danger" onclick="deleteProvider('${provider._id}')">
+                        &lt;i class="fas fa-trash">&lt;/i>
+                    &lt;/button>
+                &lt;/td>
+            `;
+      tableBody.appendChild(tr);
+    });
+  } catch (error) {
+    console.error(error.message);
+    tableBody.innerHTML = `&lt;tr>&lt;td colspan="6">${error.message}&lt;/td>&lt;/tr>`;
+  }
+}
+
+/**
+ * Prepara la interfaz para registrar un nuevo proveedor.
+ * Resetea el formulario y establece el estado por defecto.
+ */
+function openCreateModal() {
+  isEditing = false;
+  editingProviderId = null;
+
+  modalTitle.textContent = "Crear Nuevo Proveedor";
+  providerForm.reset();
+  document.getElementById("provider-active").checked = true; // Activo por defecto
+
+  modal.style.display = "flex";
+}
+
+/**
+ * Abre el modal para editar un proveedor existente.
+ * Carga los datos actuales desde la API y rellena los campos del formulario.
+ * @async
+ * @param {string} id - ID del proveedor a editar.
+ */
+async function openEditModal(id) {
+  isEditing = true;
+  editingProviderId = id;
+
+  try {
+    const response = await fetch(`http://localhost:8080/providers/${id}`, {
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("No se pudo cargar el proveedor");
+
+    const provider = await response.json();
+
+    // Llenar formulario
+    modalTitle.textContent = `Editar Proveedor: ${provider.name}`;
+    document.getElementById("provider-id").value = provider._id;
+    document.getElementById("provider-name").value = provider.name;
+    document.getElementById("provider-contactName").value =
+      provider.contactName;
+    document.getElementById("provider-email").value = provider.email;
+    document.getElementById("provider-phone").value = provider.phone;
+    document.getElementById("provider-address").value = provider.address || "";
+    document.getElementById("provider-active").checked = provider.active;
+
+    modal.style.display = "flex";
+  } catch (error) {
+    console.error(error.message);
+    alert("Error al cargar datos del proveedor.");
+  }
+}
+
+/**
+ * Cierra el modal y limpia el formulario.
+ */
+function closeProviderModal() {
+  modal.style.display = "none";
+  providerForm.reset();
+}
+
+/**
+ * Maneja el envío del formulario (Crear o Editar).
+ * Recolecta los datos y realiza la petición correspondiente (POST o PUT).
+ * @async
+ * @param {Event} e - Evento de envío del formulario.
+ */
+async function handleFormSubmit(e) {
+  e.preventDefault();
+  const saveBtn = document.getElementById("save-btn");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "Guardando...";
+
+  // Recolectar datos
+  const data = {
+    name: document.getElementById("provider-name").value,
+    contactName: document.getElementById("provider-contactName").value,
+    email: document.getElementById("provider-email").value,
+    phone: document.getElementById("provider-phone").value,
+    address: document.getElementById("provider-address").value,
+    active: document.getElementById("provider-active").checked,
+  };
+
+  let url = "http://localhost:8080/providers";
+  let method = "POST";
+
+  if (isEditing) {
+    url = `http://localhost:8080/providers/${editingProviderId}`;
+    method = "PUT";
+  }
+
+  try {
+    const response = await fetch(url, {
+      method: method,
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Error al guardar el proveedor");
+    }
+
+    // Éxito
+    closeProviderModal();
+    await loadProviders(); // Recargar tabla
+  } catch (error) {
+    console.error(error.message);
+    alert(`Error: ${error.message}`);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Guardar";
+  }
+}
+
+/**
+ * Elimina un proveedor del sistema.
+ * @async
+ * @param {string} id - ID del proveedor a eliminar.
+ */
+async function deleteProvider(id) {
+  if (!confirm("¿Estás seguro de que quieres eliminar este proveedor?")) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`http://localhost:8080/providers/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Error al eliminar");
+    }
+
+    // Éxito
+    await loadProviders(); // Recargar tabla
+  } catch (error) {
+    console.error(error.message);
+    alert(`Error: ${error.message}`);
+  }
+}
+
+// Exponer funciones globales para los onclicks dinámicos
+window.openEditModal = openEditModal;
+window.deleteProvider = deleteProvider;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CategoryManager.html">CategoryManager</a></li><li><a href="ProductManager.html">ProductManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:submit">submit</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addBtn">addBtn</a></li><li><a href="global.html#addWishlistListeners">addWishlistListeners</a></li><li><a href="global.html#allCategoryProducts">allCategoryProducts</a></li><li><a href="global.html#allowedOrigins">allowedOrigins</a></li><li><a href="global.html#applyFilters">applyFilters</a></li><li><a href="global.html#approveOrder">approveOrder</a></li><li><a href="global.html#availableRoles">availableRoles</a></li><li><a href="global.html#cancelBtn">cancelBtn</a></li><li><a href="global.html#cargarTerminosUsuario">cargarTerminosUsuario</a></li><li><a href="global.html#checkIfEmpty">checkIfEmpty</a></li><li><a href="global.html#checkLoginStatus">checkLoginStatus</a></li><li><a href="global.html#closeCouponModal">closeCouponModal</a></li><li><a href="global.html#closeEditModal">closeEditModal</a></li><li><a href="global.html#closeProviderModal">closeProviderModal</a></li><li><a href="global.html#closeUserModal">closeUserModal</a></li><li><a href="global.html#couponForm">couponForm</a></li><li><a href="global.html#createEditModal">createEditModal</a></li><li><a href="global.html#createOrderCardHTML">createOrderCardHTML</a></li><li><a href="global.html#createProductHTML">createProductHTML</a></li><li><a href="global.html#createReviewHTML">createReviewHTML</a></li><li><a href="global.html#createStarsHTML">createStarsHTML</a></li><li><a href="global.html#currentEditingUserId">currentEditingUserId</a></li><li><a href="global.html#currentUserRing">currentUserRing</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#deleteCoupon">deleteCoupon</a></li><li><a href="global.html#deleteProvider">deleteProvider</a></li><li><a href="global.html#deleteReview">deleteReview</a></li><li><a href="global.html#displayProducts">displayProducts</a></li><li><a href="global.html#editReview">editReview</a></li><li><a href="global.html#editarRol">editarRol</a></li><li><a href="global.html#editingCouponId">editingCouponId</a></li><li><a href="global.html#editingProviderId">editingProviderId</a></li><li><a href="global.html#editingReviewId">editingReviewId</a></li><li><a href="global.html#eliminarRol">eliminarRol</a></li><li><a href="global.html#form">form</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#generateCouponCode">generateCouponCode</a></li><li><a href="global.html#getStatusLabel">getStatusLabel</a></li><li><a href="global.html#getUrgencyLabel">getUrgencyLabel</a></li><li><a href="global.html#goBackToProducts">goBackToProducts</a></li><li><a href="global.html#handleFormSubmit">handleFormSubmit</a></li><li><a href="global.html#hasPermission">hasPermission</a></li><li><a href="global.html#initializeBarcodesModal">initializeBarcodesModal</a></li><li><a href="global.html#initializeCarousels">initializeCarousels</a></li><li><a href="global.html#initializeCatProductButtons">initializeCatProductButtons</a></li><li><a href="global.html#initializeCatWishlistButtons">initializeCatWishlistButtons</a></li><li><a href="global.html#initializeMessagesSystem">initializeMessagesSystem</a></li><li><a href="global.html#initializeProductButtons">initializeProductButtons</a></li><li><a href="global.html#initializeWishlistButtons">initializeWishlistButtons</a></li><li><a href="global.html#isEditing">isEditing</a></li><li><a href="global.html#loadBestSellersReport">loadBestSellersReport</a></li><li><a href="global.html#loadCartItems">loadCartItems</a></li><li><a href="global.html#loadCategoryProducts">loadCategoryProducts</a></li><li><a href="global.html#loadCoupons">loadCoupons</a></li><li><a href="global.html#loadDashboardStats">loadDashboardStats</a></li><li><a href="global.html#loadDynamicCategories">loadDynamicCategories</a></li><li><a href="global.html#loadEmployeeSalesReport">loadEmployeeSalesReport</a></li><li><a href="global.html#loadMessagesFromBackend">loadMessagesFromBackend</a></li><li><a href="global.html#loadProducts">loadProducts</a></li><li><a href="global.html#loadProviders">loadProviders</a></li><li><a href="global.html#loadRoles">loadRoles</a></li><li><a href="global.html#loadUserData">loadUserData</a></li><li><a href="global.html#loadUserDataAndProducts">loadUserDataAndProducts</a></li><li><a href="global.html#loadUserOrders">loadUserOrders</a></li><li><a href="global.html#loadUserReviews">loadUserReviews</a></li><li><a href="global.html#loadUsers">loadUsers</a></li><li><a href="global.html#loadWebOrders">loadWebOrders</a></li><li><a href="global.html#loadWishlistItems">loadWishlistItems</a></li><li><a href="global.html#markAllAsRead">markAllAsRead</a></li><li><a href="global.html#markMessageAsRead">markMessageAsRead</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#modalTitle">modalTitle</a></li><li><a href="global.html#moveItemToCart">moveItemToCart</a></li><li><a href="global.html#openCreateModal">openCreateModal</a></li><li><a href="global.html#openEditModal">openEditModal</a></li><li><a href="global.html#productGrid">productGrid</a></li><li><a href="global.html#productsToInsert">productsToInsert</a></li><li><a href="global.html#providerForm">providerForm</a></li><li><a href="global.html#recalculateSummary">recalculateSummary</a></li><li><a href="global.html#recalculateTotal">recalculateTotal</a></li><li><a href="global.html#rejectOrder">rejectOrder</a></li><li><a href="global.html#removeFromWishlist">removeFromWishlist</a></li><li><a href="global.html#removeItemFromCart">removeItemFromCart</a></li><li><a href="global.html#renderProducts">renderProducts</a></li><li><a href="global.html#resetForm">resetForm</a></li><li><a href="global.html#selectProduct">selectProduct</a></li><li><a href="global.html#selectedProduct">selectedProduct</a></li><li><a href="global.html#selectedProvider">selectedProvider</a></li><li><a href="global.html#selectedRating">selectedRating</a></li><li><a href="global.html#selectedSize">selectedSize</a></li><li><a href="global.html#sendPasswordResetEmail">sendPasswordResetEmail</a></li><li><a href="global.html#setupCartEventListeners">setupCartEventListeners</a></li><li><a href="global.html#setupEditModalListeners">setupEditModalListeners</a></li><li><a href="global.html#setupEventListeners">setupEventListeners</a></li><li><a href="global.html#setupFilterListeners">setupFilterListeners</a></li><li><a href="global.html#setupModal">setupModal</a></li><li><a href="global.html#setupScrollEffects">setupScrollEffects</a></li><li><a href="global.html#shippingData">shippingData</a></li><li><a href="global.html#showMessageDetail">showMessageDetail</a></li><li><a href="global.html#showMessagesError">showMessagesError</a></li><li><a href="global.html#showNotification">showNotification</a></li><li><a href="global.html#startMessagesRealTimeUpdates">startMessagesRealTimeUpdates</a></li><li><a href="global.html#submitReview">submitReview</a></li><li><a href="global.html#tableBody">tableBody</a></li><li><a href="global.html#toggleWishlistItem">toggleWishlistItem</a></li><li><a href="global.html#toggleWishlistItemCat">toggleWishlistItemCat</a></li><li><a href="global.html#transporter">transporter</a></li><li><a href="global.html#updateCartItemQuantity">updateCartItemQuantity</a></li><li><a href="global.html#updateMessagesUI">updateMessagesUI</a></li><li><a href="global.html#updateRatingStars">updateRatingStars</a></li><li><a href="global.html#updateSidebarForLoggedInUser">updateSidebarForLoggedInUser</a></li><li><a href="global.html#updateSizeSelection">updateSizeSelection</a></li><li><a href="global.html#updateSummary">updateSummary</a></li><li><a href="global.html#updateWishlistSummary">updateWishlistSummary</a></li><li><a href="global.html#verifyToken">verifyToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 08:00:47 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

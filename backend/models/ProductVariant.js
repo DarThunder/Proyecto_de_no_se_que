@@ -1,6 +1,17 @@
 import mongoose, { model } from "mongoose";
 const { Schema } = mongoose;
 
+/**
+ * @typedef {Object} ProductVariantDocument
+ * @property {Object} _id - ID variante (ObjectId)
+ * @property {Object} product - ID producto padre (ObjectId)
+ * @property {string} size - Talla
+ * @property {string} sku - SKU
+ * @property {number} stock - Stock
+ * @property {Date} createdAt
+ * @property {Date} updatedAt
+ */
+
 const productVariantSchema = new Schema(
   {
     product: {

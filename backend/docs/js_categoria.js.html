@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: js/categoria.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: js/categoria.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file js/categoria.js
+ * @description Controla la página de visualización de productos por categoría.
+ * Obtiene el tipo de categoría de la URL, carga los productos desde la API,
+ * gestiona los filtros dinámicos (talla, género, precio) y renderiza la cuadrícula de productos.
+ */
+
+// --- 1. Variables Globales ---
+
+/**
+ * Almacena todos los productos (variantes) cargados inicialmente para la categoría actual.
+ * Se utiliza como base para aplicar los filtros sin volver a consultar la API.
+ * @type {Array&lt;Object>}
+ */
+let allCategoryProducts = [];
+
+/**
+ * Referencia al contenedor del DOM donde se renderizarán las tarjetas de productos.
+ * @type {HTMLElement}
+ */
+const productGrid = document.getElementById("category-product-grid");
+
+/**
+ * Inicializa la lógica de la página al cargar el DOM.
+ * 1. Extrae el parámetro 'tipo' de la URL.
+ * 2. Actualiza el título de la página.
+ * 3. Inicia la carga de productos o muestra error si no hay categoría.
+ * 4. Configura los listeners para los filtros laterales.
+ * @listens document#DOMContentLoaded
+ */
+document.addEventListener("DOMContentLoaded", () => {
+  // 1. OBTENER LA CATEGORÍA DE LA URL
+  const params = new URLSearchParams(window.location.search);
+  const categoria = params.get("tipo"); // ej. "pantalones"
+
+  if (categoria) {
+    // 2. ACTUALIZAR EL TÍTULO DE LA PÁGINA
+    const titleElement = document.getElementById("category-title");
+    titleElement.textContent = categoria.toUpperCase(); // "PANTALONES"
+
+    // 3. CARGAR LOS PRODUCTOS INICIALES
+    loadCategoryProducts(categoria.toLowerCase());
+  } else {
+    // Manejar el caso de que no haya categoría
+    if (productGrid) {
+      productGrid.innerHTML = "&lt;p>No se especificó una categoría.&lt;/p>";
+    }
+    const titleElement = document.getElementById("category-title");
+    if (titleElement) titleElement.textContent = "ERROR";
+  }
+
+  // --- 4. AÑADIR EVENT LISTENERS A LOS FILTROS ---
+  setupFilterListeners();
+});
+
+/**
+ * Carga los productos desde la API y filtra aquellos que coinciden con la categoría solicitada.
+ * @async
+ * @param {string} categoria - El tipo de producto a cargar (ej. "pantalones").
+ */
+async function loadCategoryProducts(categoria) {
+  if (!productGrid) {
+    console.error(
+      "No se encontró el contenedor de productos '#category-product-grid'."
+    );
+    return;
+  }
+
+  try {
+    const response = await fetch("http://localhost:8080/products");
+    if (!response.ok) {
+      throw new Error("Error al cargar productos de la API");
+    }
+
+    const variants = await response.json();
+
+    // Filtramos por el 'productType' (ej. "pantalones")
+    allCategoryProducts = variants.filter(
+      (variant) =>
+        variant.product &amp;&amp;
+        variant.product.productType &amp;&amp;
+        variant.product.productType.toLowerCase() === categoria
+    );
+
+    if (allCategoryProducts.length === 0) {
+      productGrid.innerHTML = `&lt;p>No se encontraron productos para "${categoria}".&lt;/p>`;
+      return;
+    }
+
+    // 6. RENDERIZAR LOS PRODUCTOS
+    renderProducts(allCategoryProducts);
+  } catch (error) {
+    console.error("Error cargando productos:", error);
+    productGrid.innerHTML =
+      "&lt;p>No se pudieron cargar los productos. Intenta más tarde.&lt;/p>";
+  }
+}
+
+/**
+ * Configura los event listeners para los botones de filtro y el slider de precio.
+ * Cualquier cambio dispara la función `applyFilters()`.
+ */
+function setupFilterListeners() {
+  // Escucha botones de filtro (Talla, Género)
+  document.querySelectorAll(".filter-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      button.classList.toggle("active");
+      applyFilters();
+    });
+  });
+
+  // Escucha el slider de precio
+  const priceSlider = document.querySelector(".filter-price-slider");
+  const priceDisplay = document.querySelector(
+    ".price-range-display span:last-child"
+  );
+  if (priceSlider &amp;&amp; priceDisplay) {
+    priceSlider.addEventListener("input", () => {
+      priceDisplay.textContent = `$${priceSlider.value}`;
+      applyFilters();
+    });
+  }
+}
+
+/**
+ * Lee el estado actual de los filtros (botones activos y valor del slider)
+ * y filtra el array `allCategoryProducts`. Luego renderiza los resultados.
+ */
+function applyFilters() {
+  // A. Leer filtro de Talla
+  const selectedSizes = Array.from(
+    document.querySelectorAll("#filter-group-size .filter-btn.active")
+  ).map((btn) => btn.textContent.toUpperCase());
+
+  // B. Leer filtro de Género
+  const selectedGenders = Array.from(
+    document.querySelectorAll("#filter-group-gender .filter-btn.active")
+  ).map((btn) => btn.dataset.filter); // 'hombre', 'mujer', 'unisex'
+
+  // C. Leer filtro de Precio
+  const maxPrice = parseFloat(
+    document.querySelector("#filter-group-price .filter-price-slider").value
+  );
+
+  // Empezamos con todos los productos de la categoría
+  let filteredProducts = allCategoryProducts;
+
+  // Aplicar filtro de Talla
+  if (selectedSizes.length > 0) {
+    filteredProducts = filteredProducts.filter((variant) =>
+      selectedSizes.includes(variant.size.toUpperCase())
+    );
+  }
+
+  // Aplicar filtro de Género
+  if (selectedGenders.length > 0) {
+    filteredProducts = filteredProducts.filter(
+      (variant) =>
+        variant.product.category &amp;&amp;
+        selectedGenders.includes(variant.product.category.toLowerCase())
+    );
+  }
+
+  // Aplicar filtro de Precio
+  filteredProducts = filteredProducts.filter(
+    (variant) => variant.product.base_price &lt;= maxPrice
+  );
+
+  // 9. RENDERIZAMOS LA LISTA YA FILTRADA
+  renderProducts(filteredProducts);
+}
+
+/**
+ * Genera el HTML de las tarjetas de producto y las inserta en el contenedor.
+ * También reinicializa los listeners de los botones de acción (carrito/wishlist).
+ * @param {Array&lt;Object>} productsToRender - Lista de variantes a mostrar.
+ */
+function renderProducts(productsToRender) {
+  productGrid.innerHTML = ""; // Limpiamos el grid
+
+  if (productsToRender.length === 0) {
+    productGrid.innerHTML =
+      "&lt;p>No se encontraron productos con estos filtros.&lt;/p>";
+    return;
+  }
+
+  productsToRender.forEach((variant) => {
+    const product = variant.product;
+
+    // Ruta de imagen corregida para estar en /html/categoria.html
+    const imageUrl = product.image_url
+      ? `../${product.image_url}`
+      : "../sources/img/logo_negro.png";
+
+    const productCardHTML = `
+            &lt;div class="product-card">
+                &lt;button class="wishlist-btn" data-variant-id="${
+                  variant._id
+                }" title="Añadir a lista de deseos">
+                    &lt;i class="far fa-heart">&lt;/i> &lt;/button>
+                
+                &lt;a href="producto.html?id=${variant._id}">
+                  &lt;div class="product-image" style="background-image: url('${imageUrl}'); background-size: cover; background-position: center;">
+                  &lt;/div>
+                &lt;/a>
+                
+                &lt;h3>${product.name.toUpperCase()} (${variant.size})&lt;/h3>
+                &lt;p>$${product.base_price.toFixed(2)} MXN&lt;/p>
+                
+                &lt;button class="product-btn" data-variant-id="${variant._id}">
+                    AGREGAR AL CARRITO
+                &lt;/button>
+            &lt;/div>
+        `;
+    productGrid.innerHTML += productCardHTML;
+  });
+
+  // Inicializamos los botones de las nuevas tarjetas
+  initializeCatProductButtons();
+  initializeCatWishlistButtons();
+}
+
+/**
+ * Añade listeners a los botones "AGREGAR AL CARRITO" de la lista de categoría.
+ * Gestiona el estado de carga y las alertas de sesión.
+ */
+function initializeCatProductButtons() {
+  document.querySelectorAll(".product-grid .product-btn").forEach((button) => {
+    // Previene que se añadan múltiples listeners al mismo botón
+    if (button.dataset.listenerAttached) return;
+    button.dataset.listenerAttached = true;
+
+    button.addEventListener("click", async function () {
+      const variantId = this.dataset.variantId;
+      this.textContent = "AGREGANDO...";
+      this.disabled = true;
+
+      try {
+        const response = await fetch("http://localhost:8080/cart/items", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ variantId: variantId, quantity: 1 }),
+        });
+
+        if (response.ok) {
+          this.textContent = "AGREGADO ✓";
+          this.style.background = "#4CAF50";
+        } else {
+          if (response.status === 401 || response.status === 403) {
+            alert("Debes iniciar sesión para agregar productos.");
+            window.location.href = "login.html";
+          }
+          throw new Error("Error al agregar");
+        }
+      } catch (error) {
+        this.textContent = "ERROR";
+        this.style.background = "#e74c3c";
+      } finally {
+        setTimeout(() => {
+          this.textContent = "AGREGAR AL CARRITO";
+          this.style.background = "#fff";
+          this.style.color = "#000";
+          this.disabled = false;
+        }, 2000);
+      }
+    });
+  });
+}
+
+/**
+ * Añade listeners a los botones de "Lista de Deseos" (corazón).
+ * Detecta si el producto ya está en la lista (clase 'fas') o no ('far').
+ */
+function initializeCatWishlistButtons() {
+  document.querySelectorAll(".product-grid .wishlist-btn").forEach((button) => {
+    if (button.dataset.listenerAttached) return;
+    button.dataset.listenerAttached = true;
+
+    button.addEventListener("click", async function () {
+      const variantId = this.dataset.variantId;
+      if (!variantId) {
+        console.error(
+          "El producto no tiene un ID de variante (data-variant-id)."
+        );
+        return;
+      }
+
+      // Verificamos si el corazón está lleno ('fas') o vacío ('far')
+      const icon = this.querySelector("i");
+      const isWishlisted = icon.classList.contains("fas");
+
+      await toggleWishlistItemCat(variantId, this, isWishlisted);
+    });
+  });
+}
+
+/**
+ * Realiza la petición a la API para añadir o eliminar un producto de la wishlist.
+ * @async
+ * @param {string} variantId - ID de la variante.
+ * @param {HTMLButtonElement} button - Botón que disparó el evento.
+ * @param {boolean} isWishlisted - Estado actual (true = ya está en la lista, se eliminará).
+ */
+async function toggleWishlistItemCat(variantId, button, isWishlisted) {
+  const heartIcon = button.querySelector("i");
+
+  if (isWishlisted) {
+    // --- LÓGICA PARA ELIMINAR (DELETE) ---
+    try {
+      const response = await fetch(
+        `http://localhost:8080/wishlist/${variantId}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        // Éxito: Cambia el ícono a "vacío"
+        heartIcon.classList.remove("fas");
+        heartIcon.classList.add("far");
+        button.title = "Añadir a lista de deseos";
+      } else if (response.status === 401 || response.status === 403) {
+        alert("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
+        window.location.href = "login.html";
+      } else {
+        throw new Error("Error al eliminar de la lista de deseos");
+      }
+    } catch (error) {
+      console.error("Error en toggleWishlistItemCat (DELETE):", error);
+    }
+  } else {
+    // --- LÓGICA PARA AÑADIR (POST) ---
+    try {
+      const response = await fetch("http://localhost:8080/wishlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ variantId }),
+      });
+
+      if (response.ok) {
+        // Éxito: Cambia el ícono a "lleno"
+        heartIcon.classList.remove("far");
+        heartIcon.classList.add("fas");
+        button.title = "Eliminar de la lista de deseos";
+      } else if (response.status === 401 || response.status === 403) {
+        alert("Debes iniciar sesión para añadir a tu lista de deseos.");
+        window.location.href = "login.html";
+      } else if (response.status === 400) {
+        // El producto ya estaba (por si acaso), solo marca el corazón
+        heartIcon.classList.remove("far");
+        heartIcon.classList.add("fas");
+        button.title = "Ya está en tu lista";
+      } else {
+        throw new Error("Error al añadir a la lista de deseos");
+      }
+    } catch (error) {
+      console.error("Error en toggleWishlistItemCat (POST):", error);
+    }
+  }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CategoryManager.html">CategoryManager</a></li><li><a href="ProductManager.html">ProductManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:submit">submit</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addBtn">addBtn</a></li><li><a href="global.html#addWishlistListeners">addWishlistListeners</a></li><li><a href="global.html#allCategoryProducts">allCategoryProducts</a></li><li><a href="global.html#allowedOrigins">allowedOrigins</a></li><li><a href="global.html#applyFilters">applyFilters</a></li><li><a href="global.html#approveOrder">approveOrder</a></li><li><a href="global.html#availableRoles">availableRoles</a></li><li><a href="global.html#cancelBtn">cancelBtn</a></li><li><a href="global.html#cargarTerminosUsuario">cargarTerminosUsuario</a></li><li><a href="global.html#checkIfEmpty">checkIfEmpty</a></li><li><a href="global.html#checkLoginStatus">checkLoginStatus</a></li><li><a href="global.html#closeCouponModal">closeCouponModal</a></li><li><a href="global.html#closeEditModal">closeEditModal</a></li><li><a href="global.html#closeProviderModal">closeProviderModal</a></li><li><a href="global.html#closeUserModal">closeUserModal</a></li><li><a href="global.html#couponForm">couponForm</a></li><li><a href="global.html#createEditModal">createEditModal</a></li><li><a href="global.html#createOrderCardHTML">createOrderCardHTML</a></li><li><a href="global.html#createProductHTML">createProductHTML</a></li><li><a href="global.html#createReviewHTML">createReviewHTML</a></li><li><a href="global.html#createStarsHTML">createStarsHTML</a></li><li><a href="global.html#currentEditingUserId">currentEditingUserId</a></li><li><a href="global.html#currentUserRing">currentUserRing</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#deleteCoupon">deleteCoupon</a></li><li><a href="global.html#deleteProvider">deleteProvider</a></li><li><a href="global.html#deleteReview">deleteReview</a></li><li><a href="global.html#displayProducts">displayProducts</a></li><li><a href="global.html#editReview">editReview</a></li><li><a href="global.html#editarRol">editarRol</a></li><li><a href="global.html#editingCouponId">editingCouponId</a></li><li><a href="global.html#editingProviderId">editingProviderId</a></li><li><a href="global.html#editingReviewId">editingReviewId</a></li><li><a href="global.html#eliminarRol">eliminarRol</a></li><li><a href="global.html#form">form</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#generateCouponCode">generateCouponCode</a></li><li><a href="global.html#getStatusLabel">getStatusLabel</a></li><li><a href="global.html#getUrgencyLabel">getUrgencyLabel</a></li><li><a href="global.html#goBackToProducts">goBackToProducts</a></li><li><a href="global.html#handleFormSubmit">handleFormSubmit</a></li><li><a href="global.html#hasPermission">hasPermission</a></li><li><a href="global.html#initializeBarcodesModal">initializeBarcodesModal</a></li><li><a href="global.html#initializeCarousels">initializeCarousels</a></li><li><a href="global.html#initializeCatProductButtons">initializeCatProductButtons</a></li><li><a href="global.html#initializeCatWishlistButtons">initializeCatWishlistButtons</a></li><li><a href="global.html#initializeMessagesSystem">initializeMessagesSystem</a></li><li><a href="global.html#initializeProductButtons">initializeProductButtons</a></li><li><a href="global.html#initializeWishlistButtons">initializeWishlistButtons</a></li><li><a href="global.html#isEditing">isEditing</a></li><li><a href="global.html#loadBestSellersReport">loadBestSellersReport</a></li><li><a href="global.html#loadCartItems">loadCartItems</a></li><li><a href="global.html#loadCategoryProducts">loadCategoryProducts</a></li><li><a href="global.html#loadCoupons">loadCoupons</a></li><li><a href="global.html#loadDashboardStats">loadDashboardStats</a></li><li><a href="global.html#loadDynamicCategories">loadDynamicCategories</a></li><li><a href="global.html#loadEmployeeSalesReport">loadEmployeeSalesReport</a></li><li><a href="global.html#loadMessagesFromBackend">loadMessagesFromBackend</a></li><li><a href="global.html#loadProducts">loadProducts</a></li><li><a href="global.html#loadProviders">loadProviders</a></li><li><a href="global.html#loadRoles">loadRoles</a></li><li><a href="global.html#loadUserData">loadUserData</a></li><li><a href="global.html#loadUserDataAndProducts">loadUserDataAndProducts</a></li><li><a href="global.html#loadUserOrders">loadUserOrders</a></li><li><a href="global.html#loadUserReviews">loadUserReviews</a></li><li><a href="global.html#loadUsers">loadUsers</a></li><li><a href="global.html#loadWebOrders">loadWebOrders</a></li><li><a href="global.html#loadWishlistItems">loadWishlistItems</a></li><li><a href="global.html#markAllAsRead">markAllAsRead</a></li><li><a href="global.html#markMessageAsRead">markMessageAsRead</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#modalTitle">modalTitle</a></li><li><a href="global.html#moveItemToCart">moveItemToCart</a></li><li><a href="global.html#openCreateModal">openCreateModal</a></li><li><a href="global.html#openEditModal">openEditModal</a></li><li><a href="global.html#productGrid">productGrid</a></li><li><a href="global.html#productsToInsert">productsToInsert</a></li><li><a href="global.html#providerForm">providerForm</a></li><li><a href="global.html#recalculateSummary">recalculateSummary</a></li><li><a href="global.html#recalculateTotal">recalculateTotal</a></li><li><a href="global.html#rejectOrder">rejectOrder</a></li><li><a href="global.html#removeFromWishlist">removeFromWishlist</a></li><li><a href="global.html#removeItemFromCart">removeItemFromCart</a></li><li><a href="global.html#renderProducts">renderProducts</a></li><li><a href="global.html#resetForm">resetForm</a></li><li><a href="global.html#selectProduct">selectProduct</a></li><li><a href="global.html#selectedProduct">selectedProduct</a></li><li><a href="global.html#selectedProvider">selectedProvider</a></li><li><a href="global.html#selectedRating">selectedRating</a></li><li><a href="global.html#selectedSize">selectedSize</a></li><li><a href="global.html#sendPasswordResetEmail">sendPasswordResetEmail</a></li><li><a href="global.html#setupCartEventListeners">setupCartEventListeners</a></li><li><a href="global.html#setupEditModalListeners">setupEditModalListeners</a></li><li><a href="global.html#setupEventListeners">setupEventListeners</a></li><li><a href="global.html#setupFilterListeners">setupFilterListeners</a></li><li><a href="global.html#setupModal">setupModal</a></li><li><a href="global.html#setupScrollEffects">setupScrollEffects</a></li><li><a href="global.html#shippingData">shippingData</a></li><li><a href="global.html#showMessageDetail">showMessageDetail</a></li><li><a href="global.html#showMessagesError">showMessagesError</a></li><li><a href="global.html#showNotification">showNotification</a></li><li><a href="global.html#startMessagesRealTimeUpdates">startMessagesRealTimeUpdates</a></li><li><a href="global.html#submitReview">submitReview</a></li><li><a href="global.html#tableBody">tableBody</a></li><li><a href="global.html#toggleWishlistItem">toggleWishlistItem</a></li><li><a href="global.html#toggleWishlistItemCat">toggleWishlistItemCat</a></li><li><a href="global.html#transporter">transporter</a></li><li><a href="global.html#updateCartItemQuantity">updateCartItemQuantity</a></li><li><a href="global.html#updateMessagesUI">updateMessagesUI</a></li><li><a href="global.html#updateRatingStars">updateRatingStars</a></li><li><a href="global.html#updateSidebarForLoggedInUser">updateSidebarForLoggedInUser</a></li><li><a href="global.html#updateSizeSelection">updateSizeSelection</a></li><li><a href="global.html#updateSummary">updateSummary</a></li><li><a href="global.html#updateWishlistSummary">updateWishlistSummary</a></li><li><a href="global.html#verifyToken">verifyToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 08:00:47 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,3 +1,15 @@
+/**
+ * @file js/scriptMain.js
+ * @description Controlador principal de la página de inicio (Landing Page) y navegación global.
+ * Gestiona la interactividad del menú móvil, la carga dinámica de productos destacados y categorías,
+ * la personalización de la interfaz según el estado de sesión del usuario, y la inicialización de carruseles.
+ */
+
+/**
+ * Inicializa la lógica principal cuando el DOM está listo.
+ * Configura el menú hamburguesa, dropdowns, carga de productos y efectos visuales.
+ * @listens document#DOMContentLoaded
+ */
 document.addEventListener("DOMContentLoaded", () => {
   const hamburgerMenu = document.querySelector(".hamburger-menu");
   const mobileMenu = document.querySelector(".mobile-menu");
@@ -7,9 +19,13 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   const dropdownLinks = document.querySelectorAll(".dropdown-link");
 
+  // Configuración del overlay para el menú móvil
   menuOverlay.className = "menu-overlay";
   document.body.appendChild(menuOverlay);
 
+  /**
+   * Alterna la visibilidad del menú móvil y bloquea el scroll del body.
+   */
   function toggleMobileMenu() {
     const isActive = mobileMenu.classList.contains("active");
     if (isActive) {
@@ -25,8 +41,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  hamburgerMenu.addEventListener("click", toggleMobileMenu);
-  menuOverlay.addEventListener("click", toggleMobileMenu);
+  // Listeners para el menú
+  if (hamburgerMenu) hamburgerMenu.addEventListener("click", toggleMobileMenu);
+  if (menuOverlay) menuOverlay.addEventListener("click", toggleMobileMenu);
 
   menuLinks.forEach((link) => {
     link.addEventListener("click", toggleMobileMenu);
@@ -36,6 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
     link.addEventListener("click", toggleMobileMenu);
   });
 
+  // Gestión de Dropdowns en móvil
   const dropdownToggles = document.querySelectorAll(".dropdown-toggle");
   dropdownToggles.forEach((toggle) => {
     toggle.addEventListener("click", (e) => {
@@ -43,6 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
       e.stopPropagation();
       const dropdown = toggle.parentElement;
       dropdown.classList.toggle("active");
+      // Cierra otros dropdowns abiertos
       dropdownToggles.forEach((otherToggle) => {
         if (otherToggle !== toggle) {
           otherToggle.parentElement.classList.remove("active");
@@ -51,6 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // Cerrar dropdowns al hacer clic fuera
   document.addEventListener("click", (e) => {
     if (!e.target.closest(".dropdown")) {
       document.querySelectorAll(".dropdown").forEach((dropdown) => {
@@ -59,61 +79,64 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Carga condicional de secciones
   if (document.querySelector("#productos-hombre-container")) {
     loadProducts();
   }
 
-  // CARGAR CATEGORÍAS DINÁMICAS (NUEVA LÍNEA)
+  // Cargar categorías dinámicas desde la API
   loadDynamicCategories();
 
+  // Configurar efectos de scroll y animaciones
   setupScrollEffects();
 });
 
-// CARGAR TERMINOS Y CONDICIONES EN EL INDEX
+/**
+ * Carga el contenido de "Términos y Condiciones" desde el backend y lo inyecta en el DOM.
+ * @async
+ */
 const cargarTerminosUsuario = async () => {
-  const container = document.getElementById('terminos-content-usuario');
-  if (!container) return; // Salir si el elemento no existe en esta página
+  const container = document.getElementById("terminos-content-usuario");
+  if (!container) return;
 
   try {
-    const res = await fetch('http://localhost:8080/content/terms'); // Llama a la ruta pública
+    const res = await fetch("http://localhost:8080/content/terms");
     const data = await res.json();
 
     if (res.ok) {
-      container.innerHTML = data.htmlContent; // Inserta el HTML directamente
+      container.innerHTML = data.htmlContent;
     } else {
       throw new Error(data.message);
     }
   } catch (error) {
-    container.innerHTML = '<p>No se pudieron cargar los términos y condiciones en este momento.</p>';
-    console.error('Error fetching T&C:', error);
+    container.innerHTML =
+      "<p>No se pudieron cargar los términos y condiciones en este momento.</p>";
+    console.error("Error fetching T&C:", error);
   }
 };
 
+// Ejecutar carga de términos si aplica
 cargarTerminosUsuario();
-
 
 /**
  * Actualiza la barra lateral para un usuario logueado.
- * Cambia "Iniciar Sesión" / "Crear Cuenta" por "Ver Perfil" / "Cerrar Sesión".
- * @param {object} user - El objeto de usuario devuelto por la API
+ * Cambia las opciones de "Iniciar Sesión" / "Crear Cuenta" por "Ver Perfil" / "Cerrar Sesión".
+ * @param {Object} user - El objeto de usuario devuelto por la API.
  */
 function updateSidebarForLoggedInUser(user) {
+  // 1. Buscamos el ícono de "Cuenta" dentro del menú móvil
+  const cuentaDropdownIcon = document.querySelector(
+    ".mobile-nav-links .dropdown-toggle i.fa-user"
+  );
 
-  // 1. Buscamos el ícono de "Cuenta" (fa-user) dentro del menú
-  const cuentaDropdownIcon = document.querySelector('.mobile-nav-links .dropdown-toggle i.fa-user');
-  
   if (cuentaDropdownIcon) {
-    
-    // 2. Subimos al <li> contenedor del dropdown
-    const dropdownLi = cuentaDropdownIcon.closest('.dropdown');
-    
+    const dropdownLi = cuentaDropdownIcon.closest(".dropdown");
+
     if (dropdownLi) {
-      // 3. Encontramos el menú <ul> (el dropdown-menu) dentro de ese <li>
-      const dropdownMenu = dropdownLi.querySelector('.dropdown-menu');
+      const dropdownMenu = dropdownLi.querySelector(".dropdown-menu");
 
       if (dropdownMenu) {
-        
-        // 4. Reemplazamos el HTML de ese menú
+        // Reemplazamos el HTML del menú de usuario
         dropdownMenu.innerHTML = `
                   <li>
                       <a href="html/orders.html" class="dropdown-link">
@@ -126,52 +149,45 @@ function updateSidebarForLoggedInUser(user) {
                       </a>
                   </li>
               `;
-      } else {
       }
-    } else {
     }
-  } else {
   }
 }
 
 /**
- * Verifica si el usuario tiene una sesión activa (cookie)
+ * Verifica si el usuario tiene una sesión activa consultando al backend.
+ * Si es exitoso, actualiza la interfaz de navegación.
+ * @async
  */
 const checkLoginStatus = async () => {
-
   try {
-    // 1. Consultamos al endpoint 'me'
     const response = await fetch("http://localhost:8080/users/me", {
       method: "GET",
-      credentials: "include", 
+      credentials: "include",
     });
 
-    // 2. Si la respuesta es OK (200), el usuario está logueado
     if (response.ok) {
       const user = await response.json();
-      // 3. Llamamos a la función que actualiza la barra lateral
       updateSidebarForLoggedInUser(user);
-    } else {
-      // 4. Si la respuesta no es OK (ej. 401), no está logueado.
     }
   } catch (error) {
-    // ALERTA DE ERROR
+    // Fallo silencioso si no hay sesión
   }
 };
 
-// 5. Ejecutamos la verificación en cuanto la página carga
+// Ejecutar verificación de sesión al inicio
 checkLoginStatus();
 
-
+/**
+ * Carga los productos destacados desde la API y los renderiza en los carruseles (Swiper).
+ * Filtra por género (hombre/mujer) y asigna los productos a sus contenedores correspondientes.
+ * @async
+ */
 async function loadProducts() {
-  // 1. APUNTAMOS A LOS NUEVOS CONTENEDORES (swiper-wrapper)
   const menGrid = document.querySelector("#productos-hombre-container");
   const womenGrid = document.querySelector("#productos-mujer-container");
 
-  if (!menGrid || !womenGrid) {
-    console.error("No se encontraron los contenedores de productos.");
-    return;
-  }
+  if (!menGrid || !womenGrid) return;
 
   try {
     const response = await fetch("http://localhost:8080/products");
@@ -186,15 +202,18 @@ async function loadProducts() {
 
     variants.forEach((variant) => {
       const product = variant.product;
-      if (!product) return; // Si un producto se borró pero la variante no
+      if (!product) return;
 
-      const imageUrl = product.image_url || 'sources/img/logo_negro.png';
+      // Ajuste de ruta de imagen relativa
+      const imageUrl = product.image_url || "sources/img/logo_negro.png";
 
-      // 2. ENVOLVEMOS LA TARJETA EN <div class="swiper-slide">
+      // Estructura para Swiper Slide
       const productCardHTML = `
         <div class="swiper-slide">
             <div class="product-card">
-                <button class="wishlist-btn" data-variant-id="${variant._id}" title="Añadir a lista de deseos">
+                <button class="wishlist-btn" data-variant-id="${
+                  variant._id
+                }" title="Añadir a lista de deseos">
                     <i class="far fa-heart"></i> 
                 </button>
                 
@@ -213,6 +232,7 @@ async function loadProducts() {
         </div>
       `;
 
+      // Distribución por categoría
       if (product.category === "hombre") {
         menHTML += productCardHTML;
       } else if (product.category === "mujer") {
@@ -226,12 +246,10 @@ async function loadProducts() {
     menGrid.innerHTML = menHTML;
     womenGrid.innerHTML = womenHTML;
 
-    // 3. INICIALIZAMOS LOS CARRUSELES DESPUÉS DE CARGAR EL HTML
+    // Inicializar componentes interactivos
     initializeCarousels();
-
     initializeProductButtons();
-    initializeWishlistButtons(); // <-- LLAMADA A LA NUEVA FUNCIÓN
-
+    initializeWishlistButtons();
   } catch (error) {
     console.error("Error cargando productos:", error);
     menGrid.innerHTML =
@@ -239,64 +257,63 @@ async function loadProducts() {
   }
 }
 
-// Función para cargar datos del usuario
+/**
+ * Carga los datos básicos del usuario para mostrarlos en el encabezado (ej. nombre).
+ * @async
+ */
 async function loadUserData() {
-    const userHeaderInfo = document.getElementById("user-header-info");
-    const headerUsername = document.getElementById("header-username");
+  const userHeaderInfo = document.getElementById("user-header-info");
+  const headerUsername = document.getElementById("header-username");
 
-    try {
-        const userResponse = await fetch("http://localhost:8080/users/me", {
-            method: "GET",
-            credentials: "include",
-        });
+  try {
+    const userResponse = await fetch("http://localhost:8080/users/me", {
+      method: "GET",
+      credentials: "include",
+    });
 
-        if (userResponse.status === 401) {
-            // Usuario no logeado, mantener oculto
-            return;
-        }
+    if (userResponse.status === 401) return; // No logueado
 
-        if (!userResponse.ok) {
-            throw new Error("Error al obtener datos del usuario");
-        }
+    if (!userResponse.ok) throw new Error("Error al obtener datos del usuario");
 
-        const userData = await userResponse.json();
-        
-        // MOSTRAR NOMBRE EN EL HEADER
-        userHeaderInfo.style.display = "flex";
-        headerUsername.textContent = userData.username || 'Cliente';
+    const userData = await userResponse.json();
 
-    } catch (error) {
-        console.error("Error al cargar datos del usuario:", error);
+    if (userHeaderInfo && headerUsername) {
+      userHeaderInfo.style.display = "flex";
+      headerUsername.textContent = userData.username || "Cliente";
     }
+  } catch (error) {
+    console.error("Error al cargar datos del usuario:", error);
+  }
 }
 
-// Llamar esta función cuando cargue la página
+// Cargar datos de usuario al inicio
 document.addEventListener("DOMContentLoaded", () => {
-    loadUserData();
+  loadUserData();
 });
 
+/**
+ * Carga las categorías dinámicas desde la API y las renderiza en la sección correspondiente.
+ * @async
+ */
 async function loadDynamicCategories() {
-  const dynamicContainer = document.getElementById('dynamic-categories-container');
+  const dynamicContainer = document.getElementById(
+    "dynamic-categories-container"
+  );
   if (!dynamicContainer) return;
 
   try {
-    const response = await fetch('http://localhost:8080/categories');
-    if (!response.ok) {
-      throw new Error('Error al cargar categorías dinámicas');
-    }
+    const response = await fetch("http://localhost:8080/categories");
+    if (!response.ok) throw new Error("Error al cargar categorías dinámicas");
 
     const categories = await response.json();
 
-    if (categories.length === 0) {
-      return; // No hay categorías dinámicas, no mostrar nada
-    }
+    if (categories.length === 0) return;
 
-    let categoriesHTML = '';
-    categories.forEach(category => {
-      // Procesar URL de imagen
-      let imageUrl = category.image_url || 'sources/img/category_default.png';
-      if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
-        imageUrl = 'sources/img/' + imageUrl;
+    let categoriesHTML = "";
+    categories.forEach((category) => {
+      let imageUrl = category.image_url || "sources/img/category_default.png";
+      if (!imageUrl.startsWith("http") && !imageUrl.startsWith("/")) {
+        imageUrl = "sources/img/" + imageUrl;
       }
 
       categoriesHTML += `
@@ -306,7 +323,9 @@ async function loadDynamicCategories() {
                              onerror="this.src='sources/img/category_default.png'">
                     </div>
                     <h3>${category.name.toUpperCase()}</h3>
-                    <a href="html/categoria.html?tipo=${encodeURIComponent(category.name.toLowerCase())}" 
+                    <a href="html/categoria.html?tipo=${encodeURIComponent(
+                      category.name.toLowerCase()
+                    )}" 
                        class="category-link">
                         VER MÁS
                     </a>
@@ -315,25 +334,22 @@ async function loadDynamicCategories() {
     });
 
     dynamicContainer.innerHTML = categoriesHTML;
-
   } catch (error) {
-    console.error('Error cargando categorías dinámicas:', error);
-    // No mostrar error para no afectar la experiencia del usuario
+    console.error("Error cargando categorías dinámicas:", error);
   }
 }
 
+/**
+ * Inicializa los listeners para los botones "AGREGAR AL CARRITO" en el home.
+ * Maneja la petición a la API y el feedback visual.
+ */
 function initializeProductButtons() {
   document
     .querySelectorAll(".men-section .product-btn, .women-section .product-btn")
     .forEach((button) => {
       button.addEventListener("click", async function () {
         const variantId = this.dataset.variantId;
-        if (!variantId) {
-          console.error(
-            "El producto no tiene un ID de variante (data-variant-id)."
-          );
-          return;
-        }
+        if (!variantId) return;
 
         this.textContent = "AGREGANDO...";
         this.disabled = true;
@@ -341,14 +357,9 @@ function initializeProductButtons() {
         try {
           const response = await fetch("http://localhost:8080/cart/items", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify({
-              variantId: variantId,
-              quantity: 1,
-            }),
+            body: JSON.stringify({ variantId: variantId, quantity: 1 }),
           });
 
           if (response.ok) {
@@ -377,55 +388,58 @@ function initializeProductButtons() {
     });
 }
 
-// --- NUEVA FUNCIÓN PARA LA LISTA DE DESEOS ---
+/**
+ * Inicializa los listeners para los botones de lista de deseos (corazón).
+ */
 function initializeWishlistButtons() {
   document.querySelectorAll(".wishlist-btn").forEach((button) => {
     button.addEventListener("click", async function () {
       const variantId = this.dataset.variantId;
-      if (!variantId) {
-        console.error("El producto no tiene un ID de variante (data-variant-id).");
-        return;
-      }
+      if (!variantId) return;
 
-      // Verificamos si el corazón está lleno ('fas') o vacío ('far')
-      const icon = this.querySelector('i');
-      const isWishlisted = icon.classList.contains('fas');
+      const icon = this.querySelector("i");
+      const isWishlisted = icon.classList.contains("fas"); // 'fas' = lleno (ya está en lista)
 
-      // Llamamos a la nueva función
       await toggleWishlistItem(variantId, this, isWishlisted);
     });
   });
 }
 
+/**
+ * Añade o elimina un ítem de la lista de deseos.
+ * @async
+ * @param {string} variantId - ID del producto.
+ * @param {HTMLButtonElement} button - Botón que disparó la acción.
+ * @param {boolean} isWishlisted - Estado actual (true si ya está en la lista).
+ */
 async function toggleWishlistItem(variantId, button, isWishlisted) {
-  const heartIcon = button.querySelector('i');
+  const heartIcon = button.querySelector("i");
 
   if (isWishlisted) {
-    // --- LÓGICA PARA ELIMINAR (DELETE) ---
+    // --- ELIMINAR ---
     try {
-      const response = await fetch(`http://localhost:8080/wishlist/${variantId}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
+      const response = await fetch(
+        `http://localhost:8080/wishlist/${variantId}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        }
+      );
 
       if (response.ok) {
-        // Éxito: Cambia el ícono a "vacío"
-        heartIcon.classList.remove('fas');
-        heartIcon.classList.add('far');
+        heartIcon.classList.remove("fas");
+        heartIcon.classList.add("far");
         button.title = "Añadir a lista de deseos";
-      } else if (response.status === 401 || response.status === 403) {
-        alert("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
+      } else if (response.status === 401) {
+        alert("Tu sesión ha expirado.");
         window.location.href = "html/login.html";
-      } else {
-        throw new Error("Error al eliminar de la lista de deseos");
       }
     } catch (error) {
       console.error("Error en toggleWishlistItem (DELETE):", error);
     }
-
   } else {
-    // --- LÓGICA PARA AÑADIR (POST) ---
+    // --- AÑADIR ---
     try {
       const response = await fetch("http://localhost:8080/wishlist", {
         method: "POST",
@@ -435,20 +449,12 @@ async function toggleWishlistItem(variantId, button, isWishlisted) {
       });
 
       if (response.ok) {
-        // Éxito: Cambia el ícono a "lleno"
-        heartIcon.classList.remove('far');
-        heartIcon.classList.add('fas');
+        heartIcon.classList.remove("far");
+        heartIcon.classList.add("fas");
         button.title = "Eliminar de la lista de deseos";
-      } else if (response.status === 401 || response.status === 403) {
+      } else if (response.status === 401) {
         alert("Debes iniciar sesión para añadir a tu lista de deseos.");
         window.location.href = "html/login.html";
-      } else if (response.status === 400) {
-        // El producto ya estaba (por si acaso), solo marca el corazón
-        heartIcon.classList.remove('far');
-        heartIcon.classList.add('fas');
-        button.title = "Ya está en tu lista";
-      } else {
-        throw new Error("Error al añadir a la lista de deseos");
       }
     } catch (error) {
       console.error("Error en toggleWishlistItem (POST):", error);
@@ -456,92 +462,75 @@ async function toggleWishlistItem(variantId, button, isWishlisted) {
   }
 }
 
-
-// 4. NUEVA FUNCIÓN PARA INICIALIZAR LOS CARRUSELES
+/**
+ * Inicializa las instancias de Swiper para los carruseles de productos.
+ * Define la configuración responsiva (breakpoints).
+ */
 function initializeCarousels() {
-  const swiperHombre = new Swiper('#swiper-hombre', {
+  const commonOptions = {
     loop: true,
-    slidesPerView: 1, // 1 slide en móvil
+    slidesPerView: 1, // Móvil
     spaceBetween: 30,
     pagination: {
-      el: '#swiper-hombre .swiper-pagination',
       clickable: true,
     },
-    navigation: {
-      nextEl: '#swiper-hombre .swiper-button-next',
-      prevEl: '#swiper-hombre .swiper-button-prev',
-    },
     breakpoints: {
-      // > 640px
-      640: {
-        slidesPerView: 2,
-        spaceBetween: 20,
-      },
-      // > 1024px
-      1024: {
-        slidesPerView: 3,
-        spaceBetween: 30,
-      },
-    }
+      640: { slidesPerView: 2, spaceBetween: 20 },
+      1024: { slidesPerView: 3, spaceBetween: 30 },
+    },
+  };
+
+  new Swiper("#swiper-hombre", {
+    ...commonOptions,
+    pagination: { el: "#swiper-hombre .swiper-pagination", clickable: true },
+    navigation: {
+      nextEl: "#swiper-hombre .swiper-button-next",
+      prevEl: "#swiper-hombre .swiper-button-prev",
+    },
   });
 
-  const swiperMujer = new Swiper('#swiper-mujer', {
-    loop: true,
-    slidesPerView: 1, // 1 slide en móvil
-    spaceBetween: 30,
-    pagination: {
-      el: '#swiper-mujer .swiper-pagination',
-      clickable: true,
-    },
+  new Swiper("#swiper-mujer", {
+    ...commonOptions,
+    pagination: { el: "#swiper-mujer .swiper-pagination", clickable: true },
     navigation: {
-      nextEl: '#swiper-mujer .swiper-button-next',
-      prevEl: '#swiper-mujer .swiper-button-prev',
+      nextEl: "#swiper-mujer .swiper-button-next",
+      prevEl: "#swiper-mujer .swiper-button-prev",
     },
-    breakpoints: {
-      640: {
-        slidesPerView: 2,
-        spaceBetween: 20,
-      },
-      1024: {
-        slidesPerView: 3,
-        spaceBetween: 30,
-      },
-    }
   });
 }
 
-
-
-
+/**
+ * Configura efectos visuales basados en el scroll.
+ * - Desplazamiento suave para anclas.
+ * - Animación de aparición (fade-in) para secciones.
+ * - Cambio de fondo del header al hacer scroll.
+ */
 function setupScrollEffects() {
+  // Smooth scroll
   document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
     anchor.addEventListener("click", function (e) {
       if (this.getAttribute("href") !== "#") {
         e.preventDefault();
         const target = document.querySelector(this.getAttribute("href"));
         if (target) {
-          target.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       }
     });
   });
 
-  const observerOptions = {
-    threshold: 0.1,
-    rootMargin: "0px 0px -50px 0px",
-  };
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        entry.target.style.opacity = "1";
-        entry.target.style.transform = "translateY(0)";
-      }
-    });
-  }, observerOptions);
+  // Intersection Observer para animaciones
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = "1";
+          entry.target.style.transform = "translateY(0)";
+        }
+      });
+    },
+    { threshold: 0.1, rootMargin: "0px 0px -50px 0px" }
+  );
 
   document
     .querySelectorAll(
@@ -554,21 +543,15 @@ function setupScrollEffects() {
       observer.observe(section);
     });
 
+  // Header background on scroll
   window.addEventListener("scroll", () => {
     const header = document.querySelector(".header");
-    if (window.scrollY > 100) {
-      header.style.background = "rgba(10, 10, 10, 0.98)";
-    } else {
-      header.style.background = "rgba(10, 10, 10, 0.95)";
-    }
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      // mobileMenu.classList.remove('active');
-      // menuOverlay.classList.remove('active');
-      // hamburgerMenu.classList.remove('active');
-      // document.body.style.overflow = 'auto';
+    if (header) {
+      if (window.scrollY > 100) {
+        header.style.background = "rgba(10, 10, 10, 0.98)";
+      } else {
+        header.style.background = "rgba(10, 10, 10, 0.95)";
+      }
     }
   });
 }

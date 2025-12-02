@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: js/mensajes.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: js/mensajes.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @file js/mensajes.js
+ * @description Gestiona el sistema de mensajería interna y notificaciones de reabastecimiento.
+ * Permite visualizar solicitudes de stock bajo, marcar mensajes como leídos y procesar
+ * las órdenes (Aprobar/Rechazar) interactuando con el backend.
+ * Incluye un sistema de actualización en tiempo real (polling).
+ */
+
+/**
+ * Inicializa el sistema de mensajes cuando el DOM está completamente cargado.
+ * Carga los mensajes iniciales, configura listeners y arranca el polling de actualizaciones.
+ * @listens document#DOMContentLoaded
+ */
+document.addEventListener("DOMContentLoaded", function () {
+  initializeMessagesSystem();
+});
+
+/**
+ * Función principal de configuración.
+ * Llama a la carga inicial de datos, asigna eventos a botones globales (refrescar, marcar leídos)
+ * e inicia el ciclo de actualizaciones automáticas.
+ */
+function initializeMessagesSystem() {
+  // Cargar mensajes desde el backend
+  loadMessagesFromBackend();
+
+  // Configurar event listeners
+  const refreshBtn = document.getElementById("refreshMessages");
+  if (refreshBtn) refreshBtn.addEventListener("click", loadMessagesFromBackend);
+
+  const markAllBtn = document.getElementById("markAllRead");
+  if (markAllBtn) markAllBtn.addEventListener("click", markAllAsRead);
+
+  // Configurar actualizaciones en tiempo real
+  startMessagesRealTimeUpdates();
+}
+
+/**
+ * Obtiene la lista de mensajes/solicitudes desde el backend.
+ * Actualiza la interfaz de usuario con los datos recibidos o muestra un error en caso de fallo.
+ * @async
+ */
+async function loadMessagesFromBackend() {
+  try {
+    console.log("Cargando mensajes desde el backend...");
+    const response = await fetch("http://localhost:8080/messages/reorder", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (response.ok) {
+      const messages = await response.json();
+      console.log("Mensajes cargados:", messages);
+      updateMessagesUI(messages);
+    } else {
+      console.error("Error al cargar mensajes:", response.status);
+      showMessagesError("Error al cargar los mensajes");
+    }
+  } catch (error) {
+    console.error("Error cargando mensajes:", error);
+    showMessagesError("Error de conexión con el servidor");
+  }
+}
+
+/**
+ * Renderiza la lista de mensajes en la barra lateral y actualiza los contadores (No leídos, Pendientes).
+ * Ordena los mensajes para mostrar primero los no leídos y luego los más recientes.
+ * @param {Array&lt;Object>} messages - Lista de objetos mensaje recibidos de la API.
+ */
+function updateMessagesUI(messages) {
+  const messagesList = document.getElementById("messagesList");
+  const totalMessages = document.getElementById("totalMessages");
+  const unreadMessages = document.getElementById("unreadMessages");
+  const pendingOrders = document.getElementById("pendingOrders");
+
+  if (!messagesList) return;
+
+  // Calcular estadísticas
+  const unreadCount = messages.filter((msg) => !msg.read).length;
+  const pendingCount = messages.filter(
+    (msg) => msg.status === "pending"
+  ).length;
+
+  if (totalMessages) totalMessages.textContent = messages.length;
+  if (unreadMessages) unreadMessages.textContent = unreadCount;
+  if (pendingOrders) pendingOrders.textContent = pendingCount;
+
+  // Actualizar lista de mensajes
+  if (messages.length === 0) {
+    messagesList.innerHTML = `
+            &lt;div class="empty-state">
+                &lt;i class="fas fa-inbox">&lt;/i>
+                &lt;h4>No hay mensajes&lt;/h4>
+                &lt;p>Las solicitudes de reabastecimiento aparecerán aquí&lt;/p>
+            &lt;/div>
+        `;
+    return;
+  }
+
+  // Ordenar mensajes: no leídos primero, luego por fecha descendente
+  const sortedMessages = messages.sort((a, b) => {
+    if (a.read !== b.read) return a.read ? 1 : -1;
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+
+  // Generar HTML de la lista
+  messagesList.innerHTML = sortedMessages
+    .map(
+      (message) => `
+        &lt;div class="message-item ${
+          message.read ? "" : "unread"
+        }" data-message-id="${message._id}">
+            &lt;div class="message-header">
+                &lt;h4 class="message-title">Solicitud de Reabastecimiento&lt;/h4>
+                &lt;span class="message-date">${formatDate(
+                  message.createdAt
+                )}&lt;/span>
+            &lt;/div>
+            &lt;p class="message-preview">${message.productName} - ${
+        message.quantity
+      } unidades&lt;/p>
+            &lt;div class="message-meta">
+                &lt;span class="message-urgency urgency-${
+                  message.urgency
+                }">${getUrgencyLabel(message.urgency)}&lt;/span>
+                &lt;span class="message-status status-${
+                  message.status
+                }">${getStatusLabel(message.status)}&lt;/span>
+            &lt;/div>
+        &lt;/div>
+    `
+    )
+    .join("");
+
+  // Agregar event listeners a cada ítem de la lista para ver detalles
+  document.querySelectorAll(".message-item").forEach((item) => {
+    item.addEventListener("click", function () {
+      const messageId = this.getAttribute("data-message-id");
+      const message = messages.find((msg) => msg._id === messageId);
+      if (message) {
+        showMessageDetail(message);
+        // Marcar como leído automáticamente al abrir
+        if (!message.read) {
+          markMessageAsRead(messageId);
+        }
+      }
+    });
+  });
+}
+
+/**
+ * Muestra el contenido completo de un mensaje seleccionado en el panel principal.
+ * Incluye botones de acción (Aprobar/Rechazar) si el estado es 'pending'.
+ * @param {Object} message - Objeto con los datos del mensaje.
+ */
+function showMessageDetail(message) {
+  const messageDetail = document.getElementById("messageDetail");
+
+  if (!messageDetail) return;
+
+  messageDetail.innerHTML = `
+        &lt;div class="detail-header">
+            &lt;h3 class="detail-title">Solicitud de Reabastecimiento&lt;/h3>
+            &lt;div class="detail-meta">
+                &lt;span>Recibido: ${formatDate(message.createdAt)}&lt;/span>
+                &lt;span class="message-urgency urgency-${
+                  message.urgency
+                }">${getUrgencyLabel(message.urgency)}&lt;/span>
+                &lt;span class="message-status status-${
+                  message.status
+                }">${getStatusLabel(message.status)}&lt;/span>
+            &lt;/div>
+        &lt;/div>
+        
+        &lt;div class="detail-content">
+            &lt;div class="detail-section">
+                &lt;h4>Producto Solicitado&lt;/h4>
+                &lt;p>${message.productName}&lt;/p>
+            &lt;/div>
+            
+            &lt;div class="product-info-grid">
+                &lt;div class="info-item">
+                    &lt;div class="info-label">Proveedor&lt;/div>
+                    &lt;div class="info-value">${message.supplierName}&lt;/div>
+                &lt;/div>
+                &lt;div class="info-item">
+                    &lt;div class="info-label">Cantidad&lt;/div>
+                    &lt;div class="info-value">${message.quantity} unidades&lt;/div>
+                &lt;/div>
+                &lt;div class="info-item">
+                    &lt;div class="info-label">Solicitado por&lt;/div>
+                    &lt;div class="info-value">${message.requestedBy}&lt;/div>
+                &lt;/div>
+                &lt;div class="info-item">
+                    &lt;div class="info-label">ID de Variante&lt;/div>
+                    &lt;div class="info-value">${message.variantId}&lt;/div>
+                &lt;/div>
+            &lt;/div>
+            
+            &lt;div class="detail-section">
+                &lt;h4>Notas del Solicitante&lt;/h4>
+                &lt;p>${message.notes || "No se agregaron notas adicionales."}&lt;/p>
+            &lt;/div>
+        &lt;/div>
+        
+        ${
+          message.status === "pending"
+            ? `
+        &lt;div class="detail-actions">
+            &lt;button class="btn btn-success" onclick="approveOrder('${message._id}')">
+                &lt;i class="fas fa-check">&lt;/i> Aprobar Pedido
+            &lt;/button>
+            &lt;button class="btn btn-danger" onclick="rejectOrder('${message._id}')">
+                &lt;i class="fas fa-times">&lt;/i> Rechazar
+            &lt;/button>
+        &lt;/div>
+        `
+            : ""
+        }
+    `;
+}
+
+// --- Funciones de Utilidad ---
+
+/**
+ * Formatea una fecha ISO a un formato local legible (dd/mm/yyyy hh:mm).
+ * @param {string} dateString
+ * @returns {string} Fecha formateada.
+ */
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/**
+ * Traduce el código de urgencia a una etiqueta legible en español.
+ * @param {string} urgency - 'critical', 'urgent', 'normal'.
+ * @returns {string} Etiqueta traducida.
+ */
+function getUrgencyLabel(urgency) {
+  const labels = {
+    critical: "Crítico",
+    urgent: "Urgente",
+    normal: "Normal",
+  };
+  return labels[urgency] || urgency;
+}
+
+/**
+ * Traduce el código de estado a una etiqueta legible en español.
+ * @param {string} status - 'pending', 'approved', 'rejected'.
+ * @returns {string} Etiqueta traducida.
+ */
+function getStatusLabel(status) {
+  const labels = {
+    pending: "Pendiente",
+    approved: "Aprobado",
+    rejected: "Rechazado",
+  };
+  return labels[status] || status;
+}
+
+// --- Acciones de la API ---
+
+/**
+ * Marca un mensaje individual como leído en el backend.
+ * @async
+ * @param {string} messageId
+ */
+async function markMessageAsRead(messageId) {
+  try {
+    const response = await fetch(
+      `http://localhost:8080/messages/${messageId}/read`,
+      {
+        method: "PUT",
+        credentials: "include",
+      }
+    );
+
+    if (response.ok) {
+      // Recargar mensajes para actualizar la UI (quitar marca de no leído)
+      loadMessagesFromBackend();
+    }
+  } catch (error) {
+    console.error("Error marcando mensaje como leído:", error);
+  }
+}
+
+/**
+ * Marca todos los mensajes como leídos.
+ * @async
+ */
+async function markAllAsRead() {
+  try {
+    const response = await fetch(
+      "http://localhost:8080/messages/mark-all-read",
+      {
+        method: "PUT",
+        credentials: "include",
+      }
+    );
+
+    if (response.ok) {
+      loadMessagesFromBackend();
+      alert("Todos los mensajes han sido marcados como leídos");
+    }
+  } catch (error) {
+    console.error("Error marcando todos como leídos:", error);
+    alert("Error al marcar los mensajes como leídos");
+  }
+}
+
+/**
+ * Aprueba una solicitud de pedido.
+ * Función expuesta globalmente (`window`) para ser usada en el onclick del HTML inyectado.
+ * @async
+ * @global
+ * @param {string} messageId
+ */
+window.approveOrder = async function (messageId) {
+  if (!confirm("¿Estás seguro de que deseas aprobar este pedido?")) return;
+
+  try {
+    const response = await fetch(
+      `http://localhost:8080/messages/${messageId}/approve`,
+      {
+        method: "PUT",
+        credentials: "include",
+      }
+    );
+
+    if (response.ok) {
+      alert("Pedido aprobado correctamente");
+      loadMessagesFromBackend();
+    } else {
+      alert("Error al aprobar el pedido");
+    }
+  } catch (error) {
+    console.error("Error aprobando pedido:", error);
+    alert("Error de conexión al aprobar el pedido");
+  }
+};
+
+/**
+ * Rechaza una solicitud de pedido solicitando un motivo al usuario.
+ * Función expuesta globalmente (`window`).
+ * @async
+ * @global
+ * @param {string} messageId
+ */
+window.rejectOrder = async function (messageId) {
+  const reason = prompt("Ingresa el motivo del rechazo:");
+  if (reason === null) return; // Usuario canceló
+
+  try {
+    const response = await fetch(
+      `http://localhost:8080/messages/${messageId}/reject`,
+      {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reason: reason }),
+      }
+    );
+
+    if (response.ok) {
+      alert("Pedido rechazado correctamente");
+      loadMessagesFromBackend();
+    } else {
+      alert("Error al rechazar el pedido");
+    }
+  } catch (error) {
+    console.error("Error rechazando pedido:", error);
+    alert("Error de conexión al rechazar el pedido");
+  }
+};
+
+/**
+ * Inicia un intervalo para consultar nuevos mensajes periódicamente (Polling).
+ * Actualiza la lista cada 15 segundos.
+ */
+function startMessagesRealTimeUpdates() {
+  setInterval(async () => {
+    await loadMessagesFromBackend();
+  }, 15000);
+}
+
+/**
+ * Muestra un mensaje de error visual en el panel de lista de mensajes.
+ * @param {string} message - Texto del error.
+ */
+function showMessagesError(message) {
+  const messagesList = document.getElementById("messagesList");
+  if (messagesList) {
+    messagesList.innerHTML = `
+            &lt;div class="empty-state">
+                &lt;i class="fas fa-exclamation-triangle">&lt;/i>
+                &lt;h4>Error&lt;/h4>
+                &lt;p>${message}&lt;/p>
+            &lt;/div>
+        `;
+  }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CategoryManager.html">CategoryManager</a></li><li><a href="ProductManager.html">ProductManager</a></li></ul><h3>Events</h3><ul><li><a href="global.html#event:submit">submit</a></li></ul><h3>Global</h3><ul><li><a href="global.html#addBtn">addBtn</a></li><li><a href="global.html#addWishlistListeners">addWishlistListeners</a></li><li><a href="global.html#allCategoryProducts">allCategoryProducts</a></li><li><a href="global.html#allowedOrigins">allowedOrigins</a></li><li><a href="global.html#applyFilters">applyFilters</a></li><li><a href="global.html#approveOrder">approveOrder</a></li><li><a href="global.html#availableRoles">availableRoles</a></li><li><a href="global.html#cancelBtn">cancelBtn</a></li><li><a href="global.html#cargarTerminosUsuario">cargarTerminosUsuario</a></li><li><a href="global.html#checkIfEmpty">checkIfEmpty</a></li><li><a href="global.html#checkLoginStatus">checkLoginStatus</a></li><li><a href="global.html#closeCouponModal">closeCouponModal</a></li><li><a href="global.html#closeEditModal">closeEditModal</a></li><li><a href="global.html#closeProviderModal">closeProviderModal</a></li><li><a href="global.html#closeUserModal">closeUserModal</a></li><li><a href="global.html#couponForm">couponForm</a></li><li><a href="global.html#createEditModal">createEditModal</a></li><li><a href="global.html#createOrderCardHTML">createOrderCardHTML</a></li><li><a href="global.html#createProductHTML">createProductHTML</a></li><li><a href="global.html#createReviewHTML">createReviewHTML</a></li><li><a href="global.html#createStarsHTML">createStarsHTML</a></li><li><a href="global.html#currentEditingUserId">currentEditingUserId</a></li><li><a href="global.html#currentUserRing">currentUserRing</a></li><li><a href="global.html#db">db</a></li><li><a href="global.html#deleteCoupon">deleteCoupon</a></li><li><a href="global.html#deleteProvider">deleteProvider</a></li><li><a href="global.html#deleteReview">deleteReview</a></li><li><a href="global.html#displayProducts">displayProducts</a></li><li><a href="global.html#editReview">editReview</a></li><li><a href="global.html#editarRol">editarRol</a></li><li><a href="global.html#editingCouponId">editingCouponId</a></li><li><a href="global.html#editingProviderId">editingProviderId</a></li><li><a href="global.html#editingReviewId">editingReviewId</a></li><li><a href="global.html#eliminarRol">eliminarRol</a></li><li><a href="global.html#form">form</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#generateCouponCode">generateCouponCode</a></li><li><a href="global.html#getStatusLabel">getStatusLabel</a></li><li><a href="global.html#getUrgencyLabel">getUrgencyLabel</a></li><li><a href="global.html#goBackToProducts">goBackToProducts</a></li><li><a href="global.html#handleFormSubmit">handleFormSubmit</a></li><li><a href="global.html#hasPermission">hasPermission</a></li><li><a href="global.html#initializeBarcodesModal">initializeBarcodesModal</a></li><li><a href="global.html#initializeCarousels">initializeCarousels</a></li><li><a href="global.html#initializeCatProductButtons">initializeCatProductButtons</a></li><li><a href="global.html#initializeCatWishlistButtons">initializeCatWishlistButtons</a></li><li><a href="global.html#initializeMessagesSystem">initializeMessagesSystem</a></li><li><a href="global.html#initializeProductButtons">initializeProductButtons</a></li><li><a href="global.html#initializeWishlistButtons">initializeWishlistButtons</a></li><li><a href="global.html#isEditing">isEditing</a></li><li><a href="global.html#loadBestSellersReport">loadBestSellersReport</a></li><li><a href="global.html#loadCartItems">loadCartItems</a></li><li><a href="global.html#loadCategoryProducts">loadCategoryProducts</a></li><li><a href="global.html#loadCoupons">loadCoupons</a></li><li><a href="global.html#loadDashboardStats">loadDashboardStats</a></li><li><a href="global.html#loadDynamicCategories">loadDynamicCategories</a></li><li><a href="global.html#loadEmployeeSalesReport">loadEmployeeSalesReport</a></li><li><a href="global.html#loadMessagesFromBackend">loadMessagesFromBackend</a></li><li><a href="global.html#loadProducts">loadProducts</a></li><li><a href="global.html#loadProviders">loadProviders</a></li><li><a href="global.html#loadRoles">loadRoles</a></li><li><a href="global.html#loadUserData">loadUserData</a></li><li><a href="global.html#loadUserDataAndProducts">loadUserDataAndProducts</a></li><li><a href="global.html#loadUserOrders">loadUserOrders</a></li><li><a href="global.html#loadUserReviews">loadUserReviews</a></li><li><a href="global.html#loadUsers">loadUsers</a></li><li><a href="global.html#loadWebOrders">loadWebOrders</a></li><li><a href="global.html#loadWishlistItems">loadWishlistItems</a></li><li><a href="global.html#markAllAsRead">markAllAsRead</a></li><li><a href="global.html#markMessageAsRead">markMessageAsRead</a></li><li><a href="global.html#modal">modal</a></li><li><a href="global.html#modalTitle">modalTitle</a></li><li><a href="global.html#moveItemToCart">moveItemToCart</a></li><li><a href="global.html#openCreateModal">openCreateModal</a></li><li><a href="global.html#openEditModal">openEditModal</a></li><li><a href="global.html#productGrid">productGrid</a></li><li><a href="global.html#productsToInsert">productsToInsert</a></li><li><a href="global.html#providerForm">providerForm</a></li><li><a href="global.html#recalculateSummary">recalculateSummary</a></li><li><a href="global.html#recalculateTotal">recalculateTotal</a></li><li><a href="global.html#rejectOrder">rejectOrder</a></li><li><a href="global.html#removeFromWishlist">removeFromWishlist</a></li><li><a href="global.html#removeItemFromCart">removeItemFromCart</a></li><li><a href="global.html#renderProducts">renderProducts</a></li><li><a href="global.html#resetForm">resetForm</a></li><li><a href="global.html#selectProduct">selectProduct</a></li><li><a href="global.html#selectedProduct">selectedProduct</a></li><li><a href="global.html#selectedProvider">selectedProvider</a></li><li><a href="global.html#selectedRating">selectedRating</a></li><li><a href="global.html#selectedSize">selectedSize</a></li><li><a href="global.html#sendPasswordResetEmail">sendPasswordResetEmail</a></li><li><a href="global.html#setupCartEventListeners">setupCartEventListeners</a></li><li><a href="global.html#setupEditModalListeners">setupEditModalListeners</a></li><li><a href="global.html#setupEventListeners">setupEventListeners</a></li><li><a href="global.html#setupFilterListeners">setupFilterListeners</a></li><li><a href="global.html#setupModal">setupModal</a></li><li><a href="global.html#setupScrollEffects">setupScrollEffects</a></li><li><a href="global.html#shippingData">shippingData</a></li><li><a href="global.html#showMessageDetail">showMessageDetail</a></li><li><a href="global.html#showMessagesError">showMessagesError</a></li><li><a href="global.html#showNotification">showNotification</a></li><li><a href="global.html#startMessagesRealTimeUpdates">startMessagesRealTimeUpdates</a></li><li><a href="global.html#submitReview">submitReview</a></li><li><a href="global.html#tableBody">tableBody</a></li><li><a href="global.html#toggleWishlistItem">toggleWishlistItem</a></li><li><a href="global.html#toggleWishlistItemCat">toggleWishlistItemCat</a></li><li><a href="global.html#transporter">transporter</a></li><li><a href="global.html#updateCartItemQuantity">updateCartItemQuantity</a></li><li><a href="global.html#updateMessagesUI">updateMessagesUI</a></li><li><a href="global.html#updateRatingStars">updateRatingStars</a></li><li><a href="global.html#updateSidebarForLoggedInUser">updateSidebarForLoggedInUser</a></li><li><a href="global.html#updateSizeSelection">updateSizeSelection</a></li><li><a href="global.html#updateSummary">updateSummary</a></li><li><a href="global.html#updateWishlistSummary">updateWishlistSummary</a></li><li><a href="global.html#verifyToken">verifyToken</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Dec 02 2025 08:00:47 GMT-0600 (hora estándar central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

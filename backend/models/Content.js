@@ -1,5 +1,14 @@
 import { Schema, model } from "mongoose";
 
+/**
+ * @typedef {Object} ContentDocument
+ * @property {Object} _id - ID del contenido (ObjectId)
+ * @property {string} name - Identificador (slug)
+ * @property {string} htmlContent - HTML guardado
+ * @property {Date} createdAt
+ * @property {Date} updatedAt
+ */
+
 const contentSchema = new Schema(
   {
     name: {
